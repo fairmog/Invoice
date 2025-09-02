@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Ticket</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #2d3748;
+            background: #f7fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .service-ticket {
+            width: 100%;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .ticket-header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .ticket-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .ticket-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+        
+        .business-contact {
+            margin: 15px 0 10px 0;
+            font-size: 13px;
+            line-height: 1.4;
+            opacity: 0.95;
+        }
+        
+        .business-address {
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .business-phone {
+            font-weight: 500;
+        }
+        
+        .ticket-body {
+            padding: 25px;
+        }
+        
+        .ticket-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 6px;
+        }
+        
+        .info-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2563eb;
+        }
+        
+        .info-item {
+            margin-bottom: 8px;
+            display: flex;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            min-width: 100px;
+            color: #2d3748;
+        }
+        
+        .info-value {
+            color: #718096;
+        }
+        
+        .items-section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 8px;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        
+        .items-table th,
+        .items-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .items-table th {
+            background: #dbeafe;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+        
+        .items-table td {
+            font-size: 14px;
+        }
+        
+        .notes-section {
+            margin-bottom: 25px;
+        }
+        
+        .notes-content {
+            min-height: 80px;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            background: #f7fafc;
+            border-radius: 6px;
+            font-style: italic;
+            color: #718096;
+        }
+        
+        .print-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .print-button:hover {
+            background: #1d4ed8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #f56565;
+            background: #fed7d7;
+            border-radius: 8px;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+                background: white;
+                font-size: 10px;
+                line-height: 1.2;
+                color: #000;
+            }
+            
+            .container {
+                width: 384px !important; /* 10cm at 96 DPI */
+                height: 576px !important; /* 15cm at 96 DPI */
+                max-width: none;
+                overflow: hidden;
+            }
+            
+            .print-button {
+                display: none !important;
+            }
+            
+            .service-ticket {
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                border: 2px solid #000 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                display: flex;
+                flex-direction: column;
+                page-break-inside: avoid;
+            }
+            
+            .ticket-header {
+                background: white !important;
+                color: #000 !important;
+                padding: 8px !important;
+                border-bottom: 2px solid #000 !important;
+            }
+            
+            .ticket-title {
+                font-size: 14px !important;
+                margin-bottom: 2px !important;
+            }
+            
+            .ticket-subtitle {
+                font-size: 10px !important;
+                margin-top: 4px !important;
+            }
+            
+            .business-contact {
+                margin: 6px 0 4px 0 !important;
+                font-size: 8px !important;
+                line-height: 1.2 !important;
+            }
+            
+            .business-address, .business-phone {
+                margin-bottom: 2px !important;
+                color: #000 !important;
+            }
+            
+            .ticket-body {
+                padding: 8px !important;
+                flex-grow: 1;
+                overflow-y: auto;
+            }
+            
+            .ticket-info {
+                gap: 8px !important;
+                margin-bottom: 8px !important;
+                padding: 6px !important;
+                background: #f8f8f8 !important;
+                border: 1px solid #000 !important;
+                border-radius: 0 !important;
+            }
+            
+            .info-section h3 {
+                font-size: 9px !important;
+                margin-bottom: 4px !important;
+                color: #000 !important;
+                text-transform: uppercase;
+            }
+            
+            .info-item {
+                margin-bottom: 3px !important;
+            }
+            
+            .info-label {
+                min-width: 35px !important;
+                font-size: 8px !important;
+                color: #000 !important;
+            }
+            
+            .info-value {
+                font-size: 8px !important;
+                color: #000 !important;
+            }
+            
+            .section-title {
+                font-size: 10px !important;
+                margin-bottom: 4px !important;
+                border-bottom: 1px solid #000 !important;
+                padding-bottom: 2px !important;
+                color: #000 !important;
+            }
+            
+            .items-section {
+                margin-bottom: 8px !important;
+            }
+            
+            .items-table {
+                margin-bottom: 6px !important;
+            }
+            
+            .items-table th,
+            .items-table td {
+                padding: 3px !important;
+                border: 1px solid #000 !important;
+                font-size: 7px !important;
+            }
+            
+            .items-table th {
+                background: #e0e0e0 !important;
+            }
+            
+            .notes-section {
+                margin-bottom: 6px !important;
+            }
+            
+            .notes-content {
+                min-height: 30px !important;
+                padding: 4px !important;
+                border: 1px solid #000 !important;
+                background: #f8f8f8 !important;
+                border-radius: 0 !important;
+                font-size: 7px !important;
+                color: #000 !important;
+            }
+            
+            .loading, .error {
+                font-size: 10px !important;
+                padding: 20px !important;
+                color: #000 !important;
+                background: #f0f0f0 !important;
+                border: 1px solid #000 !important;
+                border-radius: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading" class="loading">Loading service ticket...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="ticket-container" style="display: none;">
+            <div class="service-ticket">
+                <div class="ticket-header">
+                    <div class="ticket-title" id="company-name">BUSINESS NAME</div>
+                    <div class="business-contact">
+                        <div class="business-address" id="business-address">Business Address</div>
+                        <div class="business-phone" id="business-phone">Business Phone</div>
+                    </div>
+                </div>
+                
+                <div class="ticket-body">
+                    <div class="ticket-info">
+                        <div class="info-section">
+                            <h3>Order Information</h3>
+                            <div class="info-item">
+                                <span class="info-label">Ticket #:</span>
+                                <span class="info-value" id="ticket-number">Loading...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Order #:</span>
+                                <span class="info-value" id="order-number">Loading...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date:</span>
+                                <span class="info-value" id="order-date">Loading...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Total:</span>
+                                <span class="info-value" id="order-total">Loading...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>Customer Information</h3>
+                            <div class="info-item">
+                                <span class="info-label">Name:</span>
+                                <span class="info-value" id="customer-name">Loading...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Phone:</span>
+                                <span class="info-value" id="customer-phone">Loading...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Email:</span>
+                                <span class="info-value" id="customer-email">Loading...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Address:</span>
+                                <span class="info-value" id="customer-address">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="items-section">
+                        <h2 class="section-title">Items/Services</h2>
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-list">
+                                <!-- Items will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="notes-section">
+                        <h2 class="section-title">Service Notes</h2>
+                        <div class="notes-content" id="service-notes">
+                            No special notes provided.
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <button class="print-button" onclick="printTicket()">
+                🖨️ Print Ticket
+            </button>
+        </div>
+    </div>
+
+    <script>
+        async function loadServiceTicket() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+            
+            if (!orderId) {
+                showError('No order ID provided');
+                return;
+            }
+            
+            try {
+                // Load both order and business settings
+                const [orderResponse, businessResponse] = await Promise.all([
+                    fetch(`/api/orders/${orderId}`),
+                    fetch('/api/business-settings')
+                ]);
+                
+                if (!orderResponse.ok) throw new Error('Order not found');
+                
+                const orderResult = await orderResponse.json();
+                const businessResult = await businessResponse.json();
+                
+                if (!orderResult.success) {
+                    throw new Error(orderResult.error || 'Failed to load order');
+                }
+                
+                displayServiceTicket(orderResult.order, businessResult);
+            } catch (error) {
+                console.error('Error loading order:', error);
+                showError('Failed to load order. Please check the URL and try again.');
+            }
+        }
+        
+        function displayServiceTicket(order, businessSettings) {
+            document.getElementById('loading').style.display = 'none';
+            
+            // Company info from business settings
+            document.getElementById('company-name').textContent = businessSettings.name || 'Your Business';
+            
+            // Business contact information for shipping purposes
+            const businessAddress = businessSettings.address || 'Business address not provided';
+            const businessPhone = businessSettings.phone || 'Phone not provided';
+            document.getElementById('business-address').textContent = businessAddress;
+            document.getElementById('business-phone').textContent = businessPhone;
+            
+            // Ticket info
+            document.getElementById('ticket-number').textContent = `ST-${order.id}-${Date.now().toString().slice(-4)}`;
+            document.getElementById('order-number').textContent = order.order_number || `#${order.id}`;
+            document.getElementById('order-date').textContent = new Date(order.created_at).toLocaleDateString();
+            
+            // Calculate and display total from items
+            let orderTotal = 0;
+            if (order.items && order.items.length > 0) {
+                orderTotal = order.items.reduce((sum, item) => {
+                    return sum + ((item.unit_price || 0) * (item.quantity || 1));
+                }, 0);
+            } else if (order.total_amount) {
+                orderTotal = order.total_amount;
+            }
+            document.getElementById('order-total').textContent = `Rp ${orderTotal.toLocaleString()}`;
+            
+            // Customer info
+            document.getElementById('customer-name').textContent = order.customer_name || 'Unknown Customer';
+            document.getElementById('customer-phone').textContent = order.customer_phone || 'Not provided';
+            document.getElementById('customer-email').textContent = order.customer_email || 'Not provided';
+            
+            // Use shipping address first, fallback to billing address
+            const customerAddress = order.shipping_address || order.billing_address || 'Address not provided';
+            document.getElementById('customer-address').textContent = customerAddress;
+            
+            // Items
+            const itemsList = document.getElementById('items-list');
+            itemsList.innerHTML = '';
+            
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.description || item.name || 'Unnamed Item'}</td>
+                        <td>${item.quantity || 1}</td>
+                        <td>Rp ${(item.unit_price || 0).toLocaleString()}</td>
+                        <td>Rp ${((item.unit_price || 0) * (item.quantity || 1)).toLocaleString()}</td>
+                    `;
+                    itemsList.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="4" style="text-align: center; color: var(--text-light); font-style: italic;">No items found</td>
+                `;
+                itemsList.appendChild(row);
+            }
+            
+            // Service notes
+            const notes = order.notes || order.special_instructions || 'No special notes provided.';
+            document.getElementById('service-notes').textContent = notes;
+            
+            document.getElementById('ticket-container').style.display = 'block';
+            
+            // Auto-print if requested
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoPrint = urlParams.get('autoprint');
+            if (autoPrint === 'true') {
+                setTimeout(() => {
+                    window.print();
+                }, 1000);
+            }
+        }
+        
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+        
+        function printTicket() {
+            window.print();
+        }
+        
+        // Load service ticket when page loads
+        loadServiceTicket();
+    </script>
+</body>
+</html>
