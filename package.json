@@ -1,0 +1,50 @@
+{
+  "name": "ai-invoice-generator",
+  "version": "1.0.0",
+  "description": "AI-powered invoice generator using Claude Code SDK",
+  "main": "src/web-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/web-server.js",
+    "dev": "node --watch src/web-server.js",
+    "demo": "node demo.js",
+    "test": "node tests/run-tests.js",
+    "interactive": "node interactive-test.js",
+    "web": "node src/web-server.js",
+    "setup": "./scripts/setup.sh",
+    "deploy:dev": "./scripts/deploy.sh development",
+    "deploy:staging": "./scripts/deploy.sh staging",
+    "deploy:prod": "./scripts/deploy.sh production",
+    "backup": "./scripts/backup.sh",
+    "ssl-setup": "./scripts/ssl-setup.sh",
+    "test-email": "node tests/test-email-logo-fix.js",
+    "config": "node -e \"import('./config/config.js').then(c => console.log(JSON.stringify(c.default.getConfigSummary(), null, 2)))\""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.5",
+    "openai": "^4.0.0",
+    "sqlite3": "^5.1.7"
+  },
+  "keywords": [
+    "ai",
+    "invoice",
+    "generator",
+    "claude",
+    "business"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
