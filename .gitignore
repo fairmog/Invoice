@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Environment variables (contains secrets - NEVER commit these)
+.env
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Coverage directory
+coverage/
+
+# Temporary folders
+.tmp/
+temp/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# SSL certificates
+ssl/
+*.pem
+*.crt
+*.key
+
+# Screenshots
+screenshot*.png
+image.png
