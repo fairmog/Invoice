@@ -795,6 +795,28 @@ class SupabaseDatabase {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
+    
+    // Add field compatibility mapping for AuthService
+    if (data) {
+      return {
+        ...data,
+        password: data.password_hash,  // Add compatibility field for AuthService
+        businessName: data.business_name,
+        fullName: data.full_name,
+        emailVerified: data.email_verified,
+        emailVerificationToken: data.email_verification_token,
+        resetToken: data.reset_token,
+        resetTokenExpires: data.reset_token_expires,
+        lastLogin: data.last_login,
+        loginAttempts: data.login_attempts,
+        lockedUntil: data.locked_until,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionExpires: data.subscription_expires,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+    
     return data;
   }
 
@@ -809,6 +831,28 @@ class SupabaseDatabase {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
+    
+    // Add field compatibility mapping for AuthService
+    if (data) {
+      return {
+        ...data,
+        password: data.password_hash,  // Add compatibility field for AuthService
+        businessName: data.business_name,
+        fullName: data.full_name,
+        emailVerified: data.email_verified,
+        emailVerificationToken: data.email_verification_token,
+        resetToken: data.reset_token,
+        resetTokenExpires: data.reset_token_expires,
+        lastLogin: data.last_login,
+        loginAttempts: data.login_attempts,
+        lockedUntil: data.locked_until,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionExpires: data.subscription_expires,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+    
     return data;
   }
 
@@ -823,6 +867,28 @@ class SupabaseDatabase {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
+    
+    // Add field compatibility mapping for AuthService
+    if (data) {
+      return {
+        ...data,
+        password: data.password_hash,  // Add compatibility field for AuthService
+        businessName: data.business_name,
+        fullName: data.full_name,
+        emailVerified: data.email_verified,
+        emailVerificationToken: data.email_verification_token,
+        resetToken: data.reset_token,
+        resetTokenExpires: data.reset_token_expires,
+        lastLogin: data.last_login,
+        loginAttempts: data.login_attempts,
+        lockedUntil: data.locked_until,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionExpires: data.subscription_expires,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+    
     return data;
   }
 
