@@ -901,41 +901,73 @@ class SupabaseDatabase {
 
   // Payment Methods operations
   async getPaymentMethods() {
-    const { data, error } = await this.supabase
-      .from('payment_methods')
-      .select('*');
+    try {
+      console.log('💳 Fetching payment methods from database...');
+      
+      const { data, error } = await this.supabase
+        .from('payment_methods')
+        .select('*');
 
-    if (error) throw error;
+      if (error) {
+        console.error('💥 Error fetching payment methods:', error.message);
+        throw error;
+      }
 
-    const methods = {};
-    data?.forEach(method => {
-      methods[method.method_type] = {
-        enabled: method.enabled,
-        ...method.config_json
-      };
-    });
+      const methods = {};
+      if (data && data.length > 0) {
+        data.forEach(method => {
+          methods[method.method_type] = {
+            enabled: method.enabled,
+            ...method.config_json
+          };
+        });
+        console.log('✅ Payment methods retrieved:', Object.keys(methods));
+      } else {
+        console.log('📋 No payment methods found in database');
+      }
 
-    return methods;
+      return methods;
+    } catch (error) {
+      console.error('💥 getPaymentMethods failed:', error.message);
+      throw error;
+    }
   }
 
   async updatePaymentMethods(methods) {
-    for (const [methodType, config] of Object.entries(methods)) {
-      const { enabled, ...configData } = config;
+    try {
+      console.log('💳 Updating payment methods in database:', methods);
       
-      const { error } = await this.supabase
-        .from('payment_methods')
-        .upsert({
-          method_type: methodType,
-          enabled: enabled,
-          config_json: configData
-        }, {
-          onConflict: 'method_type'
-        });
+      for (const [methodType, config] of Object.entries(methods)) {
+        const { enabled, ...configData } = config;
+        
+        console.log(`💳 Processing ${methodType}:`, { enabled, configData });
+        
+        const { data, error } = await this.supabase
+          .from('payment_methods')
+          .upsert({
+            method_type: methodType,
+            enabled: enabled,
+            config_json: configData
+          }, {
+            onConflict: 'method_type'
+          })
+          .select();
 
-      if (error) throw error;
+        if (error) {
+          console.error(`💥 Failed to update payment method ${methodType}:`, error.message);
+          throw error;
+        }
+        
+        console.log(`✅ Updated payment method ${methodType}:`, data);
+      }
+
+      const result = await this.getPaymentMethods();
+      console.log('✅ Payment methods update completed:', result);
+      return result;
+    } catch (error) {
+      console.error('💥 updatePaymentMethods failed:', error.message);
+      throw error;
     }
-
-    return await this.getPaymentMethods();
   }
 
   // Access logging
