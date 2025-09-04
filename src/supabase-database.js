@@ -166,36 +166,64 @@ class SupabaseDatabase {
 
   // Customer operations
   async saveCustomer(customerData) {
-    const { data: existing } = await this.supabase
-      .from('customers')
-      .select('*')
-      .eq('email', customerData.email)
-      .single();
+    try {
+      console.log('👤 Saving customer:', {
+        name: customerData.name,
+        email: customerData.email,
+        hasPhone: !!customerData.phone
+      });
 
-    if (existing) {
-      // Update existing
-      const { data, error } = await this.supabase
+      if (!customerData.email || !customerData.name) {
+        throw new Error('Customer email and name are required');
+      }
+
+      const { data: existing, error: selectError } = await this.supabase
         .from('customers')
-        .update(customerData)
+        .select('*')
         .eq('email', customerData.email)
-        .select()
         .single();
 
-      if (error) throw error;
-      return { lastInsertRowid: data.id };
-    } else {
-      // Create new
-      const { data, error } = await this.supabase
-        .from('customers')
-        .insert({
-          name: customerData.name || '',
-          email: customerData.email || null,
-          phone: customerData.phone || null,
-          address: customerData.address || null,
-          source_invoice_id: customerData.source_invoice_id || null,
-          source_invoice_number: customerData.source_invoice_number || null,
-          first_invoice_date: customerData.first_invoice_date || new Date().toISOString(),
-          last_invoice_date: customerData.last_invoice_date || new Date().toISOString(),
+      if (selectError && selectError.code !== 'PGRST116') {
+        console.error('💥 Error checking existing customer:', selectError.message);
+        throw selectError;
+      }
+
+      if (existing) {
+        // Update existing customer
+        console.log('🔄 Updating existing customer with ID:', existing.id);
+        const { data, error } = await this.supabase
+          .from('customers')
+          .update({
+            name: customerData.name,
+            phone: customerData.phone || existing.phone,
+            address: customerData.address || existing.address,
+            last_invoice_date: new Date().toISOString(),
+            invoice_count: (existing.invoice_count || 0) + 1
+          })
+          .eq('email', customerData.email)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('💥 Error updating customer:', error.message);
+          throw error;
+        }
+        console.log('✅ Customer updated successfully');
+        return { lastInsertRowid: data.id };
+      } else {
+        // Create new customer
+        console.log('✨ Creating new customer');
+        const { data, error } = await this.supabase
+          .from('customers')
+          .insert({
+            name: customerData.name || '',
+            email: customerData.email,
+            phone: customerData.phone || null,
+            address: customerData.address || null,
+            source_invoice_id: customerData.source_invoice_id || null,
+            source_invoice_number: customerData.source_invoice_number || null,
+            first_invoice_date: new Date().toISOString(),
+            last_invoice_date: new Date().toISOString(),
           invoice_count: customerData.invoice_count || 0,
           total_spent: customerData.total_spent || 0,
           extraction_method: customerData.extraction_method || 'manual'
@@ -203,8 +231,16 @@ class SupabaseDatabase {
         .select()
         .single();
 
-      if (error) throw error;
-      return { lastInsertRowid: data.id };
+        if (error) {
+          console.error('💥 Error creating customer:', error.message);
+          throw error;
+        }
+        console.log('✅ Customer created successfully');
+        return { lastInsertRowid: data.id };
+      }
+    } catch (error) {
+      console.error('💥 saveCustomer failed:', error.message);
+      throw error;
     }
   }
 
@@ -279,46 +315,61 @@ class SupabaseDatabase {
 
   // Invoice operations
   async saveInvoice(invoiceData) {
-    const customerToken = this.generateCustomerToken();
-    const invoice = invoiceData.invoice || invoiceData;
-    const invoiceNumber = await this.generateInvoiceNumber();
-    
-    // Auto-create/update customer record
-    await this.saveCustomer({
-      name: invoice.customer.name,
-      email: invoice.customer.email,
-      phone: invoice.customer.phone,
-      address: invoice.customer.address
-    });
-    
-    const { data, error } = await this.supabase
-      .from('invoices')
-      .insert({
+    try {
+      console.log('💾 Saving invoice to database:', {
+        hasInvoice: !!(invoiceData.invoice || invoiceData),
+        hasCustomer: !!(invoiceData.invoice?.customer || invoiceData.customer),
+        hasItems: !!(invoiceData.invoice?.items || invoiceData.items)
+      });
+      
+      const customerToken = this.generateCustomerToken();
+      const invoice = invoiceData.invoice || invoiceData;
+      const invoiceNumber = await this.generateInvoiceNumber();
+      
+      if (!invoice || !invoice.customer) {
+        throw new Error('Invoice data or customer information is missing');
+      }
+      
+      // Auto-create/update customer record
+      try {
+        await this.saveCustomer({
+          name: invoice.customer.name,
+          email: invoice.customer.email,
+          phone: invoice.customer.phone,
+          address: invoice.customer.address
+        });
+        console.log('✅ Customer record saved/updated');
+      } catch (customerError) {
+        console.error('⚠️ Warning: Failed to save customer record:', customerError.message);
+        // Continue with invoice save even if customer save fails
+      }
+      
+      const invoiceInsertData = {
         invoice_number: invoiceNumber,
-        customer_name: invoice.customer.name,
-        customer_email: invoice.customer.email,
-        customer_phone: invoice.customer.phone,
-        customer_address: invoice.customer.address,
-        merchant_name: invoice.merchant?.businessName || invoice.businessProfile?.name || 'Unknown',
+        customer_name: invoice.customer?.name || '',
+        customer_email: invoice.customer?.email || '',
+        customer_phone: invoice.customer?.phone || '',
+        customer_address: invoice.customer?.address || '',
+        merchant_name: invoice.merchant?.businessName || invoice.businessProfile?.name || 'Unknown Merchant',
         merchant_address: invoice.merchant?.address || invoice.businessProfile?.address || '',
         merchant_phone: invoice.merchant?.phone || invoice.businessProfile?.phone || '',
         merchant_email: invoice.merchant?.email || invoice.businessProfile?.email || '',
-        invoice_date: invoice.header.invoiceDate,
-        due_date: invoice.header.dueDate,
-        original_due_date: invoice.header.dueDate,
+        invoice_date: invoice.header?.invoiceDate || new Date().toISOString().split('T')[0],
+        due_date: invoice.header?.dueDate || new Date().toISOString().split('T')[0],
+        original_due_date: invoice.header?.dueDate || new Date().toISOString().split('T')[0],
         status: 'draft',
         payment_stage: invoice.paymentSchedule ? 'down_payment' : 'full_payment',
         payment_status: 'pending',
-        subtotal: invoice.calculations?.subtotal || invoice.summary?.subtotal || 0,
-        tax_amount: invoice.calculations?.totalTax || invoice.summary?.tax_amount || 0,
-        shipping_cost: invoice.calculations?.shippingCost || invoice.summary?.shipping_cost || 0,
-        discount: invoice.calculations?.discount || invoice.summary?.discount || 0,
-        discount_amount: invoice.calculations?.discount || invoice.summary?.discount || 0,
-        grand_total: invoice.calculations?.grandTotal || invoice.summary?.grand_total || 0,
+        subtotal: parseFloat(invoice.calculations?.subtotal || invoice.summary?.subtotal || 0),
+        tax_amount: parseFloat(invoice.calculations?.totalTax || invoice.summary?.tax_amount || 0),
+        shipping_cost: parseFloat(invoice.calculations?.shippingCost || invoice.summary?.shipping_cost || 0),
+        discount: parseFloat(invoice.calculations?.discount || invoice.summary?.discount || 0),
+        discount_amount: parseFloat(invoice.calculations?.discount || invoice.summary?.discount || 0),
+        grand_total: parseFloat(invoice.calculations?.grandTotal || invoice.summary?.grand_total || 0),
         currency: invoice.calculations?.currency || invoice.summary?.currency || 'IDR',
         payment_terms: invoice.payment?.paymentTerms || 'Net 30',
         notes: invoice.notes?.publicNotes || '',
-        items_json: invoice.items,
+        items_json: invoice.items || [],
         metadata_json: {
           ...invoice.metadata,
           businessProfile: invoiceData.businessProfile || invoice.businessProfile || null
@@ -327,17 +378,42 @@ class SupabaseDatabase {
         notes_json: invoice.notes || {},
         calculations_json: invoice.calculations || {},
         customer_token: customerToken
-      })
-      .select()
-      .single();
+      };
+      
+      console.log('📋 Inserting invoice data:', {
+        invoice_number: invoiceNumber,
+        customer_name: invoiceInsertData.customer_name,
+        merchant_name: invoiceInsertData.merchant_name,
+        grand_total: invoiceInsertData.grand_total,
+        itemsCount: Array.isArray(invoiceInsertData.items_json) ? invoiceInsertData.items_json.length : 0
+      });
+      
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .insert(invoiceInsertData)
+        .select()
+        .single();
 
-    if (error) throw error;
+      if (error) {
+        console.error('💥 Invoice insert error:', error.message, error.details);
+        throw error;
+      }
 
-    return {
-      ...data,
-      invoiceNumber: invoiceNumber,
-      customerToken
-    };
+      console.log('✅ Invoice saved successfully:', {
+        id: data.id,
+        invoice_number: data.invoice_number,
+        grand_total: data.grand_total
+      });
+
+      return {
+        ...data,
+        invoiceNumber: invoiceNumber,
+        customerToken
+      };
+    } catch (error) {
+      console.error('💥 saveInvoice failed:', error.message);
+      throw error;
+    }
   }
 
   async getAllInvoices(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null) {
@@ -443,43 +519,180 @@ class SupabaseDatabase {
 
   // Business Settings operations
   async getBusinessSettings() {
-    const { data, error } = await this.supabase
-      .from('business_settings')
-      .select('*')
-      .limit(1)
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from('business_settings')
+        .select('*')
+        .limit(1)
+        .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return data || {};
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('📋 No business settings found, returning empty object');
+          return {};
+        }
+        console.error('💥 Error fetching business settings:', error.message);
+        throw error;
+      }
+      
+      console.log('✅ Business settings retrieved from database:', {
+        hasName: !!data?.name,
+        hasEmail: !!data?.email,
+        hasLogoUrl: !!data?.logo_url,
+        hasLogoPublicId: !!data?.logo_public_id
+      });
+      
+      // Add field compatibility mapping for web-server.js
+      if (data) {
+        return {
+          ...data,
+          // Map snake_case to camelCase for compatibility
+          taxId: data.tax_id,
+          taxEnabled: data.tax_enabled,
+          taxRate: data.tax_rate,
+          taxName: data.tax_name,
+          taxDescription: data.tax_description,
+          hideBusinessName: data.hide_business_name,
+          businessCode: data.business_code,
+          logoUrl: data.logo_url,
+          logoPublicId: data.logo_public_id,
+          logoFilename: data.logo_filename,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+      }
+      
+      return {};
+    } catch (error) {
+      console.error('💥 getBusinessSettings failed:', error.message);
+      throw error;
+    }
   }
 
   async updateBusinessSettings(settings) {
-    const { data: existing } = await this.supabase
-      .from('business_settings')
-      .select('*')
-      .limit(1)
-      .single();
+    try {
+      console.log('🏢 Updating business settings with data:', settings);
+      
+      // Map camelCase input fields to snake_case database fields
+      const mappedSettings = {};
+      
+      if (settings.name !== undefined) mappedSettings.name = settings.name;
+      if (settings.email !== undefined) mappedSettings.email = settings.email;
+      if (settings.phone !== undefined) mappedSettings.phone = settings.phone;
+      if (settings.address !== undefined) mappedSettings.address = settings.address;
+      if (settings.website !== undefined) mappedSettings.website = settings.website;
+      
+      // Handle both field name formats
+      if (settings.taxId !== undefined || settings.tax_id !== undefined) {
+        mappedSettings.tax_id = settings.taxId || settings.tax_id;
+      }
+      if (settings.taxEnabled !== undefined || settings.tax_enabled !== undefined) {
+        mappedSettings.tax_enabled = settings.taxEnabled !== undefined ? settings.taxEnabled : settings.tax_enabled;
+      }
+      if (settings.taxRate !== undefined || settings.tax_rate !== undefined) {
+        mappedSettings.tax_rate = settings.taxRate !== undefined ? settings.taxRate : settings.tax_rate;
+      }
+      if (settings.taxName !== undefined || settings.tax_name !== undefined) {
+        mappedSettings.tax_name = settings.taxName || settings.tax_name;
+      }
+      if (settings.taxDescription !== undefined || settings.tax_description !== undefined) {
+        mappedSettings.tax_description = settings.taxDescription || settings.tax_description;
+      }
+      if (settings.hideBusinessName !== undefined || settings.hide_business_name !== undefined) {
+        mappedSettings.hide_business_name = settings.hideBusinessName !== undefined ? settings.hideBusinessName : settings.hide_business_name;
+      }
+      if (settings.businessCode !== undefined || settings.business_code !== undefined) {
+        mappedSettings.business_code = settings.businessCode || settings.business_code;
+      }
+      if (settings.logoUrl !== undefined || settings.logo_url !== undefined) {
+        mappedSettings.logo_url = settings.logoUrl || settings.logo_url;
+      }
+      if (settings.logoPublicId !== undefined || settings.logo_public_id !== undefined) {
+        mappedSettings.logo_public_id = settings.logoPublicId || settings.logo_public_id;
+      }
+      if (settings.logoFilename !== undefined || settings.logo_filename !== undefined) {
+        mappedSettings.logo_filename = settings.logoFilename || settings.logo_filename;
+      }
 
-    if (existing) {
-      const { data, error } = await this.supabase
+      console.log('📋 Mapped settings for database:', mappedSettings);
+
+      // Check if business settings exist
+      const { data: existing, error: selectError } = await this.supabase
         .from('business_settings')
-        .update(settings)
-        .eq('id', existing.id)
-        .select()
+        .select('*')
+        .limit(1)
         .single();
 
-      if (error) throw error;
-      return data;
-    } else {
-      const { data, error } = await this.supabase
-        .from('business_settings')
-        .insert(settings)
-        .select()
-        .single();
+      if (selectError && selectError.code !== 'PGRST116') {
+        console.error('💥 Error checking existing business settings:', selectError.message);
+        throw selectError;
+      }
 
-      if (error) throw error;
-      return data;
+      let result;
+      if (existing) {
+        console.log('🔄 Updating existing business settings with ID:', existing.id);
+        const { data, error } = await this.supabase
+          .from('business_settings')
+          .update(mappedSettings)
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('💥 Error updating business settings:', error.message);
+          throw error;
+        }
+        result = data;
+      } else {
+        console.log('✨ Creating new business settings record');
+        const { data, error } = await this.supabase
+          .from('business_settings')
+          .insert(mappedSettings)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('💥 Error creating business settings:', error.message);
+          throw error;
+        }
+        result = data;
+      }
+      
+      console.log('✅ Business settings saved successfully:', {
+        id: result.id,
+        hasName: !!result.name,
+        hasEmail: !!result.email,
+        hasLogoUrl: !!result.logo_url
+      });
+      
+      // Return with field mapping for compatibility
+      return this.mapBusinessSettingsFields(result);
+    } catch (error) {
+      console.error('💥 updateBusinessSettings failed:', error.message);
+      throw error;
     }
+  }
+
+  // Helper method for consistent field mapping
+  mapBusinessSettingsFields(data) {
+    if (!data) return data;
+    
+    return {
+      ...data,
+      // Map snake_case to camelCase for compatibility
+      taxId: data.tax_id,
+      taxEnabled: data.tax_enabled,
+      taxRate: data.tax_rate,
+      taxName: data.tax_name,
+      taxDescription: data.tax_description,
+      hideBusinessName: data.hide_business_name,
+      businessCode: data.business_code,
+      logoUrl: data.logo_url,
+      logoPublicId: data.logo_public_id,
+      logoFilename: data.logo_filename,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
   }
 
   // Order operations
@@ -1023,6 +1236,77 @@ class SupabaseDatabase {
       recentLogins,
       inactiveMerchants: totalMerchants - activeMerchants
     };
+  }
+
+  // Account Settings operations (alias for business settings for compatibility)
+  async getAccountSettings() {
+    // Account settings are the same as business settings in this system
+    return await this.getBusinessSettings();
+  }
+
+  async updateAccountSettings(settings) {
+    // Account settings are the same as business settings in this system
+    return await this.updateBusinessSettings(settings);
+  }
+
+  // Usage Statistics operations
+  async getUsageStatistics() {
+    // Return basic statistics from various tables
+    try {
+      const [invoices, customers, products, orders] = await Promise.all([
+        this.supabase.from('invoices').select('id, status, grand_total, created_at'),
+        this.supabase.from('customers').select('id, created_at'),
+        this.supabase.from('products').select('id, is_active'),
+        this.supabase.from('orders').select('id, status, total_amount, created_at')
+      ]);
+
+      const totalInvoices = invoices.data?.length || 0;
+      const totalCustomers = customers.data?.length || 0;
+      const totalProducts = products.data?.length || 0;
+      const totalOrders = orders.data?.length || 0;
+
+      // Calculate revenue
+      const totalRevenue = invoices.data?.reduce((sum, invoice) => {
+        return sum + (invoice.status === 'paid' ? parseFloat(invoice.grand_total || 0) : 0);
+      }, 0) || 0;
+
+      // Calculate this month's statistics
+      const thisMonth = new Date();
+      thisMonth.setDate(1);
+      thisMonth.setHours(0, 0, 0, 0);
+
+      const thisMonthInvoices = invoices.data?.filter(inv => 
+        new Date(inv.created_at) >= thisMonth
+      ).length || 0;
+
+      const thisMonthRevenue = invoices.data?.filter(inv => 
+        new Date(inv.created_at) >= thisMonth && inv.status === 'paid'
+      ).reduce((sum, inv) => sum + parseFloat(inv.grand_total || 0), 0) || 0;
+
+      return {
+        totalInvoices,
+        totalCustomers,
+        totalProducts,
+        totalOrders,
+        totalRevenue,
+        thisMonthInvoices,
+        thisMonthRevenue,
+        averageInvoiceValue: totalInvoices > 0 ? totalRevenue / totalInvoices : 0
+      };
+
+    } catch (error) {
+      console.error('Error getting usage statistics:', error);
+      return {
+        totalInvoices: 0,
+        totalCustomers: 0,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        thisMonthInvoices: 0,
+        thisMonthRevenue: 0,
+        averageInvoiceValue: 0
+      };
+    }
   }
 
   close() {
