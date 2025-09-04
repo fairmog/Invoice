@@ -172,6 +172,30 @@ CREATE TABLE access_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Merchants Table (for authentication/user management)
+CREATE TABLE merchants (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  business_name TEXT,
+  full_name TEXT,
+  phone TEXT,
+  address TEXT,
+  website TEXT,
+  status TEXT DEFAULT 'active',
+  email_verified BOOLEAN DEFAULT false,
+  email_verification_token TEXT,
+  reset_token TEXT,
+  reset_token_expires TIMESTAMP WITH TIME ZONE,
+  last_login TIMESTAMP WITH TIME ZONE,
+  login_attempts INTEGER DEFAULT 0,
+  locked_until TIMESTAMP WITH TIME ZONE,
+  subscription_plan TEXT DEFAULT 'free',
+  subscription_expires TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_customers_email ON customers(email);
 CREATE INDEX idx_invoices_number ON invoices(invoice_number);
@@ -183,6 +207,9 @@ CREATE INDEX idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_products_sku ON products(sku);
 CREATE INDEX idx_products_active ON products(is_active);
+CREATE INDEX idx_merchants_email ON merchants(email);
+CREATE INDEX idx_merchants_status ON merchants(status);
+CREATE INDEX idx_merchants_reset_token ON merchants(reset_token);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -200,6 +227,7 @@ CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW
 CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_payment_methods_updated_at BEFORE UPDATE ON payment_methods FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_merchants_updated_at BEFORE UPDATE ON merchants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Enable Row Level Security (RLS) - Optional for multi-tenant setup
 -- ALTER TABLE business_settings ENABLE ROW LEVEL SECURITY;
