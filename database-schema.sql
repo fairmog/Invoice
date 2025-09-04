@@ -20,6 +20,7 @@ CREATE TABLE business_settings (
   hide_business_name BOOLEAN DEFAULT false,
   business_code TEXT,
   logo_url TEXT,
+  logo_public_id TEXT,
   logo_filename TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
