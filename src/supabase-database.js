@@ -755,7 +755,7 @@ class SupabaseDatabase {
     // Handle both camelCase and snake_case field names for compatibility
     const insertData = {
       email: merchantData.email.toLowerCase(),
-      password_hash: merchantData.passwordHash || merchantData.password_hash,
+      password_hash: merchantData.passwordHash || merchantData.password_hash || merchantData.password,
       business_name: merchantData.businessName || merchantData.business_name || '',
       full_name: merchantData.fullName || merchantData.full_name || '',
       phone: merchantData.phone || '',
@@ -836,7 +836,7 @@ class SupabaseDatabase {
     if (updateData.email) updateFields.email = updateData.email.toLowerCase();
     
     // Password hash - handle both formats
-    const passwordHash = updateData.passwordHash || updateData.password_hash;
+    const passwordHash = updateData.passwordHash || updateData.password_hash || updateData.password;
     if (passwordHash) updateFields.password_hash = passwordHash;
     
     // Business name - handle both formats
