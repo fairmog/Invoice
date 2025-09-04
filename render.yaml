@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ai-invoice-generator
+    env: node
+    buildCommand: npm install
+    startCommand: node web-server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+    plan: free
