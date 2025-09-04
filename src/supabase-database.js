@@ -752,21 +752,29 @@ class SupabaseDatabase {
    * Create a new merchant user
    */
   async createMerchant(merchantData) {
+    // Handle both camelCase and snake_case field names for compatibility
+    const insertData = {
+      email: merchantData.email.toLowerCase(),
+      password_hash: merchantData.passwordHash || merchantData.password_hash,
+      business_name: merchantData.businessName || merchantData.business_name || '',
+      full_name: merchantData.fullName || merchantData.full_name || '',
+      phone: merchantData.phone || '',
+      address: merchantData.address || '',
+      website: merchantData.website || '',
+      status: merchantData.status || 'active',
+      email_verified: merchantData.emailVerified || merchantData.email_verified || false,
+      email_verification_token: merchantData.emailVerificationToken || merchantData.email_verification_token || null,
+      subscription_plan: merchantData.subscriptionPlan || merchantData.subscription_plan || 'free'
+    };
+
+    // Validate required fields
+    if (!insertData.password_hash) {
+      throw new Error('Password hash is required for merchant creation');
+    }
+
     const { data, error } = await this.supabase
       .from('merchants')
-      .insert({
-        email: merchantData.email.toLowerCase(),
-        password_hash: merchantData.passwordHash,
-        business_name: merchantData.businessName || '',
-        full_name: merchantData.fullName || '',
-        phone: merchantData.phone || '',
-        address: merchantData.address || '',
-        website: merchantData.website || '',
-        status: merchantData.status || 'active',
-        email_verified: merchantData.emailVerified || false,
-        email_verification_token: merchantData.emailVerificationToken || null,
-        subscription_plan: merchantData.subscriptionPlan || 'free'
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -824,25 +832,65 @@ class SupabaseDatabase {
   async updateMerchant(id, updateData) {
     const updateFields = {};
     
-    // Map the fields correctly
+    // Handle both camelCase and snake_case field names for compatibility
     if (updateData.email) updateFields.email = updateData.email.toLowerCase();
-    if (updateData.passwordHash) updateFields.password_hash = updateData.passwordHash;
-    if (updateData.businessName !== undefined) updateFields.business_name = updateData.businessName;
-    if (updateData.fullName !== undefined) updateFields.full_name = updateData.fullName;
+    
+    // Password hash - handle both formats
+    const passwordHash = updateData.passwordHash || updateData.password_hash;
+    if (passwordHash) updateFields.password_hash = passwordHash;
+    
+    // Business name - handle both formats
+    const businessName = updateData.businessName || updateData.business_name;
+    if (businessName !== undefined) updateFields.business_name = businessName;
+    
+    // Full name - handle both formats
+    const fullName = updateData.fullName || updateData.full_name;
+    if (fullName !== undefined) updateFields.full_name = fullName;
+    
     if (updateData.phone !== undefined) updateFields.phone = updateData.phone;
     if (updateData.address !== undefined) updateFields.address = updateData.address;
     if (updateData.website !== undefined) updateFields.website = updateData.website;
     if (updateData.status) updateFields.status = updateData.status;
-    if (updateData.emailVerified !== undefined) updateFields.email_verified = updateData.emailVerified;
-    if (updateData.emailVerificationToken !== undefined) updateFields.email_verification_token = updateData.emailVerificationToken;
-    if (updateData.resetToken !== undefined) updateFields.reset_token = updateData.resetToken;
-    if (updateData.resetTokenExpires) updateFields.reset_token_expires = updateData.resetTokenExpires;
-    if (updateData.lastLogin) updateFields.last_login = updateData.lastLogin;
-    if (updateData.loginAttempts !== undefined) updateFields.login_attempts = updateData.loginAttempts;
-    if (updateData.lockedUntil) updateFields.locked_until = updateData.lockedUntil;
-    if (updateData.subscriptionPlan) updateFields.subscription_plan = updateData.subscriptionPlan;
-    if (updateData.subscriptionExpires) updateFields.subscription_expires = updateData.subscriptionExpires;
-    if (updateData.deletedAt) updateFields.deleted_at = updateData.deletedAt;
+    
+    // Email verification - handle both formats
+    const emailVerified = updateData.emailVerified || updateData.email_verified;
+    if (emailVerified !== undefined) updateFields.email_verified = emailVerified;
+    
+    // Email verification token - handle both formats
+    const emailVerificationToken = updateData.emailVerificationToken || updateData.email_verification_token;
+    if (emailVerificationToken !== undefined) updateFields.email_verification_token = emailVerificationToken;
+    
+    // Reset token - handle both formats
+    const resetToken = updateData.resetToken || updateData.reset_token;
+    if (resetToken !== undefined) updateFields.reset_token = resetToken;
+    
+    // Reset token expires - handle both formats
+    const resetTokenExpires = updateData.resetTokenExpires || updateData.reset_token_expires;
+    if (resetTokenExpires) updateFields.reset_token_expires = resetTokenExpires;
+    
+    // Last login - handle both formats
+    const lastLogin = updateData.lastLogin || updateData.last_login;
+    if (lastLogin) updateFields.last_login = lastLogin;
+    
+    // Login attempts - handle both formats
+    const loginAttempts = updateData.loginAttempts || updateData.login_attempts;
+    if (loginAttempts !== undefined) updateFields.login_attempts = loginAttempts;
+    
+    // Locked until - handle both formats
+    const lockedUntil = updateData.lockedUntil || updateData.locked_until;
+    if (lockedUntil) updateFields.locked_until = lockedUntil;
+    
+    // Subscription plan - handle both formats
+    const subscriptionPlan = updateData.subscriptionPlan || updateData.subscription_plan;
+    if (subscriptionPlan) updateFields.subscription_plan = subscriptionPlan;
+    
+    // Subscription expires - handle both formats
+    const subscriptionExpires = updateData.subscriptionExpires || updateData.subscription_expires;
+    if (subscriptionExpires) updateFields.subscription_expires = subscriptionExpires;
+    
+    // Deleted at - handle both formats
+    const deletedAt = updateData.deletedAt || updateData.deleted_at;
+    if (deletedAt) updateFields.deleted_at = deletedAt;
 
     const { data, error } = await this.supabase
       .from('merchants')
