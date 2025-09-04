@@ -1681,7 +1681,7 @@
                     </div>
                 </a>
                 <div class="header-actions">
-                    <button class="profile-btn" onclick="window.open('http://localhost:3000/merchant', '_blank')">
+                    <button class="profile-btn" onclick="openMerchantDashboard()">
                         <span>📊</span>
                         <span>Merchant Dashboard</span>
                     </button>
@@ -1879,6 +1879,16 @@
     </div>
 
     <script>
+        // Dynamic URL Management
+        function getBaseUrl() {
+            return window.location.origin;
+        }
+        
+        function openMerchantDashboard() {
+            const dashboardUrl = getBaseUrl() + '/merchant';
+            window.open(dashboardUrl, '_blank');
+        }
+        
         // Chat functionality
         function handleKeypress(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
