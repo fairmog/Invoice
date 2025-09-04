@@ -744,6 +744,173 @@ class SupabaseDatabase {
     return { lastInsertRowid: data.id };
   }
 
+  // ==========================================
+  // MERCHANT USER MANAGEMENT METHODS
+  // ==========================================
+
+  /**
+   * Create a new merchant user
+   */
+  async createMerchant(merchantData) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .insert({
+        email: merchantData.email.toLowerCase(),
+        password_hash: merchantData.passwordHash,
+        business_name: merchantData.businessName || '',
+        full_name: merchantData.fullName || '',
+        phone: merchantData.phone || '',
+        address: merchantData.address || '',
+        website: merchantData.website || '',
+        status: merchantData.status || 'active',
+        email_verified: merchantData.emailVerified || false,
+        email_verification_token: merchantData.emailVerificationToken || null,
+        subscription_plan: merchantData.subscriptionPlan || 'free'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`👤 New merchant created: ${data.email} (${data.business_name})`);
+    return data;
+  }
+
+  /**
+   * Get merchant by email
+   */
+  async getMerchant(email) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+
+  /**
+   * Get merchant by ID
+   */
+  async getMerchantById(id) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+
+  /**
+   * Get merchant by reset token
+   */
+  async getMerchantByResetToken(resetToken) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .eq('reset_token', resetToken)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+
+  /**
+   * Update merchant data
+   */
+  async updateMerchant(id, updateData) {
+    const updateFields = {};
+    
+    // Map the fields correctly
+    if (updateData.email) updateFields.email = updateData.email.toLowerCase();
+    if (updateData.passwordHash) updateFields.password_hash = updateData.passwordHash;
+    if (updateData.businessName !== undefined) updateFields.business_name = updateData.businessName;
+    if (updateData.fullName !== undefined) updateFields.full_name = updateData.fullName;
+    if (updateData.phone !== undefined) updateFields.phone = updateData.phone;
+    if (updateData.address !== undefined) updateFields.address = updateData.address;
+    if (updateData.website !== undefined) updateFields.website = updateData.website;
+    if (updateData.status) updateFields.status = updateData.status;
+    if (updateData.emailVerified !== undefined) updateFields.email_verified = updateData.emailVerified;
+    if (updateData.emailVerificationToken !== undefined) updateFields.email_verification_token = updateData.emailVerificationToken;
+    if (updateData.resetToken !== undefined) updateFields.reset_token = updateData.resetToken;
+    if (updateData.resetTokenExpires) updateFields.reset_token_expires = updateData.resetTokenExpires;
+    if (updateData.lastLogin) updateFields.last_login = updateData.lastLogin;
+    if (updateData.loginAttempts !== undefined) updateFields.login_attempts = updateData.loginAttempts;
+    if (updateData.lockedUntil) updateFields.locked_until = updateData.lockedUntil;
+    if (updateData.subscriptionPlan) updateFields.subscription_plan = updateData.subscriptionPlan;
+    if (updateData.subscriptionExpires) updateFields.subscription_expires = updateData.subscriptionExpires;
+    if (updateData.deletedAt) updateFields.deleted_at = updateData.deletedAt;
+
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .update(updateFields)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`👤 Merchant updated: ${data.email}`);
+    return data;
+  }
+
+  /**
+   * Delete merchant (soft delete by setting status to inactive)
+   */
+  async deleteMerchant(id) {
+    return this.updateMerchant(id, { 
+      status: 'inactive',
+      deletedAt: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Get all merchants (admin function)
+   */
+  async getAllMerchants() {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .neq('status', 'inactive')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  /**
+   * Get merchant statistics
+   */
+  async getMerchantStats() {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*');
+
+    if (error) throw error;
+
+    const merchants = data || [];
+    const totalMerchants = merchants.length;
+    const activeMerchants = merchants.filter(m => m.status === 'active').length;
+    const verifiedMerchants = merchants.filter(m => m.email_verified).length;
+    
+    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentLogins = merchants.filter(m => {
+      if (!m.last_login) return false;
+      return new Date(m.last_login) > lastWeek;
+    }).length;
+
+    return {
+      totalMerchants,
+      activeMerchants,
+      verifiedMerchants,
+      recentLogins,
+      inactiveMerchants: totalMerchants - activeMerchants
+    };
+  }
+
   close() {
     // No-op for compatibility
   }
