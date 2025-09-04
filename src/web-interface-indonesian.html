@@ -2617,22 +2617,7 @@
                 businessTerms = businessProfile.termsAndConditions || 'Pembayaran dalam 30 hari';
             }
             
-            // If no logo found in localStorage, try to load from API asynchronously
-            if (!businessLogo || businessLogo === '') {
-                console.log('🔧 No logo in localStorage, trying API fallback...');
-                fetch('/api/business-settings')
-                    .then(response => response.json())
-                    .then(settings => {
-                        if (settings.logoUrl) {
-                            console.log('✅ Found logo in API settings:', settings.logoUrl);
-                            // Update the logo in the already rendered template
-                            updateLogoInPreviewTemplate(settings.logoUrl);
-                        }
-                    })
-                    .catch(error => {
-                        console.log('❌ Error loading logo from API:', error);
-                    });
-            }
+            // Logo is now managed by loadBusinessDataFromAPI which syncs database with localStorage
             
             // Category-based titles (consistent across all contexts)
             const getCategoryTitle = (category) => {
@@ -5415,16 +5400,54 @@ Terima kasih! 🙏`;
             }
         }
 
-        function removeLogo() {
-            const logoPreview = document.getElementById('logo-preview');
-            logoPreview.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 12px;">🏢<br>Logo</div>';
-            document.getElementById('logo-upload').value = '';
+        async function removeLogo() {
+            try {
+                // Clear the preview immediately
+                const logoPreview = document.getElementById('logo-preview');
+                logoPreview.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 12px;">🏢<br>Logo</div>';
+                document.getElementById('logo-upload').value = '';
+                
+                // Remove logo from database via API
+                const response = await fetch('/api/remove-business-logo', {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ Logo removed from database successfully');
+                    
+                    // Update business logo display on main page
+                    const businessLogoImg = document.getElementById('business-logo-img');
+                    const logoPlaceholder = document.getElementById('logo-placeholder');
+                    
+                    if (businessLogoImg) businessLogoImg.style.display = 'none';
+                    if (logoPlaceholder) logoPlaceholder.style.display = 'block';
+                    
+                    // Update localStorage
+                    const savedProfile = localStorage.getItem('businessProfile');
+                    if (savedProfile) {
+                        const profile = JSON.parse(savedProfile);
+                        profile.logo = '';
+                        profile.logoUrl = '';
+                        localStorage.setItem('businessProfile', JSON.stringify(profile));
+                    }
+                } else {
+                    console.error('❌ Failed to remove logo from database:', result.error);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error removing logo:', error);
+            }
         }
 
         async function saveBusinessProfile(event) {
             event.preventDefault();
             
             try {
+                // Show loading state
+                alert('⏳ Saving business profile...');
+                
                 // Get form data
                 const name = document.getElementById('edit-business-name').value;
                 const email = document.getElementById('edit-business-email').value;
@@ -5435,14 +5458,61 @@ Terima kasih! 🙏`;
                 const termsAndConditions = document.getElementById('edit-terms-conditions').value;
                 const hideBusinessName = document.getElementById('edit-hide-business-name').checked;
                 
-                // Handle logo upload
-                let logoDataURL = '';
+                let logoUrl = document.getElementById('business-logo-img').src || '';
+                
+                // Handle logo upload to Cloudinary
                 const logoFile = document.getElementById('logo-upload').files[0];
                 if (logoFile) {
-                    logoDataURL = await convertFileToDataURL(logoFile);
+                    console.log('📤 Uploading logo to Cloudinary...');
+                    
+                    const formData = new FormData();
+                    formData.append('logo', logoFile);
+                    
+                    const logoResponse = await fetch('/api/upload-business-logo', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const logoResult = await logoResponse.json();
+                    
+                    if (logoResult.success) {
+                        logoUrl = logoResult.logoUrl;
+                        console.log('✅ Logo uploaded successfully:', logoUrl);
+                    } else {
+                        throw new Error('Failed to upload logo: ' + logoResult.error);
+                    }
                 }
 
-                // Save to localStorage
+                // Save business settings to database
+                const businessSettings = {
+                    name,
+                    email,
+                    phone,
+                    address,
+                    category,
+                    taxRate,
+                    taxEnabled: taxRate > 0,
+                    taxName: 'PPN',
+                    taxDescription: `${taxRate}% PPN`,
+                    termsAndConditions,
+                    hideBusinessName,
+                    logoUrl: logoUrl
+                };
+
+                const response = await fetch('/api/business-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(businessSettings)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save business settings');
+                }
+
+                // Update localStorage for backward compatibility
                 const businessData = {
                     name,
                     email,
@@ -5452,12 +5522,12 @@ Terima kasih! 🙏`;
                     taxRate,
                     termsAndConditions,
                     hideBusinessName,
-                    logo: logoDataURL || document.getElementById('business-logo-img').src || ''
+                    logo: logoUrl || ''
                 };
                 
                 localStorage.setItem('businessProfile', JSON.stringify(businessData));
 
-                // Update UI
+                // Update UI immediately
                 document.getElementById('business-name').textContent = name;
                 document.getElementById('business-email').textContent = email;
                 document.getElementById('business-phone').textContent = phone;
@@ -5477,17 +5547,15 @@ Terima kasih! 🙏`;
                 };
                 document.getElementById('business-category').textContent = categoryNames[category] || 'Bisnis Umum';
 
-                // Update logo
-                if (logoDataURL) {
-                    const logoImg = document.getElementById('business-logo-img');
-                    const logoPlaceholder = document.getElementById('logo-placeholder');
-                    logoImg.src = logoDataURL;
+                // Update logo display
+                const logoImg = document.getElementById('business-logo-img');
+                const logoPlaceholder = document.getElementById('logo-placeholder');
+                
+                if (logoUrl) {
+                    logoImg.src = logoUrl;
                     logoImg.style.display = 'block';
                     logoPlaceholder.style.display = 'none';
-                } else if (!businessData.logo) {
-                    // Remove logo if cleared
-                    const logoImg = document.getElementById('business-logo-img');
-                    const logoPlaceholder = document.getElementById('logo-placeholder');
+                } else {
                     logoImg.style.display = 'none';
                     logoPlaceholder.style.display = 'block';
                 }
@@ -5500,7 +5568,7 @@ Terima kasih! 🙏`;
 
             } catch (error) {
                 console.error('Error saving business profile:', error);
-                alert('❌ Error menyimpan profil bisnis. Silakan coba lagi.');
+                alert('❌ Error saving business profile: ' + error.message);
             }
         }
 
