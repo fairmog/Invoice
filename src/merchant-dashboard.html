@@ -203,6 +203,19 @@
             box-shadow: var(--shadow-soft);
         }
 
+        .nav-btn.logout-btn {
+            background: var(--error);
+            color: white;
+            border-color: var(--error);
+            margin-left: auto;
+        }
+
+        .nav-btn.logout-btn:hover {
+            background: #E53E3E;
+            border-color: #E53E3E;
+            transform: translateY(-2px);
+        }
+
         /* Page Header */
         .page-header {
             display: flex;
@@ -1996,6 +2009,9 @@
             </button>
             <button class="nav-btn" onclick="showSection('customers')">
                 <span>👥</span> Customers
+            </button>
+            <button class="nav-btn logout-btn" onclick="handleLogout()">
+                <span>🚪</span> Logout
             </button>
         </div>
 
@@ -6808,6 +6824,53 @@ Terima kasih! 🙏`;
             }).format(amount);
         }
 
+        // Logout function
+        async function handleLogout() {
+            const confirmed = confirm('Are you sure you want to logout?');
+            if (!confirmed) return;
+
+            try {
+                // Show loading state
+                const logoutBtn = document.querySelector('.logout-btn');
+                const originalText = logoutBtn.innerHTML;
+                logoutBtn.innerHTML = '<span>⏳</span> Logging out...';
+                logoutBtn.disabled = true;
+
+                // Call logout API
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Clear any local storage data
+                    localStorage.removeItem('merchantToken');
+                    localStorage.removeItem('businessProfile');
+                    
+                    // Show success message briefly
+                    logoutBtn.innerHTML = '<span>✅</span> Logged out!';
+                    
+                    // Redirect to login page after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/auth/login';
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || 'Logout failed');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Failed to logout. Please try again.');
+                
+                // Reset button state
+                const logoutBtn = document.querySelector('.logout-btn');
+                logoutBtn.innerHTML = '<span>🚪</span> Logout';
+                logoutBtn.disabled = false;
+            }
+        }
 
     </script>
 </body>
