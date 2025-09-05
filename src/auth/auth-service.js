@@ -8,8 +8,9 @@ import config from '../../config/config.js';
  * Handles registration, login, password hashing, JWT tokens
  */
 class AuthService {
-  constructor(database) {
+  constructor(database, emailService = null) {
     this.database = database;
+    this.emailService = emailService;
     this.jwtSecret = config.security.jwtSecret;
     this.saltRounds = 12; // Strong password hashing
     this.tokenExpiry = '7d'; // 7 days token validity
@@ -41,6 +42,9 @@ class AuthService {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, this.saltRounds);
 
+      // Generate email verification token
+      const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+
       // Create merchant account
       const merchantData = {
         email: email.toLowerCase().trim(),
@@ -49,6 +53,7 @@ class AuthService {
         fullName: fullName?.trim() || '',
         status: 'active',
         emailVerified: false,
+        emailVerificationToken: emailVerificationToken,
         createdAt: new Date().toISOString(),
         lastLogin: null,
         loginAttempts: 0,
@@ -56,6 +61,23 @@ class AuthService {
       };
 
       const merchant = await this.database.createMerchant(merchantData);
+
+      // Send email verification email
+      if (this.emailService) {
+        try {
+          const emailResult = await this.emailService.sendEmailVerificationEmail(
+            merchant.email, 
+            emailVerificationToken, 
+            businessName
+          );
+          console.log(`📧 Email verification result for ${email}:`, emailResult.success ? 'Sent' : 'Failed');
+        } catch (emailError) {
+          console.error('📧 Failed to send email verification:', emailError);
+          // Continue without failing registration
+        }
+      } else {
+        console.log('⚠️ Email service not configured - email verification not sent');
+      }
 
       // Generate JWT token
       const token = this.generateToken(merchant);
@@ -263,13 +285,31 @@ class AuthService {
         resetExpiry
       });
 
-      // TODO: Send email with reset link
-      console.log(`Password reset requested for ${email}. Token: ${resetToken}`);
+      // Send password reset email
+      if (this.emailService) {
+        try {
+          const businessName = merchant.businessName || 'AI Invoice Generator';
+          const emailResult = await this.emailService.sendPasswordResetEmail(
+            merchant.email, 
+            resetToken, 
+            businessName
+          );
+          
+          console.log(`📧 Password reset email result for ${email}:`, emailResult.success ? 'Sent' : 'Failed');
+        } catch (emailError) {
+          console.error('📧 Failed to send password reset email:', emailError);
+          // Continue without failing the request for security
+        }
+      } else {
+        console.log(`Password reset requested for ${email}. Token: ${resetToken}`);
+        console.log('⚠️ Email service not configured - password reset email not sent');
+      }
 
       return {
         success: true,
         message: 'If an account with this email exists, a password reset link has been sent',
-        resetToken // Remove this in production
+        // Remove resetToken in production for security
+        ...(process.env.NODE_ENV !== 'production' && { resetToken })
       };
 
     } catch (error) {
@@ -374,6 +414,93 @@ class AuthService {
       return {
         success: false,
         error: error.message
+      };
+    }
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(verificationToken) {
+    try {
+      const merchant = await this.database.getMerchantByEmailVerificationToken(verificationToken);
+      if (!merchant) {
+        throw new Error('Invalid or expired verification token');
+      }
+
+      // Update merchant as email verified
+      await this.database.updateMerchant(merchant.id, {
+        emailVerified: true,
+        emailVerificationToken: null,
+        updatedAt: new Date().toISOString()
+      });
+
+      return {
+        success: true,
+        message: 'Email verified successfully'
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Resend email verification
+   */
+  async resendEmailVerification(email) {
+    try {
+      const merchant = await this.database.getMerchant(email.toLowerCase().trim());
+      if (!merchant) {
+        // Don't reveal if email exists for security
+        return {
+          success: true,
+          message: 'If an account with this email exists, a verification email has been sent'
+        };
+      }
+
+      if (merchant.emailVerified) {
+        return {
+          success: false,
+          error: 'Email is already verified'
+        };
+      }
+
+      // Generate new verification token
+      const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+
+      // Update merchant with new token
+      await this.database.updateMerchant(merchant.id, {
+        emailVerificationToken: emailVerificationToken,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Send email verification email
+      if (this.emailService) {
+        try {
+          const emailResult = await this.emailService.sendEmailVerificationEmail(
+            merchant.email, 
+            emailVerificationToken, 
+            merchant.businessName || 'AI Invoice Generator'
+          );
+          console.log(`📧 Email verification resend result for ${email}:`, emailResult.success ? 'Sent' : 'Failed');
+        } catch (emailError) {
+          console.error('📧 Failed to resend email verification:', emailError);
+        }
+      }
+
+      return {
+        success: true,
+        message: 'If an account with this email exists, a verification email has been sent'
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Failed to resend email verification'
       };
     }
   }
