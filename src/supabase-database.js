@@ -313,6 +313,17 @@ class SupabaseDatabase {
     return digits;
   }
 
+  async getAllCustomers(limit = 50, offset = 0) {
+    const { data, error } = await this.supabase
+      .from('customers')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    return data || [];
+  }
+
   // Invoice operations
   async saveInvoice(invoiceData) {
     try {
@@ -515,6 +526,67 @@ class SupabaseDatabase {
     }
 
     return { changes: 1 };
+  }
+
+  async deleteInvoice(id) {
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { changes: 1, deletedInvoice: data };
+  }
+
+  async getInvoiceStats(dateFrom = null, dateTo = null) {
+    let query = this.supabase
+      .from('invoices')
+      .select('status, grand_total, created_at');
+
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('created_at', dateTo);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const invoices = data || [];
+    const stats = {
+      totalInvoices: invoices.length,
+      draftInvoices: invoices.filter(i => i.status === 'draft').length,
+      sentInvoices: invoices.filter(i => i.status === 'sent').length,
+      paidInvoices: invoices.filter(i => i.status === 'paid').length,
+      cancelledInvoices: invoices.filter(i => i.status === 'cancelled').length,
+      totalRevenue: invoices.filter(i => i.status === 'paid')
+        .reduce((sum, invoice) => sum + parseFloat(invoice.grand_total || 0), 0),
+      outstandingAmount: invoices.filter(i => i.status === 'sent')
+        .reduce((sum, invoice) => sum + parseFloat(invoice.grand_total || 0), 0),
+      draftAmount: invoices.filter(i => i.status === 'draft')
+        .reduce((sum, invoice) => sum + parseFloat(invoice.grand_total || 0), 0)
+    };
+
+    return stats;
+  }
+
+  async bulkDeleteInvoices(invoiceIds) {
+    if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+      return { changes: 0 };
+    }
+
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .delete()
+      .in('id', invoiceIds)
+      .select();
+
+    if (error) throw error;
+    return { changes: data ? data.length : 0 };
   }
 
   // Business Settings operations
@@ -903,6 +975,180 @@ class SupabaseDatabase {
     return `${prefix}-${dateString}-${hash}`;
   }
 
+  async getAllOrders(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null) {
+    let query = this.supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (customerEmail) {
+      query = query.ilike('customer_email', `%${customerEmail}%`);
+    }
+
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('created_at', dateTo);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getOrder(id) {
+    const { data, error } = await this.supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getOrderStats(dateFrom = null, dateTo = null) {
+    let query = this.supabase
+      .from('orders')
+      .select('status, total_amount, created_at');
+
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('created_at', dateTo);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const orders = data || [];
+    const stats = {
+      totalOrders: orders.length,
+      pendingOrders: orders.filter(o => o.status === 'pending').length,
+      processingOrders: orders.filter(o => o.status === 'processing').length,
+      shippedOrders: orders.filter(o => o.status === 'shipped').length,
+      deliveredOrders: orders.filter(o => o.status === 'delivered').length,
+      cancelledOrders: orders.filter(o => o.status === 'cancelled').length,
+      totalRevenue: orders.filter(o => o.status === 'delivered')
+        .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0),
+      pendingValue: orders.filter(o => o.status === 'pending')
+        .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
+    };
+
+    return stats;
+  }
+
+  async deleteOrder(id) {
+    // First delete order items
+    await this.supabase
+      .from('order_items')
+      .delete()
+      .eq('order_id', id);
+
+    // Then delete the order
+    const { data, error } = await this.supabase
+      .from('orders')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { changes: 1, deletedOrder: data };
+  }
+
+  async updateOrderStatus(id, status, trackingNumber = null, notes = null) {
+    const updateData = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+
+    if (trackingNumber) {
+      updateData.tracking_number = trackingNumber;
+    }
+
+    if (notes) {
+      updateData.notes = notes;
+    }
+
+    if (status === 'shipped') {
+      updateData.shipped_date = new Date().toISOString();
+    } else if (status === 'delivered') {
+      updateData.delivered_date = new Date().toISOString();
+    }
+
+    const { data, error } = await this.supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async bulkUpdateOrderStatus(orderIds, status, trackingNumber = null) {
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return { changes: 0 };
+    }
+
+    const updateData = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+
+    if (trackingNumber) {
+      updateData.tracking_number = trackingNumber;
+    }
+
+    if (status === 'shipped') {
+      updateData.shipped_date = new Date().toISOString();
+    } else if (status === 'delivered') {
+      updateData.delivered_date = new Date().toISOString();
+    }
+
+    const { data, error } = await this.supabase
+      .from('orders')
+      .update(updateData)
+      .in('id', orderIds)
+      .select();
+
+    if (error) throw error;
+    return { changes: data ? data.length : 0 };
+  }
+
+  async bulkDeleteOrders(orderIds) {
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return { changes: 0 };
+    }
+
+    // First delete order items for all orders
+    await this.supabase
+      .from('order_items')
+      .delete()
+      .in('order_id', orderIds);
+
+    // Then delete the orders
+    const { data, error } = await this.supabase
+      .from('orders')
+      .delete()
+      .in('id', orderIds)
+      .select();
+
+    if (error) throw error;
+    return { changes: data ? data.length : 0 };
+  }
+
   // Payment Methods operations
   async getPaymentMethods() {
     try {
@@ -946,6 +1192,7 @@ class SupabaseDatabase {
         
         console.log(`💳 Processing ${methodType}:`, { enabled, configData });
         
+        // Try upsert first
         const { data, error } = await this.supabase
           .from('payment_methods')
           .upsert({
@@ -958,11 +1205,62 @@ class SupabaseDatabase {
           .select();
 
         if (error) {
-          console.error(`💥 Failed to update payment method ${methodType}:`, error.message);
-          throw error;
+          // Check if it's the unique constraint error
+          if (error.code === '42P10' || error.message.includes('no unique or exclusion constraint')) {
+            console.log(`⚠️  UNIQUE constraint missing for ${methodType}, trying manual upsert...`);
+            
+            // Fallback: manual upsert logic
+            const { data: existing, error: selectError } = await this.supabase
+              .from('payment_methods')
+              .select('id')
+              .eq('method_type', methodType)
+              .single();
+
+            if (selectError && selectError.code !== 'PGRST116') {
+              console.error(`💥 Failed to check existing ${methodType}:`, selectError.message);
+              throw selectError;
+            }
+
+            if (existing) {
+              // Update existing record
+              const { data: updateData, error: updateError } = await this.supabase
+                .from('payment_methods')
+                .update({
+                  enabled: enabled,
+                  config_json: configData
+                })
+                .eq('method_type', methodType)
+                .select();
+
+              if (updateError) {
+                console.error(`💥 Failed to update existing ${methodType}:`, updateError.message);
+                throw updateError;
+              }
+              console.log(`✅ Updated existing payment method ${methodType}:`, updateData);
+            } else {
+              // Insert new record
+              const { data: insertData, error: insertError } = await this.supabase
+                .from('payment_methods')
+                .insert({
+                  method_type: methodType,
+                  enabled: enabled,
+                  config_json: configData
+                })
+                .select();
+
+              if (insertError) {
+                console.error(`💥 Failed to insert new ${methodType}:`, insertError.message);
+                throw insertError;
+              }
+              console.log(`✅ Inserted new payment method ${methodType}:`, insertData);
+            }
+          } else {
+            console.error(`💥 Failed to update payment method ${methodType}:`, error.message);
+            throw error;
+          }
+        } else {
+          console.log(`✅ Updated payment method ${methodType}:`, data);
         }
-        
-        console.log(`✅ Updated payment method ${methodType}:`, data);
       }
 
       const result = await this.getPaymentMethods();
@@ -970,6 +1268,9 @@ class SupabaseDatabase {
       return result;
     } catch (error) {
       console.error('💥 updatePaymentMethods failed:', error.message);
+      console.error('🔧 Possible fixes:');
+      console.error('  1. Run the database migration script: scripts/fix-database-schema-issues.sql');
+      console.error('  2. Or add UNIQUE constraint: ALTER TABLE payment_methods ADD CONSTRAINT payment_methods_method_type_unique UNIQUE (method_type);');
       throw error;
     }
   }
