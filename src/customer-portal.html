@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
     <title>Customer Portal - Invoice Viewer</title>
     <!-- Midtrans Payment Integration -->
     <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="SB-Mid-client-your-client-key"></script>
@@ -517,6 +517,77 @@
                 padding: 0.3rem 0.6rem;
                 font-size: 0.75rem;
             }
+            
+            /* Mobile Customer Portal Invoice Zoom Controls */
+            .mobile-customer-invoice-zoom-controls {
+                position: fixed !important;
+                top: 50% !important;
+                right: 8px !important;
+                transform: translateY(-50%) !important;
+                z-index: 1002 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                background: rgba(255, 255, 255, 0.95) !important;
+                padding: 12px 8px !important;
+                border-radius: 12px !important;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+                border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            }
+            
+            .customer-invoice-zoom-btn {
+                width: 36px !important;
+                height: 36px !important;
+                border: none !important;
+                border-radius: 8px !important;
+                background: #007bff !important;
+                color: white !important;
+                font-size: 16px !important;
+                font-weight: bold !important;
+                cursor: pointer !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                transition: all 0.2s ease !important;
+                user-select: none !important;
+                -webkit-tap-highlight-color: transparent !important;
+            }
+            
+            .customer-invoice-zoom-btn:hover, .customer-invoice-zoom-btn:active {
+                background: #0056b3 !important;
+                transform: scale(0.95) !important;
+            }
+            
+            /* Customer Invoice Modal Content Scaling */
+            .customer-invoice-modal-content-wrapper {
+                transform: scale(var(--customer-invoice-mobile-scale-factor, 0.8)) !important;
+                transform-origin: top center !important;
+                transition: transform 0.3s ease !important;
+                width: 100% !important;
+                overflow: visible !important;
+            }
+            
+            /* Customer Invoice Zoom Indicator */
+            .customer-invoice-zoom-indicator {
+                position: fixed !important;
+                top: 20px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                z-index: 1003 !important;
+                background: rgba(0, 0, 0, 0.8) !important;
+                color: white !important;
+                padding: 4px 12px !important;
+                border-radius: 16px !important;
+                font-size: 12px !important;
+                font-weight: 500 !important;
+                pointer-events: none !important;
+                opacity: 0 !important;
+                transition: opacity 0.3s ease !important;
+            }
+            
+            .customer-invoice-zoom-indicator.show {
+                opacity: 1 !important;
+            }
         }
 
         @media (max-width: 480px) {
@@ -626,8 +697,20 @@
                 <h3>Invoice Details</h3>
                 <span class="close" onclick="closeModal()">&times;</span>
             </div>
-            <div id="modalContent"></div>
+            <div class="customer-invoice-modal-content-wrapper" id="customerInvoiceModalContentWrapper">
+                <div id="modalContent"></div>
+            </div>
         </div>
+        
+        <!-- Mobile Zoom Controls (only visible on mobile) -->
+        <div class="mobile-customer-invoice-zoom-controls" id="mobile-customer-invoice-zoom-controls" style="display: none;">
+            <button class="customer-invoice-zoom-btn" id="customer-invoice-zoom-in-btn" onclick="adjustCustomerInvoiceZoom(0.1)" title="Zoom In">+</button>
+            <button class="customer-invoice-zoom-btn" id="customer-invoice-fit-screen-btn" onclick="fitCustomerInvoiceToScreen()" title="Fit to Screen">⌂</button>
+            <button class="customer-invoice-zoom-btn" id="customer-invoice-zoom-out-btn" onclick="adjustCustomerInvoiceZoom(-0.1)" title="Zoom Out">−</button>
+        </div>
+        
+        <!-- Zoom Indicator -->
+        <div class="customer-invoice-zoom-indicator" id="customer-invoice-zoom-indicator">100%</div>
     </div>
 
     <script>
@@ -953,10 +1036,158 @@
             `;
             
             modal.style.display = 'block';
+            
+            // Initialize mobile controls if on mobile
+            setTimeout(() => initializeCustomerInvoiceModalMobile(), 100);
         }
 
         function closeModal() {
             document.getElementById('invoiceModal').style.display = 'none';
+            // Hide mobile zoom controls
+            const mobileControls = document.getElementById('mobile-customer-invoice-zoom-controls');
+            if (mobileControls) {
+                mobileControls.style.display = 'none';
+            }
+        }
+        
+        // Mobile Customer Invoice Zoom Functionality
+        let customerInvoiceCurrentScale = 0.8;
+        const customerInvoiceMinScale = 0.3;
+        const customerInvoiceMaxScale = 3.0;
+        
+        function initializeCustomerInvoiceModalMobile() {
+            const isMobile = window.innerWidth <= 767;
+            if (!isMobile) return;
+            
+            const mobileControls = document.getElementById('mobile-customer-invoice-zoom-controls');
+            const wrapper = document.getElementById('customerInvoiceModalContentWrapper');
+            
+            if (mobileControls && wrapper) {
+                mobileControls.style.display = 'flex';
+                
+                // Set initial scale
+                customerInvoiceCurrentScale = 0.8;
+                wrapper.style.setProperty('--customer-invoice-mobile-scale-factor', customerInvoiceCurrentScale);
+                
+                // Add touch gesture support
+                addCustomerInvoiceModalTouchGestureSupport();
+            }
+        }
+        
+        function adjustCustomerInvoiceZoom(delta) {
+            customerInvoiceCurrentScale = Math.max(customerInvoiceMinScale, Math.min(customerInvoiceMaxScale, customerInvoiceCurrentScale + delta));
+            
+            const wrapper = document.getElementById('customerInvoiceModalContentWrapper');
+            const indicator = document.getElementById('customer-invoice-zoom-indicator');
+            
+            if (wrapper) {
+                wrapper.style.setProperty('--customer-invoice-mobile-scale-factor', customerInvoiceCurrentScale);
+            }
+            
+            // Show zoom indicator
+            if (indicator) {
+                indicator.textContent = Math.round(customerInvoiceCurrentScale * 100) + '%';
+                indicator.classList.add('show');
+                setTimeout(() => indicator.classList.remove('show'), 1500);
+            }
+        }
+        
+        function fitCustomerInvoiceToScreen() {
+            const modal = document.getElementById('invoiceModal');
+            if (!modal) return;
+            
+            const modalContent = modal.querySelector('.modal-content');
+            if (!modalContent) return;
+            
+            const containerWidth = modalContent.clientWidth - 32; // Account for padding
+            const estimatedContentWidth = 400; // Estimated invoice content width
+            customerInvoiceCurrentScale = Math.max(containerWidth / estimatedContentWidth, customerInvoiceMinScale);
+            customerInvoiceCurrentScale = Math.min(customerInvoiceCurrentScale, customerInvoiceMaxScale);
+            
+            const wrapper = document.getElementById('customerInvoiceModalContentWrapper');
+            const indicator = document.getElementById('customer-invoice-zoom-indicator');
+            
+            if (wrapper) {
+                wrapper.style.setProperty('--customer-invoice-mobile-scale-factor', customerInvoiceCurrentScale);
+            }
+            
+            if (indicator) {
+                indicator.textContent = Math.round(customerInvoiceCurrentScale * 100) + '%';
+                indicator.classList.add('show');
+                setTimeout(() => indicator.classList.remove('show'), 1500);
+            }
+        }
+        
+        function addCustomerInvoiceModalTouchGestureSupport() {
+            const wrapper = document.getElementById('customerInvoiceModalContentWrapper');
+            if (!wrapper) return;
+            
+            let initialDistance = 0;
+            let initialScale = customerInvoiceCurrentScale;
+            let lastTap = 0;
+            
+            wrapper.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    // Pinch-zoom start
+                    e.preventDefault();
+                    initialDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    initialScale = customerInvoiceCurrentScale;
+                } else if (e.touches.length === 1) {
+                    // Double-tap detection
+                    const currentTime = new Date().getTime();
+                    const tapGap = currentTime - lastTap;
+                    
+                    if (tapGap < 300 && tapGap > 0) {
+                        // Double-tap detected
+                        e.preventDefault();
+                        const targetScale = customerInvoiceCurrentScale < 1.5 ? 2.0 : 0.8;
+                        customerInvoiceCurrentScale = targetScale;
+                        
+                        wrapper.style.setProperty('--customer-invoice-mobile-scale-factor', customerInvoiceCurrentScale);
+                        
+                        const indicator = document.getElementById('customer-invoice-zoom-indicator');
+                        if (indicator) {
+                            indicator.textContent = Math.round(customerInvoiceCurrentScale * 100) + '%';
+                            indicator.classList.add('show');
+                            setTimeout(() => indicator.classList.remove('show'), 1500);
+                        }
+                    }
+                    lastTap = currentTime;
+                }
+            });
+            
+            wrapper.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const currentDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    
+                    const scale = (currentDistance / initialDistance) * initialScale;
+                    customerInvoiceCurrentScale = Math.max(customerInvoiceMinScale, Math.min(customerInvoiceMaxScale, scale));
+                    
+                    wrapper.style.setProperty('--customer-invoice-mobile-scale-factor', customerInvoiceCurrentScale);
+                    
+                    const indicator = document.getElementById('customer-invoice-zoom-indicator');
+                    if (indicator) {
+                        indicator.textContent = Math.round(customerInvoiceCurrentScale * 100) + '%';
+                        indicator.classList.add('show');
+                    }
+                }
+            });
+            
+            wrapper.addEventListener('touchend', function(e) {
+                if (e.touches.length === 0) {
+                    const indicator = document.getElementById('customer-invoice-zoom-indicator');
+                    if (indicator) {
+                        setTimeout(() => indicator.classList.remove('show'), 1500);
+                    }
+                }
+            });
         }
 
         async function downloadPDF(invoiceNumber) {
