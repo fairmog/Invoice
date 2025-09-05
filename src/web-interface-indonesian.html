@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
     <title>Aspree Invoice Generator - Modern Purple</title>
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
     <link rel="alternate icon" href="/assets/favicon.ico">
@@ -1171,16 +1171,29 @@
             .pdf-preview-container {
                 padding: 8px !important;
                 min-height: auto !important;
-                overflow-x: auto !important;
+                overflow: auto !important;
+                position: relative !important;
+                -webkit-overflow-scrolling: touch !important;
             }
 
             .pdf-preview {
-                width: 100% !important;
-                max-width: 100% !important;
-                min-width: 320px !important;
-                min-height: auto !important;
-                margin: 0 !important;
+                /* Maintain A4 aspect ratio (210:297) */
+                width: 210mm !important;
+                min-height: 297mm !important;
+                max-width: none !important;
+                min-width: none !important;
+                margin: 0 auto !important;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                transform-origin: top center !important;
+                transform: scale(var(--mobile-scale-factor, 0.4)) !important;
+                transition: transform 0.3s ease !important;
+            }
+
+            .pdf-preview-mobile-wrapper {
+                width: calc(210mm * var(--mobile-scale-factor, 0.4)) !important;
+                height: calc(297mm * var(--mobile-scale-factor, 0.4)) !important;
+                margin: 0 auto !important;
+                overflow: visible !important;
             }
 
             /* Mobile Invoice Content Scaling */
@@ -1325,6 +1338,85 @@
             .output-actions .btn {
                 flex: 1 1 auto !important;
                 min-width: 120px !important;
+            }
+
+            /* Mobile Invoice Preview Zoom Controls */
+            .mobile-zoom-controls {
+                position: fixed !important;
+                top: 50% !important;
+                right: 8px !important;
+                transform: translateY(-50%) !important;
+                z-index: 1000 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                background: rgba(255, 255, 255, 0.95) !important;
+                border-radius: 20px !important;
+                padding: 8px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+                backdrop-filter: blur(8px) !important;
+            }
+
+            .zoom-btn {
+                width: 40px !important;
+                height: 40px !important;
+                border: none !important;
+                background: var(--primary-purple) !important;
+                color: white !important;
+                border-radius: 50% !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 18px !important;
+                font-weight: bold !important;
+                cursor: pointer !important;
+                transition: all 0.2s ease !important;
+                box-shadow: 0 2px 6px rgba(49, 29, 107, 0.3) !important;
+                touch-action: manipulation !important;
+            }
+
+            .zoom-btn:hover, .zoom-btn:active {
+                background: var(--primary-light) !important;
+                transform: scale(1.05) !important;
+            }
+
+            .zoom-indicator {
+                position: fixed !important;
+                top: 20px !important;
+                right: 8px !important;
+                background: rgba(0, 0, 0, 0.8) !important;
+                color: white !important;
+                padding: 6px 12px !important;
+                border-radius: 12px !important;
+                font-size: 12px !important;
+                font-weight: 500 !important;
+                z-index: 1001 !important;
+                pointer-events: none !important;
+                opacity: 0 !important;
+                transition: opacity 0.3s ease !important;
+            }
+
+            .zoom-indicator.show {
+                opacity: 1 !important;
+            }
+
+            /* Pan indicator for when zoomed in */
+            .pan-indicator {
+                position: fixed !important;
+                bottom: 20px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                background: rgba(0, 0, 0, 0.8) !important;
+                color: white !important;
+                padding: 8px 16px !important;
+                border-radius: 16px !important;
+                font-size: 12px !important;
+                z-index: 1001 !important;
+                display: none !important;
+            }
+
+            .pan-indicator.show {
+                display: block !important;
             }
         }
 
@@ -1845,12 +1937,29 @@
                             </div>
                             
                             <!-- PDF Preview -->
-                            <div class="pdf-preview-container">
-                                <div class="pdf-preview" id="pdf-preview">
-                                    <div class="preview-loading">
-                                        <div class="loading-spinner"></div>
-                                        <div>Generating PDF preview...</div>
+                            <div class="pdf-preview-container" id="pdf-preview-container">
+                                <div class="pdf-preview-mobile-wrapper" id="pdf-preview-wrapper">
+                                    <div class="pdf-preview" id="pdf-preview">
+                                        <div class="preview-loading">
+                                            <div class="loading-spinner"></div>
+                                            <div>Generating PDF preview...</div>
+                                        </div>
                                     </div>
+                                </div>
+                                
+                                <!-- Mobile Zoom Controls (only visible on mobile) -->
+                                <div class="mobile-zoom-controls" id="mobile-zoom-controls" style="display: none;">
+                                    <button class="zoom-btn" id="zoom-in-btn" onclick="adjustZoom(0.1)" title="Zoom In">+</button>
+                                    <button class="zoom-btn" id="fit-screen-btn" onclick="fitToScreen()" title="Fit to Screen">⌂</button>
+                                    <button class="zoom-btn" id="zoom-out-btn" onclick="adjustZoom(-0.1)" title="Zoom Out">−</button>
+                                </div>
+                                
+                                <!-- Zoom Indicator -->
+                                <div class="zoom-indicator" id="zoom-indicator">100%</div>
+                                
+                                <!-- Pan Indicator -->
+                                <div class="pan-indicator" id="pan-indicator">
+                                    📱 Drag to pan around the invoice
                                 </div>
                             </div>
                             
@@ -6333,6 +6442,277 @@ Terima kasih! 🙏`;
             
             console.log('=== END IMMEDIATE VISIBILITY TEST ===');
         };
+
+        // ============================================================================
+        // MOBILE INVOICE PREVIEW ZOOM & PAN FUNCTIONALITY
+        // ============================================================================
+
+        let currentScale = 1.0;
+        let initialScale = 0.4;
+        let minScale = 0.2;
+        let maxScale = 3.0;
+        let zoomIndicatorTimeout;
+        let isMobile = window.innerWidth <= 767;
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        // Initialize mobile zoom functionality when invoice preview is shown
+        function initializeMobileZoom() {
+            if (!isMobile) return;
+
+            const previewContainer = document.getElementById('pdf-preview-container');
+            const mobileControls = document.getElementById('mobile-zoom-controls');
+            const preview = document.getElementById('pdf-preview');
+            
+            if (!previewContainer || !mobileControls || !preview) return;
+
+            // Calculate initial scale to fit A4 in mobile screen
+            const containerWidth = previewContainer.clientWidth - 16; // Account for padding
+            const a4WidthPx = 794; // 210mm in pixels at 96 DPI
+            initialScale = Math.max(containerWidth / a4WidthPx, 0.25);
+            currentScale = initialScale;
+
+            // Set CSS custom property for mobile scaling
+            document.documentElement.style.setProperty('--mobile-scale-factor', currentScale);
+
+            // Show mobile zoom controls
+            mobileControls.style.display = 'flex';
+
+            // Update zoom indicator
+            updateZoomIndicator();
+
+            // Add touch gesture support
+            addTouchGestureSupport();
+
+            // Add pan support when zoomed in
+            addPanSupport();
+
+            console.log('📱 Mobile zoom initialized', {
+                initialScale: initialScale,
+                containerWidth: containerWidth,
+                a4Width: a4WidthPx
+            });
+        }
+
+        // Adjust zoom level
+        function adjustZoom(delta) {
+            const newScale = Math.max(minScale, Math.min(maxScale, currentScale + delta));
+            
+            if (newScale !== currentScale) {
+                currentScale = newScale;
+                applyZoom();
+            }
+        }
+
+        // Fit invoice to screen width
+        function fitToScreen() {
+            const previewContainer = document.getElementById('pdf-preview-container');
+            const containerWidth = previewContainer.clientWidth - 16;
+            const a4WidthPx = 794;
+            
+            currentScale = Math.max(containerWidth / a4WidthPx, 0.25);
+            applyZoom();
+        }
+
+        // Apply current zoom level
+        function applyZoom() {
+            document.documentElement.style.setProperty('--mobile-scale-factor', currentScale);
+            updateZoomIndicator();
+            
+            const panIndicator = document.getElementById('pan-indicator');
+            if (currentScale > initialScale + 0.1) {
+                panIndicator.classList.add('show');
+            } else {
+                panIndicator.classList.remove('show');
+            }
+        }
+
+        // Update zoom indicator
+        function updateZoomIndicator() {
+            const indicator = document.getElementById('zoom-indicator');
+            if (indicator) {
+                indicator.textContent = Math.round(currentScale * 100) + '%';
+                indicator.classList.add('show');
+                
+                // Hide after 2 seconds
+                clearTimeout(zoomIndicatorTimeout);
+                zoomIndicatorTimeout = setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        // Add touch gesture support for pinch-zoom and double-tap
+        function addTouchGestureSupport() {
+            const previewContainer = document.getElementById('pdf-preview-container');
+            if (!previewContainer) return;
+
+            let lastTouchDistance = 0;
+            let lastTapTime = 0;
+            let touchStartScale = currentScale;
+
+            // Pinch-to-zoom
+            previewContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    lastTouchDistance = Math.hypot(
+                        touch1.clientX - touch2.clientX,
+                        touch1.clientY - touch2.clientY
+                    );
+                    touchStartScale = currentScale;
+                }
+                
+                // Double-tap detection
+                if (e.touches.length === 1) {
+                    const currentTime = new Date().getTime();
+                    const tapGap = currentTime - lastTapTime;
+                    
+                    if (tapGap < 300 && tapGap > 0) {
+                        e.preventDefault();
+                        // Double-tap: toggle between fit-to-screen and 1.5x zoom
+                        if (Math.abs(currentScale - initialScale) < 0.05) {
+                            currentScale = Math.min(initialScale * 2.5, maxScale);
+                        } else {
+                            currentScale = initialScale;
+                        }
+                        applyZoom();
+                    }
+                    lastTapTime = currentTime;
+                }
+            }, { passive: false });
+
+            previewContainer.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    const currentDistance = Math.hypot(
+                        touch1.clientX - touch2.clientX,
+                        touch1.clientY - touch2.clientY
+                    );
+                    
+                    if (lastTouchDistance > 0) {
+                        const scale = touchStartScale * (currentDistance / lastTouchDistance);
+                        currentScale = Math.max(minScale, Math.min(maxScale, scale));
+                        applyZoom();
+                    }
+                }
+            }, { passive: false });
+
+            previewContainer.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    lastTouchDistance = 0;
+                }
+            });
+        }
+
+        // Add pan support when zoomed in
+        function addPanSupport() {
+            const previewContainer = document.getElementById('pdf-preview-container');
+            if (!previewContainer) return;
+
+            // Mouse events for testing
+            previewContainer.addEventListener('mousedown', startDrag);
+            previewContainer.addEventListener('mousemove', doDrag);
+            previewContainer.addEventListener('mouseup', endDrag);
+            previewContainer.addEventListener('mouseleave', endDrag);
+
+            // Touch events
+            previewContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1 && currentScale > initialScale + 0.1) {
+                    startDrag(e.touches[0]);
+                }
+            });
+            
+            previewContainer.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging) {
+                    e.preventDefault();
+                    doDrag(e.touches[0]);
+                }
+            }, { passive: false });
+            
+            previewContainer.addEventListener('touchend', endDrag);
+
+            function startDrag(e) {
+                if (currentScale <= initialScale + 0.1) return;
+                
+                isDragging = true;
+                startX = e.clientX - previewContainer.offsetLeft;
+                startY = e.clientY - previewContainer.offsetTop;
+                scrollLeft = previewContainer.scrollLeft;
+                scrollTop = previewContainer.scrollTop;
+                
+                previewContainer.style.cursor = 'grabbing';
+            }
+
+            function doDrag(e) {
+                if (!isDragging) return;
+                
+                e.preventDefault();
+                const x = e.clientX - previewContainer.offsetLeft;
+                const y = e.clientY - previewContainer.offsetTop;
+                const walkX = (x - startX) * 1.5;
+                const walkY = (y - startY) * 1.5;
+                
+                previewContainer.scrollLeft = scrollLeft - walkX;
+                previewContainer.scrollTop = scrollTop - walkY;
+            }
+
+            function endDrag() {
+                isDragging = false;
+                previewContainer.style.cursor = currentScale > initialScale + 0.1 ? 'grab' : 'auto';
+            }
+        }
+
+        // Update mobile detection on window resize
+        window.addEventListener('resize', () => {
+            const wasMobile = isMobile;
+            isMobile = window.innerWidth <= 767;
+            
+            if (wasMobile !== isMobile) {
+                const mobileControls = document.getElementById('mobile-zoom-controls');
+                if (mobileControls) {
+                    mobileControls.style.display = isMobile ? 'flex' : 'none';
+                }
+                
+                if (isMobile) {
+                    initializeMobileZoom();
+                } else {
+                    // Reset to desktop styles
+                    document.documentElement.style.setProperty('--mobile-scale-factor', '1');
+                    currentScale = 1.0;
+                }
+            }
+        });
+
+        // Hook into existing invoice preview generation
+        const originalGenerateInvoicePreview = window.generateInvoicePreview;
+        if (originalGenerateInvoicePreview) {
+            window.generateInvoicePreview = function(invoiceData) {
+                const result = originalGenerateInvoicePreview(invoiceData);
+                
+                // Initialize mobile zoom after preview is generated
+                setTimeout(() => {
+                    initializeMobileZoom();
+                }, 100);
+                
+                return result;
+            };
+        }
+
+        // Initialize on DOM load if preview already exists
+        document.addEventListener('DOMContentLoaded', () => {
+            const preview = document.getElementById('pdf-preview');
+            if (preview && preview.innerHTML && !preview.innerHTML.includes('preview-loading')) {
+                setTimeout(() => {
+                    initializeMobileZoom();
+                }, 100);
+            }
+        });
+
+        console.log('📱 Mobile invoice zoom functionality loaded');
     </script>
 </body>
 </html>
