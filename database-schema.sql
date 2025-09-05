@@ -19,6 +19,7 @@ CREATE TABLE business_settings (
   tax_description TEXT,
   hide_business_name BOOLEAN DEFAULT false,
   business_code TEXT,
+  terms_conditions TEXT,
   logo_url TEXT,
   logo_public_id TEXT,
   logo_filename TEXT,
