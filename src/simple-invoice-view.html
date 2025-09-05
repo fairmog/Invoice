@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
     <title>Invoice View</title>
     <style>
         /* Clean Professional CSS Variables */
@@ -37,13 +37,23 @@
         .container {
             max-width: 800px;
             margin: 0 auto;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .paper-wrapper {
+            width: fit-content;
+            margin: 0 auto;
+            transform-origin: top center;
+            transform: scale(var(--mobile-scale-factor, 1));
+            transition: transform 0.3s ease;
         }
         
         .paper {
-            width: 100%;
-            max-width: 794px;
-            min-height: 1123px;
-            margin: 0 auto;
+            width: 210mm; /* A4 width */
+            min-height: 297mm; /* A4 height */
+            max-width: none;
+            margin: 0;
             background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 0;
@@ -497,56 +507,326 @@
             }
         }
 
-        /* Mobile responsive */
+        /* Mobile responsive - Smart A4 Scaling */
         @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+            
             .container {
-                padding: 10px;
+                padding: 8px;
+                overflow: auto;
+                position: relative;
             }
-            .inv-header {
-                grid-template-columns: 1fr;
-                gap: 20px;
-                padding: 20px;
+            
+            .paper-wrapper {
+                /* Smart scaling - maintains A4 aspect ratio */
+                transform: scale(var(--mobile-scale-factor, 0.45));
+                transform-origin: top center;
             }
-            .invoice-meta {
-                text-align: left;
+            
+            .paper {
+                /* Keep A4 dimensions - no cramping */
+                width: 210mm;
+                min-height: 297mm;
+                border: 1px solid var(--border);
+                border-radius: 0;
             }
-            .parties {
-                grid-template-columns: 1fr;
-                gap: 24px;
-                padding: 20px;
+            
+            /* Mobile zoom controls */
+            .mobile-zoom-controls {
+                position: fixed;
+                top: 50%;
+                right: 8px;
+                transform: translateY(-50%);
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 20px;
+                padding: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                backdrop-filter: blur(8px);
             }
+
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                border: none;
+                background: #4299E1;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 6px rgba(66, 153, 225, 0.3);
+                touch-action: manipulation;
+            }
+
+            .zoom-btn:hover, .zoom-btn:active {
+                background: #3182CE;
+                transform: scale(1.05);
+            }
+
+            .zoom-indicator {
+                position: fixed;
+                top: 20px;
+                right: 8px;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 500;
+                z-index: 1001;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .zoom-indicator.show {
+                opacity: 1;
+            }
+
+            .pan-indicator {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 16px;
+                font-size: 12px;
+                z-index: 1001;
+                display: none;
+            }
+
+            .pan-indicator.show {
+                display: block;
+            }
+            
+            .party-section address {
+                font-size: 14px;
+            }
+            
+            .party-section strong {
+                font-size: 15px;
+            }
+            
             .items-section {
-                padding: 20px;
+                padding: 16px;
+                margin: 0;
             }
+            
             .items-table {
                 font-size: 12px;
             }
+            
             .items-table th,
             .items-table td {
-                padding: 12px 10px;
+                padding: 10px 6px;
             }
+            
+            /* Hide less important columns on very small screens */
+            .items-table th:nth-child(3),
+            .items-table td:nth-child(3) {
+                display: none;
+            }
+            
             .summary {
-                padding: 20px;
+                padding: 16px;
+                margin: 0;
             }
+            
             .summary-grid {
-                gap: 8px 20px;
+                gap: 6px 15px;
+                font-size: 14px;
             }
+            
+            .summary-total {
+                font-size: 18px;
+            }
+            
             .payment-methods {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
+                grid-template-columns: 1fr;
+                gap: 12px;
+                margin: 16px 0;
             }
+            
             .payment-method {
-                padding: 12px 8px;
-                font-size: 13px;
+                padding: 14px 16px;
+                font-size: 14px;
+            }
+            
+            .payment-method span {
+                font-size: 1.5rem;
+            }
+            
+            .payment-details {
+                margin-top: 12px !important;
+                padding: 16px !important;
+            }
+            
+            .payment-details h4 {
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+            
+            .pay-btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+                width: 100%;
+                margin-top: 15px;
             }
             
             /* Mobile footer adjustments */
             .footer-band {
-                padding: 20px !important;
+                padding: 16px !important;
+                margin: 0 !important;
             }
+            
             .footer-band > div:first-child {
                 grid-template-columns: 1fr !important;
-                gap: 20px !important;
+                gap: 16px !important;
+            }
+            
+            .footer-band h4 {
+                font-size: 16px;
+            }
+            
+            .footer-band p, 
+            .footer-band li {
+                font-size: 13px;
+            }
+            
+            /* Action buttons mobile optimization */
+            .management-actions {
+                padding: 15px 10px;
+                gap: 10px;
+            }
+            
+            .action-btn {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-width: auto;
+            }
+            
+            /* Payment upload section mobile */
+            #payment-upload-section {
+                margin-top: 15px;
+            }
+            
+            #payment-upload-section h4 {
+                font-size: 16px;
+            }
+            
+            .file-upload-area {
+                padding: 20px !important;
+            }
+            
+            .file-upload-area p {
+                font-size: 13px;
+            }
+        }
+        
+        /* Extra small screens (phones in portrait) */
+        @media (max-width: 480px) {
+            body {
+                padding: 4px;
+            }
+            
+            .container {
+                padding: 4px;
+            }
+            
+            .paper-wrapper {
+                /* Smaller scale for very small screens */
+                transform: scale(var(--mobile-scale-factor, 0.35));
+            }
+            
+            .paper {
+                /* Maintain A4 dimensions */
+                width: 210mm;
+                min-height: 297mm;
+                border: 1px solid var(--border);
+            }
+            
+            .parties {
+                padding: 12px;
+                gap: 15px;
+            }
+            
+            .items-section {
+                padding: 12px;
+            }
+            
+            /* Stack table vertically for very small screens */
+            .items-table,
+            .items-table thead,
+            .items-table tbody,
+            .items-table th,
+            .items-table td,
+            .items-table tr {
+                display: block;
+            }
+            
+            .items-table thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            
+            .items-table tr {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                margin-bottom: 10px;
+                padding: 10px;
+            }
+            
+            .items-table td {
+                border: none;
+                position: relative;
+                padding: 8px 10px 8px 35%;
+                text-align: right;
+            }
+            
+            .items-table td:before {
+                content: attr(data-label) ": ";
+                position: absolute;
+                left: 10px;
+                width: 30%;
+                padding-right: 10px;
+                white-space: nowrap;
+                font-weight: 600;
+                color: var(--text);
+            }
+            
+            .summary {
+                padding: 12px;
+            }
+            
+            .summary-grid {
+                gap: 4px 12px;
+                font-size: 13px;
+            }
+            
+            .summary-total {
+                font-size: 16px;
+            }
+            
+            .payment-method {
+                padding: 12px;
+                font-size: 13px;
+            }
+            
+            .payment-method span {
+                font-size: 1.3rem;
             }
         }
 
@@ -701,11 +981,26 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="main-container">
         <div id="loading" class="loading">Loading invoice...</div>
         <div id="error" class="error" style="display: none;"></div>
         <div id="invoice-container" style="display: none;">
             <!-- Invoice will be loaded here -->
+        </div>
+        
+        <!-- Mobile Zoom Controls (only visible on mobile) -->
+        <div class="mobile-zoom-controls" id="mobile-zoom-controls" style="display: none;">
+            <button class="zoom-btn" id="zoom-in-btn" onclick="adjustZoom(0.1)" title="Zoom In">+</button>
+            <button class="zoom-btn" id="fit-screen-btn" onclick="fitToScreen()" title="Fit to Screen">⌂</button>
+            <button class="zoom-btn" id="zoom-out-btn" onclick="adjustZoom(-0.1)" title="Zoom Out">−</button>
+        </div>
+        
+        <!-- Zoom Indicator -->
+        <div class="zoom-indicator" id="zoom-indicator">100%</div>
+        
+        <!-- Pan Indicator -->
+        <div class="pan-indicator" id="pan-indicator">
+            📱 Drag to pan around the invoice
         </div>
         
         <!-- Action buttons for management context -->
@@ -881,7 +1176,8 @@
             }
             
             const cleanHTML = `
-                <div class="paper">
+                <div class="paper-wrapper">
+                    <div class="paper">
                     <!-- Header band -->
                     <div style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 12px 0; text-align: center;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
@@ -1199,6 +1495,7 @@
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
             `;
             
@@ -1306,7 +1603,13 @@
                 // Fallback to API call
                 const response = await fetch('/api/payment-methods');
                 const apiResponse = await response.json();
-                paymentMethods = apiResponse;
+                
+                // Handle the API response structure properly
+                if (apiResponse.success && apiResponse.paymentMethods) {
+                    paymentMethods = apiResponse.paymentMethods;
+                } else {
+                    paymentMethods = apiResponse;
+                }
                 console.log('💳 Payment methods loaded from API:', paymentMethods);
             } catch (error) {
                 console.error('Error loading payment methods:', error);
@@ -1361,9 +1664,9 @@
             }
             
             // Check for bank transfer (supports both localStorage and API structure)
-            const bankTransferEnabled = paymentMethods.bankTransfer?.enabled;
+            const bankTransferEnabled = paymentMethods.bankTransfer?.enabled || paymentMethods.bank_transfer?.enabled;
             if (bankTransferEnabled) {
-                const bankName = paymentMethods.bankTransfer?.bankName || 'Bank Transfer';
+                const bankName = paymentMethods.bankTransfer?.bankName || paymentMethods.bank_transfer?.bank_name || 'Bank Transfer';
                 methodsHTML += `
                     <div class="payment-method ${firstMethod === '' ? 'active' : ''}" data-method="bank_transfer">
                         <span>🏦</span> ${bankName}
@@ -1430,9 +1733,9 @@
 
         // Generate bank transfer details
         function generateBankTransferDetails() {
-            if (!paymentMethods?.bankTransfer?.enabled) return '';
+            if (!paymentMethods?.bankTransfer?.enabled && !paymentMethods?.bank_transfer?.enabled) return '';
             
-            const bankInfo = paymentMethods.bankTransfer;
+            const bankInfo = paymentMethods.bankTransfer || paymentMethods.bank_transfer;
             // Show by default if it's the only payment method enabled
             const displayStyle = selectedPaymentMethod === 'bank_transfer' ? 'block' : 'none';
             return `
@@ -1444,23 +1747,23 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                         <div>
                             <label style="display: block; font-weight: 600; color: #4a5568; font-size: 13px; margin-bottom: 4px;">BANK NAME</label>
-                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-weight: 600;">${bankInfo.bankName || '-'}</div>
+                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-weight: 600;">${bankInfo.bankName || bankInfo.bank_name || '-'}</div>
                         </div>
                         <div>
                             <label style="display: block; font-weight: 600; color: #4a5568; font-size: 13px; margin-bottom: 4px;">ACCOUNT NUMBER</label>
-                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-family: monospace; font-weight: 600; font-size: 16px;">${bankInfo.accountNumber || '-'}</div>
+                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-family: monospace; font-weight: 600; font-size: 16px;">${bankInfo.accountNumber || bankInfo.account_number || '-'}</div>
                         </div>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr ${bankInfo.bankBranch ? '1fr' : ''}; gap: 15px; margin-bottom: 15px;">
                         <div>
                             <label style="display: block; font-weight: 600; color: #4a5568; font-size: 13px; margin-bottom: 4px;">ACCOUNT HOLDER</label>
-                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-weight: 600;">${bankInfo.accountHolderName || bankInfo.accountName || '-'}</div>
+                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-weight: 600;">${bankInfo.accountHolderName || bankInfo.account_holder_name || bankInfo.accountName || '-'}</div>
                         </div>
-                        ${bankInfo.bankBranch ? `
+                        ${(bankInfo.bankBranch || bankInfo.bank_branch) ? `
                         <div>
                             <label style="display: block; font-weight: 600; color: #4a5568; font-size: 13px; margin-bottom: 4px;">BRANCH</label>
-                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${bankInfo.bankBranch}</div>
+                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${bankInfo.bankBranch || bankInfo.bank_branch}</div>
                         </div>
                         ` : ''}
                     </div>
@@ -1528,9 +1831,11 @@
         function generatePaymentSection(invoice) {
             if (invoice.status === 'paid') {
                 return `
-                    <div class="paper" style="margin-top: 20px;">
-                        <div class="paid-notice">
-                            ✅ Invoice ini telah dibayar lunas. Terima kasih!
+                    <div class="paper-wrapper" style="margin-top: 20px;">
+                        <div class="paper">
+                            <div class="paid-notice">
+                                ✅ Invoice ini telah dibayar lunas. Terima kasih!
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1539,7 +1844,8 @@
             // Check if payment confirmation is pending approval
             if (invoice.payment_status === 'confirmation_pending') {
                 return `
-                    <div class="paper payment-confirmation-status" style="margin-top: 20px;">
+                    <div class="paper-wrapper" style="margin-top: 20px;">
+                        <div class="paper payment-confirmation-status">
                         <div style="background: rgba(66, 153, 225, 0.1); border: 2px solid #4299e1; border-radius: 8px; padding: 20px; text-align: center;">
                             <h3 style="color: #2b6cb0; margin-bottom: 15px;">⏳ Menunggu Konfirmasi Pembayaran</h3>
                             <p style="color: #4a5568; margin-bottom: 15px;">
@@ -1556,6 +1862,7 @@
                                     </small>
                                 </div>
                             ` : ''}
+                        </div>
                         </div>
                     </div>
                 `;
@@ -1652,7 +1959,8 @@
                 console.log('💳 Payment info determined:', paymentInfo);
                 
                 return `
-                    <div class="paper" style="margin-top: 20px; padding: 20px;">
+                    <div class="paper-wrapper" style="margin-top: 20px;">
+                        <div class="paper" style="padding: 20px;">
                         <div class="payment-section">
                             <h3>Pembayaran Online</h3>
                             
@@ -1732,6 +2040,7 @@
                                     </form>
                                 </div>
                             </div>
+                        </div>
                         </div>
                     </div>
                 `;
@@ -2120,11 +2429,17 @@
                     console.log('📊 Payment methods data received:', data);
                     
                     if (data.success && data.paymentMethods) {
-                        const bank = data.paymentMethods.bankTransfer;
+                        // Handle both camelCase and snake_case formats
+                        const bank = data.paymentMethods.bankTransfer || data.paymentMethods.bank_transfer;
                         console.log('🏦 Bank transfer data:', bank);
                         
                         if (bank && bank.enabled) {
-                            bankInfo = `\n💳 *PEMBAYARAN BANK TRANSFER*\nBank: ${bank.bankName || ''}\nNo. Rekening: ${bank.accountNumber || ''}\nAtas Nama: ${bank.accountHolderName || ''}\n${bank.instructions ? `Catatan: ${bank.instructions}` : ''}`;
+                            const bankName = bank.bankName || bank.bank_name || '';
+                            const accountNumber = bank.accountNumber || bank.account_number || '';
+                            const accountHolder = bank.accountHolderName || bank.account_holder_name || '';
+                            const instructions = bank.instructions || '';
+                            
+                            bankInfo = `\n💳 *PEMBAYARAN BANK TRANSFER*\nBank: ${bankName}\nNo. Rekening: ${accountNumber}\nAtas Nama: ${accountHolder}\n${instructions ? `Catatan: ${instructions}` : ''}`;
                             console.log('✅ Bank info generated:', bankInfo);
                         } else {
                             console.log('❌ Bank transfer not enabled or missing');
@@ -2231,6 +2546,267 @@ Terima kasih! 🙏`;
             const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
+
+        // ============================================================================
+        // MOBILE INVOICE VIEW ZOOM & PAN FUNCTIONALITY
+        // ============================================================================
+
+        let currentScale = 1.0;
+        let initialScale = 0.45;
+        let minScale = 0.2;
+        let maxScale = 3.0;
+        let zoomIndicatorTimeout;
+        let isMobile = window.innerWidth <= 768;
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        // Initialize mobile zoom functionality when invoice is loaded
+        function initializeMobileZoom() {
+            if (!isMobile) return;
+
+            const container = document.getElementById('main-container');
+            const mobileControls = document.getElementById('mobile-zoom-controls');
+            
+            if (!container || !mobileControls) return;
+
+            // Calculate initial scale to fit A4 in mobile screen
+            const containerWidth = container.clientWidth - 16;
+            const a4WidthPx = 794; // 210mm in pixels at 96 DPI
+            initialScale = Math.max(containerWidth / a4WidthPx, 0.25);
+            currentScale = initialScale;
+
+            // Set CSS custom property for mobile scaling
+            document.documentElement.style.setProperty('--mobile-scale-factor', currentScale);
+
+            // Show mobile zoom controls
+            mobileControls.style.display = 'flex';
+
+            // Update zoom indicator
+            updateZoomIndicator();
+
+            // Add touch gesture support
+            addTouchGestureSupport();
+
+            // Add pan support when zoomed in
+            addPanSupport();
+
+            console.log('📱 Mobile zoom initialized for customer view', {
+                initialScale: initialScale,
+                containerWidth: containerWidth,
+                a4Width: a4WidthPx
+            });
+        }
+
+        // Adjust zoom level
+        function adjustZoom(delta) {
+            const newScale = Math.max(minScale, Math.min(maxScale, currentScale + delta));
+            
+            if (newScale !== currentScale) {
+                currentScale = newScale;
+                applyZoom();
+            }
+        }
+
+        // Fit invoice to screen width
+        function fitToScreen() {
+            const container = document.getElementById('main-container');
+            const containerWidth = container.clientWidth - 16;
+            const a4WidthPx = 794;
+            
+            currentScale = Math.max(containerWidth / a4WidthPx, 0.25);
+            applyZoom();
+        }
+
+        // Apply current zoom level
+        function applyZoom() {
+            document.documentElement.style.setProperty('--mobile-scale-factor', currentScale);
+            updateZoomIndicator();
+            
+            const panIndicator = document.getElementById('pan-indicator');
+            if (currentScale > initialScale + 0.1) {
+                panIndicator.classList.add('show');
+            } else {
+                panIndicator.classList.remove('show');
+            }
+        }
+
+        // Update zoom indicator
+        function updateZoomIndicator() {
+            const indicator = document.getElementById('zoom-indicator');
+            if (indicator) {
+                indicator.textContent = Math.round(currentScale * 100) + '%';
+                indicator.classList.add('show');
+                
+                // Hide after 2 seconds
+                clearTimeout(zoomIndicatorTimeout);
+                zoomIndicatorTimeout = setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        // Add touch gesture support for pinch-zoom and double-tap
+        function addTouchGestureSupport() {
+            const container = document.getElementById('main-container');
+            if (!container) return;
+
+            let lastTouchDistance = 0;
+            let lastTapTime = 0;
+            let touchStartScale = currentScale;
+
+            // Pinch-to-zoom
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    lastTouchDistance = Math.hypot(
+                        touch1.clientX - touch2.clientX,
+                        touch1.clientY - touch2.clientY
+                    );
+                    touchStartScale = currentScale;
+                }
+                
+                // Double-tap detection
+                if (e.touches.length === 1) {
+                    const currentTime = new Date().getTime();
+                    const tapGap = currentTime - lastTapTime;
+                    
+                    if (tapGap < 300 && tapGap > 0) {
+                        e.preventDefault();
+                        // Double-tap: toggle between fit-to-screen and 2x zoom
+                        if (Math.abs(currentScale - initialScale) < 0.05) {
+                            currentScale = Math.min(initialScale * 2.5, maxScale);
+                        } else {
+                            currentScale = initialScale;
+                        }
+                        applyZoom();
+                    }
+                    lastTapTime = currentTime;
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    const currentDistance = Math.hypot(
+                        touch1.clientX - touch2.clientX,
+                        touch1.clientY - touch2.clientY
+                    );
+                    
+                    if (lastTouchDistance > 0) {
+                        const scale = touchStartScale * (currentDistance / lastTouchDistance);
+                        currentScale = Math.max(minScale, Math.min(maxScale, scale));
+                        applyZoom();
+                    }
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    lastTouchDistance = 0;
+                }
+            });
+        }
+
+        // Add pan support when zoomed in
+        function addPanSupport() {
+            const container = document.getElementById('main-container');
+            if (!container) return;
+
+            // Mouse events for testing
+            container.addEventListener('mousedown', startDrag);
+            container.addEventListener('mousemove', doDrag);
+            container.addEventListener('mouseup', endDrag);
+            container.addEventListener('mouseleave', endDrag);
+
+            // Touch events
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1 && currentScale > initialScale + 0.1) {
+                    startDrag(e.touches[0]);
+                }
+            });
+            
+            container.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging) {
+                    e.preventDefault();
+                    doDrag(e.touches[0]);
+                }
+            }, { passive: false });
+            
+            container.addEventListener('touchend', endDrag);
+
+            function startDrag(e) {
+                if (currentScale <= initialScale + 0.1) return;
+                
+                isDragging = true;
+                startX = e.clientX - container.offsetLeft;
+                startY = e.clientY - container.offsetTop;
+                scrollLeft = container.scrollLeft;
+                scrollTop = container.scrollTop;
+                
+                container.style.cursor = 'grabbing';
+            }
+
+            function doDrag(e) {
+                if (!isDragging) return;
+                
+                e.preventDefault();
+                const x = e.clientX - container.offsetLeft;
+                const y = e.clientY - container.offsetTop;
+                const walkX = (x - startX) * 1.5;
+                const walkY = (y - startY) * 1.5;
+                
+                container.scrollLeft = scrollLeft - walkX;
+                container.scrollTop = scrollTop - walkY;
+            }
+
+            function endDrag() {
+                isDragging = false;
+                const container = document.getElementById('main-container');
+                container.style.cursor = currentScale > initialScale + 0.1 ? 'grab' : 'auto';
+            }
+        }
+
+        // Update mobile detection on window resize
+        window.addEventListener('resize', () => {
+            const wasMobile = isMobile;
+            isMobile = window.innerWidth <= 768;
+            
+            if (wasMobile !== isMobile) {
+                const mobileControls = document.getElementById('mobile-zoom-controls');
+                if (mobileControls) {
+                    mobileControls.style.display = isMobile ? 'flex' : 'none';
+                }
+                
+                if (isMobile) {
+                    initializeMobileZoom();
+                } else {
+                    // Reset to desktop styles
+                    document.documentElement.style.setProperty('--mobile-scale-factor', '1');
+                    currentScale = 1.0;
+                }
+            }
+        });
+
+        // Initialize mobile zoom after invoice is loaded
+        function initializeMobileZoomAfterLoad() {
+            setTimeout(() => {
+                initializeMobileZoom();
+            }, 100);
+        }
+
+        // Hook into existing displayInvoice function
+        const originalDisplayInvoice = displayInvoice;
+        displayInvoice = function(invoice) {
+            const result = originalDisplayInvoice(invoice);
+            initializeMobileZoomAfterLoad();
+            return result;
+        };
+
+        console.log('📱 Customer invoice mobile zoom functionality loaded');
 
         // Load invoice when page loads
         loadInvoice();
