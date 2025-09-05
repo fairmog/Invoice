@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
     <title>Merchant Dashboard - Aspree Invoice Gen</title>
     <style>
         /* Professional Business Design System */
@@ -153,6 +153,45 @@
             font-size: 12px;
         }
 
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .header-logout-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 11px;
+            background: var(--error);
+            color: white;
+            border: 1px solid var(--error);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            width: fit-content;
+            margin-top: 2px;
+        }
+
+        .header-logout-btn:hover {
+            background: #E53E3E;
+            border-color: #E53E3E;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
+        }
+
+        .header-logout-btn:active {
+            transform: translateY(0);
+        }
+
+        .header-logout-btn span {
+            font-size: 10px;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -203,18 +242,6 @@
             box-shadow: var(--shadow-soft);
         }
 
-        .nav-btn.logout-btn {
-            background: var(--error);
-            color: white;
-            border-color: var(--error);
-            margin-left: auto;
-        }
-
-        .nav-btn.logout-btn:hover {
-            background: #E53E3E;
-            border-color: #E53E3E;
-            transform: translateY(-2px);
-        }
 
         /* Page Header */
         .page-header {
@@ -1561,6 +1588,21 @@
                 padding: 0 16px;
             }
 
+            .user-info {
+                padding: 6px 12px;
+                gap: 8px;
+            }
+
+            .header-logout-btn {
+                font-size: 10px;
+                padding: 3px 6px;
+                margin-top: 1px;
+            }
+
+            .header-logout-btn span {
+                font-size: 9px;
+            }
+
             .settings-btn span:last-child {
                 display: none;
             }
@@ -1710,6 +1752,77 @@
                 margin: 1% auto;
                 padding: 1rem;
                 max-height: 95vh;
+            }
+            
+            /* Mobile Invoice Modal Zoom Controls */
+            .mobile-invoice-zoom-controls {
+                position: fixed !important;
+                top: 50% !important;
+                right: 8px !important;
+                transform: translateY(-50%) !important;
+                z-index: 1002 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                background: rgba(255, 255, 255, 0.95) !important;
+                padding: 12px 8px !important;
+                border-radius: 12px !important;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+                border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            }
+            
+            .invoice-zoom-btn {
+                width: 36px !important;
+                height: 36px !important;
+                border: none !important;
+                border-radius: 8px !important;
+                background: var(--primary-purple) !important;
+                color: white !important;
+                font-size: 16px !important;
+                font-weight: bold !important;
+                cursor: pointer !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                transition: all 0.2s ease !important;
+                user-select: none !important;
+                -webkit-tap-highlight-color: transparent !important;
+            }
+            
+            .invoice-zoom-btn:hover, .invoice-zoom-btn:active {
+                background: var(--primary-dark) !important;
+                transform: scale(0.95) !important;
+            }
+            
+            /* Invoice Modal Content Scaling */
+            .invoice-modal-content-wrapper {
+                transform: scale(var(--invoice-mobile-scale-factor, 0.8)) !important;
+                transform-origin: top center !important;
+                transition: transform 0.3s ease !important;
+                width: 100% !important;
+                overflow: visible !important;
+            }
+            
+            /* Zoom Indicator */
+            .invoice-zoom-indicator {
+                position: fixed !important;
+                top: 20px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                z-index: 1003 !important;
+                background: rgba(0, 0, 0, 0.8) !important;
+                color: white !important;
+                padding: 4px 12px !important;
+                border-radius: 16px !important;
+                font-size: 12px !important;
+                font-weight: 500 !important;
+                pointer-events: none !important;
+                opacity: 0 !important;
+                transition: opacity 0.3s ease !important;
+            }
+            
+            .invoice-zoom-indicator.show {
+                opacity: 1 !important;
             }
 
             .modal-header {
@@ -1978,9 +2091,12 @@
                 </a>
                 <div class="user-info">
                     <div class="user-avatar">AG</div>
-                    <div>
+                    <div class="user-details">
                         <div style="font-weight: 600; font-size: 14px;">Agus Merchant</div>
                         <div style="font-size: 12px; color: var(--text-secondary);">Business Owner</div>
+                        <button class="header-logout-btn" onclick="handleLogout()">
+                            <span>🚪</span> Logout
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2009,9 +2125,6 @@
             </button>
             <button class="nav-btn" onclick="showSection('customers')">
                 <span>👥</span> Customers
-            </button>
-            <button class="nav-btn logout-btn" onclick="handleLogout()">
-                <span>🚪</span> Logout
             </button>
         </div>
 
@@ -2419,8 +2532,20 @@
                 <h3 class="modal-title">Invoice Details</h3>
                 <span class="close" onclick="closeInvoiceModal()">&times;</span>
             </div>
-            <div id="invoiceModalContent"></div>
+            <div class="invoice-modal-content-wrapper" id="invoiceModalContentWrapper">
+                <div id="invoiceModalContent"></div>
+            </div>
         </div>
+        
+        <!-- Mobile Zoom Controls (only visible on mobile) -->
+        <div class="mobile-invoice-zoom-controls" id="mobile-invoice-zoom-controls" style="display: none;">
+            <button class="invoice-zoom-btn" id="invoice-zoom-in-btn" onclick="adjustInvoiceZoom(0.1)" title="Zoom In">+</button>
+            <button class="invoice-zoom-btn" id="invoice-fit-screen-btn" onclick="fitInvoiceToScreen()" title="Fit to Screen">⌂</button>
+            <button class="invoice-zoom-btn" id="invoice-zoom-out-btn" onclick="adjustInvoiceZoom(-0.1)" title="Zoom Out">−</button>
+        </div>
+        
+        <!-- Zoom Indicator -->
+        <div class="invoice-zoom-indicator" id="invoice-zoom-indicator">100%</div>
     </div>
 
     <!-- Customer Detail Modal -->
@@ -4370,6 +4495,9 @@ Total: ${formatCurrency(invoice.grand_total)}`;
             `;
             
             modal.style.display = 'block';
+            
+            // Initialize mobile controls if on mobile
+            setTimeout(() => initializeInvoiceModalMobile(), 100);
         }
 
         // Enhanced Invoice Modal with Payment Confirmations
@@ -4498,6 +4626,9 @@ Total: ${formatCurrency(invoice.grand_total)}`;
             `;
             
             modal.style.display = 'block';
+            
+            // Initialize mobile controls if on mobile
+            setTimeout(() => initializeInvoiceModalMobile(), 100);
         }
 
         // Generate Payment Confirmations Section
@@ -4722,6 +4853,151 @@ Total: ${formatCurrency(invoice.grand_total)}`;
             // Close any open share dropdowns
             document.querySelectorAll('.share-menu.show').forEach(menu => {
                 menu.classList.remove('show');
+            });
+            // Hide mobile zoom controls
+            const mobileControls = document.getElementById('mobile-invoice-zoom-controls');
+            if (mobileControls) {
+                mobileControls.style.display = 'none';
+            }
+        }
+        
+        // Mobile Invoice Zoom Functionality
+        let invoiceCurrentScale = 0.8;
+        const invoiceMinScale = 0.3;
+        const invoiceMaxScale = 3.0;
+        
+        function initializeInvoiceModalMobile() {
+            const isMobile = window.innerWidth <= 767;
+            if (!isMobile) return;
+            
+            const mobileControls = document.getElementById('mobile-invoice-zoom-controls');
+            const wrapper = document.getElementById('invoiceModalContentWrapper');
+            
+            if (mobileControls && wrapper) {
+                mobileControls.style.display = 'flex';
+                
+                // Set initial scale
+                invoiceCurrentScale = 0.8;
+                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
+                
+                // Add touch gesture support
+                addInvoiceModalTouchGestureSupport();
+            }
+        }
+        
+        function adjustInvoiceZoom(delta) {
+            invoiceCurrentScale = Math.max(invoiceMinScale, Math.min(invoiceMaxScale, invoiceCurrentScale + delta));
+            
+            const wrapper = document.getElementById('invoiceModalContentWrapper');
+            const indicator = document.getElementById('invoice-zoom-indicator');
+            
+            if (wrapper) {
+                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
+            }
+            
+            // Show zoom indicator
+            if (indicator) {
+                indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
+                indicator.classList.add('show');
+                setTimeout(() => indicator.classList.remove('show'), 1500);
+            }
+        }
+        
+        function fitInvoiceToScreen() {
+            const modal = document.getElementById('invoiceModal');
+            if (!modal) return;
+            
+            const modalContent = modal.querySelector('.invoice-modal-content');
+            if (!modalContent) return;
+            
+            const containerWidth = modalContent.clientWidth - 32; // Account for padding
+            const estimatedContentWidth = 400; // Estimated invoice content width
+            invoiceCurrentScale = Math.max(containerWidth / estimatedContentWidth, invoiceMinScale);
+            invoiceCurrentScale = Math.min(invoiceCurrentScale, invoiceMaxScale);
+            
+            const wrapper = document.getElementById('invoiceModalContentWrapper');
+            const indicator = document.getElementById('invoice-zoom-indicator');
+            
+            if (wrapper) {
+                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
+            }
+            
+            if (indicator) {
+                indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
+                indicator.classList.add('show');
+                setTimeout(() => indicator.classList.remove('show'), 1500);
+            }
+        }
+        
+        function addInvoiceModalTouchGestureSupport() {
+            const wrapper = document.getElementById('invoiceModalContentWrapper');
+            if (!wrapper) return;
+            
+            let initialDistance = 0;
+            let initialScale = invoiceCurrentScale;
+            let lastTap = 0;
+            
+            wrapper.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    // Pinch-zoom start
+                    e.preventDefault();
+                    initialDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    initialScale = invoiceCurrentScale;
+                } else if (e.touches.length === 1) {
+                    // Double-tap detection
+                    const currentTime = new Date().getTime();
+                    const tapGap = currentTime - lastTap;
+                    
+                    if (tapGap < 300 && tapGap > 0) {
+                        // Double-tap detected
+                        e.preventDefault();
+                        const targetScale = invoiceCurrentScale < 1.5 ? 2.0 : 0.8;
+                        invoiceCurrentScale = targetScale;
+                        
+                        wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
+                        
+                        const indicator = document.getElementById('invoice-zoom-indicator');
+                        if (indicator) {
+                            indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
+                            indicator.classList.add('show');
+                            setTimeout(() => indicator.classList.remove('show'), 1500);
+                        }
+                    }
+                    lastTap = currentTime;
+                }
+            });
+            
+            wrapper.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const currentDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    
+                    const scale = (currentDistance / initialDistance) * initialScale;
+                    invoiceCurrentScale = Math.max(invoiceMinScale, Math.min(invoiceMaxScale, scale));
+                    
+                    wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
+                    
+                    const indicator = document.getElementById('invoice-zoom-indicator');
+                    if (indicator) {
+                        indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
+                        indicator.classList.add('show');
+                    }
+                }
+            });
+            
+            wrapper.addEventListener('touchend', function(e) {
+                if (e.touches.length === 0) {
+                    const indicator = document.getElementById('invoice-zoom-indicator');
+                    if (indicator) {
+                        setTimeout(() => indicator.classList.remove('show'), 1500);
+                    }
+                }
             });
         }
 
@@ -6831,7 +7107,7 @@ Terima kasih! 🙏`;
 
             try {
                 // Show loading state
-                const logoutBtn = document.querySelector('.logout-btn');
+                const logoutBtn = document.querySelector('.header-logout-btn');
                 const originalText = logoutBtn.innerHTML;
                 logoutBtn.innerHTML = '<span>⏳</span> Logging out...';
                 logoutBtn.disabled = true;
@@ -6866,7 +7142,7 @@ Terima kasih! 🙏`;
                 alert('Failed to logout. Please try again.');
                 
                 // Reset button state
-                const logoutBtn = document.querySelector('.logout-btn');
+                const logoutBtn = document.querySelector('.header-logout-btn');
                 logoutBtn.innerHTML = '<span>🚪</span> Logout';
                 logoutBtn.disabled = false;
             }
