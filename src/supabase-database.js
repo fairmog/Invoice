@@ -604,6 +604,9 @@ class SupabaseDatabase {
       if (settings.businessCode !== undefined || settings.business_code !== undefined) {
         mappedSettings.business_code = settings.businessCode || settings.business_code;
       }
+      if (settings.termsAndConditions !== undefined || settings.terms_conditions !== undefined) {
+        mappedSettings.terms_conditions = settings.termsAndConditions || settings.terms_conditions;
+      }
       if (settings.logoUrl !== undefined || settings.logo_url !== undefined) {
         mappedSettings.logo_url = settings.logoUrl || settings.logo_url;
       }
@@ -687,6 +690,7 @@ class SupabaseDatabase {
       taxDescription: data.tax_description,
       hideBusinessName: data.hide_business_name,
       businessCode: data.business_code,
+      termsAndConditions: data.terms_conditions,
       logoUrl: data.logo_url,
       logoPublicId: data.logo_public_id,
       logoFilename: data.logo_filename,
@@ -1099,6 +1103,43 @@ class SupabaseDatabase {
     }
     
     return data;
+  }
+
+  /**
+   * Get merchant by email verification token
+   */
+  async getMerchantByEmailVerificationToken(verificationToken) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .eq('email_verification_token', verificationToken)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Add field compatibility mapping
+    if (data) {
+      return {
+        ...data,
+        id: data.id,
+        password: data.password_hash,
+        businessName: data.business_name,
+        fullName: data.full_name,
+        emailVerified: data.email_verified,
+        emailVerificationToken: data.email_verification_token,
+        resetToken: data.reset_token,
+        resetTokenExpires: data.reset_token_expires,
+        lastLogin: data.last_login,
+        loginAttempts: data.login_attempts,
+        lockedUntil: data.locked_until,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionExpires: data.subscription_expires,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+
+    return null;
   }
 
   /**
