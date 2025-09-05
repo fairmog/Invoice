@@ -173,11 +173,10 @@ const performanceMonitor = (req, res, next) => {
 const database = new SupabaseDatabase();
 const cloudinaryService = new CloudinaryService();
 const generator = new WhatsAppInvoiceGenerator();
-// PDF Generator removed - using Print functionality instead
-const authService = new AuthService(database);
-const xenditService = new XenditService();
-
 const emailService = new SimpleEmailService();
+// PDF Generator removed - using Print functionality instead  
+const authService = new AuthService(database, emailService);
+const xenditService = new XenditService();
 
 // Function to get current business settings
 async function getCurrentBusinessSettings() {
@@ -196,7 +195,8 @@ async function getCurrentBusinessSettings() {
       taxDescription: process.env.MERCHANT_TAX_DESCRIPTION || dbSettings.taxDescription || config.merchant.taxDescription || '',
       logoUrl: dbSettings.logoUrl || null,
       logoFilename: dbSettings.logoFilename || null,
-      hideBusinessName: dbSettings.hideBusinessName || false
+      hideBusinessName: dbSettings.hideBusinessName || false,
+      termsAndConditions: dbSettings.termsAndConditions || ''
     };
   } catch (error) {
     console.error('Error getting business settings:', error);
@@ -214,7 +214,8 @@ async function getCurrentBusinessSettings() {
       taxDescription: process.env.MERCHANT_TAX_DESCRIPTION || config.merchant.taxDescription || '',
       logoUrl: null,
       logoFilename: null,
-      hideBusinessName: false
+      hideBusinessName: false,
+      termsAndConditions: ''
     };
   }
 }
@@ -471,6 +472,21 @@ app.get('/auth/forgot-password', authMiddleware.redirectIfAuthenticated, (req, r
   res.sendFile(path.join(__dirname, 'auth', 'merchant-forgot-password.html'));
 });
 
+app.get('/auth/reset-password', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-reset-password.html'));
+});
+
+// Email verification page
+app.get('/auth/verify-email', (req, res) => {
+  const token = req.query.token;
+  if (!token) {
+    return res.status(400).send('Missing verification token');
+  }
+  
+  // For now, redirect to a simple success page or handle verification
+  res.redirect(`/auth/login?message=verify-email&token=${token}`);
+});
+
 // Authentication API Routes
 app.use('/api/auth', authMiddleware.authRateLimit());
 
@@ -588,12 +604,108 @@ app.get('/api/auth/verify',
 // Logout
 app.post('/api/auth/logout',
   authMiddleware.logAuthEvent('LOGOUT'),
-  (req, res) => {
-    // Clear cookie
-    res.clearCookie('merchantToken');
-    
-    const result = authService.logout();
-    res.json(result);
+  async (req, res) => {
+    try {
+      // Clear all possible token cookies
+      res.clearCookie('merchantToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/'
+      });
+      res.clearCookie('authToken');
+      res.clearCookie('token');
+      
+      // Get merchant info from token if available
+      let merchantInfo = null;
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.split(' ')[1] || req.cookies?.merchantToken;
+      
+      if (token) {
+        const tokenResult = authService.verifyToken(token);
+        if (tokenResult.success) {
+          merchantInfo = tokenResult.payload;
+          console.log(`👋 Merchant logout: ${merchantInfo.email}`);
+        }
+      }
+      
+      // Clear any server-side session data if implemented
+      // (For future use with Redis or database sessions)
+      
+      // Set security headers
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      const result = authService.logout();
+      
+      // Enhanced response with cleanup confirmation
+      res.json({
+        ...result,
+        message: 'Successfully logged out. All sessions cleared.',
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Logout failed',
+        message: 'An error occurred during logout. Please clear your browser data.'
+      });
+    }
+  }
+);
+
+// Verify email
+app.post('/api/auth/verify-email',
+  authMiddleware.logAuthEvent('EMAIL_VERIFICATION'),
+  async (req, res) => {
+    try {
+      const { verificationToken } = req.body;
+      if (!verificationToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'Verification token is required'
+        });
+      }
+
+      const result = await authService.verifyEmail(verificationToken);
+      res.json(result);
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Email verification failed'
+      });
+    }
+  }
+);
+
+// Resend email verification
+app.post('/api/auth/resend-verification',
+  authMiddleware.logAuthEvent('RESEND_EMAIL_VERIFICATION'),
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email address is required'
+        });
+      }
+
+      const result = await authService.resendEmailVerification(email);
+      res.json(result);
+    } catch (error) {
+      console.error('Resend email verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to resend email verification'
+      });
+    }
   }
 );
 
@@ -835,7 +947,8 @@ app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (re
         taxRate: config.merchant.taxRate || 0,
         taxEnabled: config.merchant.taxRate > 0,
         taxName: 'PPN',
-        taxDescription: ''
+        taxDescription: '',
+        termsAndConditions: ''
       });
     }
     
@@ -872,6 +985,24 @@ app.post('/api/business-settings', authMiddleware.authenticateMerchant, async (r
 
 // Payment methods API endpoint
 app.get('/api/settings/payment-methods', async (req, res) => {
+  try {
+    const paymentMethods = await database.getPaymentMethods();
+    
+    res.json({
+      success: true,
+      paymentMethods: paymentMethods
+    });
+  } catch (error) {
+    console.error('Error loading payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load payment methods'
+    });
+  }
+});
+
+// Alternative payment methods API endpoint (without /settings/)
+app.get('/api/payment-methods', async (req, res) => {
   try {
     const paymentMethods = await database.getPaymentMethods();
     
