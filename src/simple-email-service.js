@@ -1182,6 +1182,267 @@ class SimpleEmailService {
     `;
   }
 
+  // Password reset email
+  async sendPasswordResetEmail(merchantEmail, resetToken, businessName = 'AI Invoice Generator') {
+    if (!this.isConfigured) {
+      return this.sendMockPasswordResetEmail(merchantEmail, resetToken, businessName);
+    }
+
+    try {
+      const resetUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+      
+      const htmlContent = this.generatePasswordResetEmailHTML(merchantEmail, resetUrl, businessName);
+
+      const mailOptions = {
+        from: `"${businessName}" <${this.config.user}>`,
+        to: merchantEmail,
+        subject: `🔐 Password Reset Request - ${businessName}`,
+        html: htmlContent,
+        headers: {
+          'X-Mailer': 'AI Invoice Generator',
+          'X-Priority': '1'
+        }
+      };
+
+      console.log(`📧 Sending password reset email to ${merchantEmail}...`);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Password reset email sent successfully: ${result.messageId}`);
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        resetUrl: resetUrl // Remove in production
+      };
+    } catch (error) {
+      console.error('❌ Password reset email failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async sendMockPasswordResetEmail(merchantEmail, resetToken, businessName) {
+    const resetUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+    
+    console.log('\n📧 ========== MOCK PASSWORD RESET EMAIL ==========');
+    console.log(`📧 Type: Password Reset`);
+    console.log(`📧 To: ${merchantEmail}`);
+    console.log(`📧 From: "${businessName}" <${this.config.user || 'not-configured@example.com'}>`);
+    console.log(`📧 Subject: 🔐 Password Reset Request - ${businessName}`);
+    console.log(`📧 Reset URL: ${resetUrl}`);
+    console.log('📧 Content: Password reset instructions with reset link');
+    console.log('📧 ===============================================\n');
+    
+    return {
+      success: true,
+      mock: true,
+      resetUrl: resetUrl
+    };
+  }
+
+  // Email verification email
+  async sendEmailVerificationEmail(merchantEmail, verificationToken, businessName = 'AI Invoice Generator') {
+    if (!this.isConfigured) {
+      return this.sendMockEmailVerificationEmail(merchantEmail, verificationToken, businessName);
+    }
+
+    try {
+      const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/verify-email?token=${verificationToken}`;
+      
+      const htmlContent = this.generateEmailVerificationHTML(merchantEmail, verificationUrl, businessName);
+
+      const mailOptions = {
+        from: `"${businessName}" <${this.config.user}>`,
+        to: merchantEmail,
+        subject: `✉️ Verify Your Email - ${businessName}`,
+        html: htmlContent,
+        headers: {
+          'X-Mailer': 'AI Invoice Generator',
+          'X-Priority': '1'
+        }
+      };
+
+      console.log(`📧 Sending email verification to ${merchantEmail}...`);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Email verification sent successfully: ${result.messageId}`);
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        verificationUrl: verificationUrl // Remove in production
+      };
+    } catch (error) {
+      console.error('❌ Email verification failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async sendMockEmailVerificationEmail(merchantEmail, verificationToken, businessName) {
+    const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/verify-email?token=${verificationToken}`;
+    
+    console.log('\n📧 ======== MOCK EMAIL VERIFICATION EMAIL ========');
+    console.log(`📧 Type: Email Verification`);
+    console.log(`📧 To: ${merchantEmail}`);
+    console.log(`📧 From: "${businessName}" <${this.config.user || 'not-configured@example.com'}>`);
+    console.log(`📧 Subject: ✉️ Verify Your Email - ${businessName}`);
+    console.log(`📧 Verification URL: ${verificationUrl}`);
+    console.log('📧 Content: Email verification instructions with verification link');
+    console.log('📧 ===============================================\n');
+    
+    return {
+      success: true,
+      mock: true,
+      verificationUrl: verificationUrl
+    };
+  }
+
+  generateEmailVerificationHTML(merchantEmail, verificationUrl, businessName) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify Your Email - ${businessName}</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f7fafc; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #8B5FFF 0%, #9966FF 100%); color: white; padding: 40px 32px; text-align: center; }
+            .header h1 { margin: 0; font-size: 28px; font-weight: 800; }
+            .content { padding: 40px 32px; }
+            .verification-card { background: #f8f9ff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center; }
+            .verify-button { display: inline-block; background: #48BB78; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 20px 0; }
+            .verify-button:hover { background: #38a169; }
+            .info-note { background: #e6fffa; border: 1px solid #4fd1c7; border-radius: 8px; padding: 16px; margin: 24px 0; }
+            .footer { background: #f7fafc; padding: 24px 32px; text-align: center; color: #718096; font-size: 14px; }
+            .token-info { font-family: monospace; background: #f1f5f9; padding: 12px; border-radius: 6px; margin: 16px 0; word-break: break-all; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>✉️ Verify Your Email</h1>
+                <p style="margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Welcome to ${businessName}</p>
+            </div>
+            
+            <div class="content">
+                <h2 style="color: #2d3748; margin-bottom: 16px;">Welcome!</h2>
+                <p style="color: #4a5568; font-size: 16px; line-height: 1.6;">
+                    Thank you for creating your merchant account with <strong>${businessName}</strong>. 
+                    To complete your registration, please verify your email address: <strong>${merchantEmail}</strong>
+                </p>
+                
+                <div class="verification-card">
+                    <h3 style="color: #553c9a; margin-bottom: 12px;">🔗 Verify Your Email Address</h3>
+                    <p style="color: #718096; margin-bottom: 20px;">
+                        Click the button below to verify your email address and activate your account.
+                    </p>
+                    <a href="${verificationUrl}" class="verify-button">Verify Email Now</a>
+                </div>
+                
+                <div class="info-note">
+                    <h4 style="color: #285e61; margin-bottom: 8px;">📋 What happens after verification?</h4>
+                    <ul style="color: #285e61; text-align: left; margin: 0; padding-left: 20px;">
+                        <li>Your account will be fully activated</li>
+                        <li>You can access all features of the platform</li>
+                        <li>You'll receive important updates and notifications</li>
+                        <li>Your account security will be enhanced</li>
+                    </ul>
+                </div>
+                
+                <p style="color: #718096; font-size: 14px; margin-top: 24px;">
+                    If the button doesn't work, you can copy and paste this link into your browser:
+                </p>
+                <div class="token-info">
+                    ${verificationUrl}
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p><strong>${businessName}</strong> - AI Invoice Generator</p>
+                <p style="margin: 8px 0 0 0;">If you didn't create this account, please ignore this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
+  generatePasswordResetEmailHTML(merchantEmail, resetUrl, businessName) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset - ${businessName}</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f7fafc; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #8B5FFF 0%, #9966FF 100%); color: white; padding: 40px 32px; text-align: center; }
+            .header h1 { margin: 0; font-size: 28px; font-weight: 800; }
+            .content { padding: 40px 32px; }
+            .reset-card { background: #f8f9ff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center; }
+            .reset-button { display: inline-block; background: #8B5FFF; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 20px 0; }
+            .reset-button:hover { background: #7c3aed; }
+            .security-note { background: #fef5e7; border: 1px solid #f6d55c; border-radius: 8px; padding: 16px; margin: 24px 0; }
+            .footer { background: #f7fafc; padding: 24px 32px; text-align: center; color: #718096; font-size: 14px; }
+            .token-info { font-family: monospace; background: #f1f5f9; padding: 12px; border-radius: 6px; margin: 16px 0; word-break: break-all; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🔐 Password Reset Request</h1>
+                <p style="margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Secure password reset for ${businessName}</p>
+            </div>
+            
+            <div class="content">
+                <h2 style="color: #2d3748; margin-bottom: 16px;">Hello,</h2>
+                <p style="color: #4a5568; font-size: 16px; line-height: 1.6;">
+                    We received a request to reset the password for your merchant account associated with <strong>${merchantEmail}</strong>.
+                </p>
+                
+                <div class="reset-card">
+                    <h3 style="color: #553c9a; margin-bottom: 12px;">🔗 Reset Your Password</h3>
+                    <p style="color: #718096; margin-bottom: 20px;">
+                        Click the button below to reset your password. This link will expire in 1 hour for security reasons.
+                    </p>
+                    <a href="${resetUrl}" class="reset-button">Reset Password Now</a>
+                </div>
+                
+                <div class="security-note">
+                    <h4 style="color: #92400e; margin-bottom: 8px;">🛡️ Security Information</h4>
+                    <ul style="color: #92400e; text-align: left; margin: 0; padding-left: 20px;">
+                        <li>This link expires in 1 hour</li>
+                        <li>Can only be used once</li>
+                        <li>If you didn't request this reset, please ignore this email</li>
+                        <li>Your current password remains unchanged until you complete the reset</li>
+                    </ul>
+                </div>
+                
+                <p style="color: #718096; font-size: 14px; margin-top: 24px;">
+                    If the button doesn't work, you can copy and paste this link into your browser:
+                </p>
+                <div class="token-info">
+                    ${resetUrl}
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p><strong>${businessName}</strong> - AI Invoice Generator</p>
+                <p style="margin: 8px 0 0 0;">This is an automated security email. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
   getStatus() {
     return {
       configured: this.isConfigured,
