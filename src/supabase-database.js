@@ -1819,6 +1819,108 @@ class SupabaseDatabase {
     }
   }
 
+  async getProductCategories() {
+    try {
+      const { data: products, error } = await this.supabase
+        .from('products')
+        .select('category')
+        .eq('is_active', true)
+        .not('category', 'is', null);
+
+      if (error) throw error;
+
+      // Count categories
+      const categoryCount = {};
+      products.forEach(product => {
+        const category = product.category;
+        if (category) {
+          categoryCount[category] = (categoryCount[category] || 0) + 1;
+        }
+      });
+
+      return Object.entries(categoryCount)
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => a.category.localeCompare(b.category));
+    } catch (error) {
+      console.error('Error fetching product categories:', error);
+      return [];
+    }
+  }
+
+  async getCustomerStats() {
+    try {
+      // Get all customers
+      const { data: customers, error: customerError } = await this.supabase
+        .from('customers')
+        .select('*');
+      
+      if (customerError) throw customerError;
+
+      // Get all invoices for CLV calculation
+      const { data: invoices, error: invoiceError } = await this.supabase
+        .from('invoices')
+        .select('customer_email, grand_total, created_at');
+      
+      if (invoiceError) throw invoiceError;
+
+      // Get all orders
+      const { data: orders, error: orderError } = await this.supabase
+        .from('orders')
+        .select('customer_email, created_at');
+      
+      if (orderError) throw orderError;
+
+      const totalCustomers = customers.length;
+      
+      // Calculate active customers (with orders or invoices)
+      const activeCustomers = customers.filter(c => {
+        const hasOrders = orders.some(o => o.customer_email === c.email);
+        const hasInvoices = invoices.some(i => i.customer_email === c.email);
+        return hasOrders || hasInvoices;
+      }).length;
+
+      // Calculate repeat customers (more than 1 order)
+      const repeatCustomers = customers.filter(c => {
+        const orderCount = orders.filter(o => o.customer_email === c.email).length;
+        return orderCount > 1;
+      }).length;
+
+      // Calculate new customers this month
+      const now = new Date();
+      const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const newCustomersThisMonth = customers.filter(c => {
+        const createdDate = new Date(c.created_at);
+        return createdDate >= firstDayThisMonth;
+      }).length;
+
+      // Calculate total customer lifetime value
+      const totalCLV = customers.reduce((sum, customer) => {
+        const customerInvoices = invoices.filter(i => i.customer_email === customer.email);
+        const customerTotal = customerInvoices.reduce((invSum, inv) => invSum + (inv.grand_total || 0), 0);
+        return sum + customerTotal;
+      }, 0);
+
+      return {
+        total_customers: totalCustomers,
+        active_customers: activeCustomers,
+        repeat_customers: repeatCustomers,
+        new_customers_this_month: newCustomersThisMonth,
+        average_clv: totalCustomers > 0 ? totalCLV / totalCustomers : 0,
+        total_clv: totalCLV
+      };
+    } catch (error) {
+      console.error('Error fetching customer stats:', error);
+      return {
+        total_customers: 0,
+        active_customers: 0,
+        repeat_customers: 0,
+        new_customers_this_month: 0,
+        average_clv: 0,
+        total_clv: 0
+      };
+    }
+  }
+
   close() {
     // No-op for compatibility
   }
