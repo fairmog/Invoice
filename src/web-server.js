@@ -1022,18 +1022,26 @@ app.get('/api/payment-methods', async (req, res) => {
 // Business logo upload endpoint
 app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoUpload.single('logo'), async (req, res) => {
   try {
+    console.log('📸 Logo upload request received for merchant:', req.merchant?.id);
+    
     if (!req.file) {
+      console.log('❌ No logo file in request');
       return res.status(400).json({
         success: false,
         error: 'No logo file uploaded'
       });
     }
 
-    console.log('📸 Business logo uploading to Cloudinary...');
+    console.log('📸 Business logo uploading to Cloudinary...', {
+      originalName: req.file.originalname,
+      size: req.file.size,
+      mimeType: req.file.mimetype
+    });
     
     // Upload to Cloudinary
     const currentSettings = await database.getBusinessSettings() || {};
     const businessName = currentSettings.name || 'business';
+    console.log('🏢 Using business name for upload:', businessName);
     
     const uploadResult = await cloudinaryService.uploadBusinessLogo(
       req.file.buffer, 
@@ -1041,19 +1049,29 @@ app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoU
     );
     
     if (!uploadResult.success) {
+      console.error('❌ Cloudinary upload failed:', uploadResult.error);
       return res.status(500).json({
         success: false,
         error: 'Failed to upload logo to cloud storage: ' + uploadResult.error
       });
     }
 
-    console.log('✅ Logo uploaded to Cloudinary:', uploadResult.publicId);
-    console.log('🔗 Logo URL:', uploadResult.url);
+    console.log('✅ Logo uploaded to Cloudinary:', {
+      publicId: uploadResult.publicId,
+      url: uploadResult.url,
+      width: uploadResult.width,
+      height: uploadResult.height
+    });
     
     // Delete old logo from Cloudinary if it exists
     if (currentSettings.logo_public_id) {
-      console.log('🗑️  Deleting old logo from Cloudinary...');
-      await cloudinaryService.deleteImage(currentSettings.logo_public_id);
+      console.log('🗑️  Deleting old logo from Cloudinary:', currentSettings.logo_public_id);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.logo_public_id);
+      if (deleteResult.success) {
+        console.log('✅ Old logo deleted successfully');
+      } else {
+        console.error('⚠️  Failed to delete old logo:', deleteResult.error);
+      }
     }
     
     // Update business settings with the new Cloudinary URL
@@ -1066,10 +1084,12 @@ app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoU
     
     console.log('📋 Updating business settings with logo:', {
       logo_url: updatedSettings.logo_url,
-      logo_public_id: updatedSettings.logo_public_id
+      logo_public_id: updatedSettings.logo_public_id,
+      updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
     });
     
-    await database.updateBusinessSettings(updatedSettings);
+    const updateResult = await database.updateBusinessSettings(updatedSettings);
+    console.log('✅ Database update result:', { success: !!updateResult });
     
     res.json({
       success: true,
@@ -1081,11 +1101,16 @@ app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoU
         height: uploadResult.height,
         format: uploadResult.format,
         bytes: uploadResult.bytes
+      },
+      debug: {
+        oldLogoDeleted: !!currentSettings.logo_public_id,
+        updatedDatabase: true
       }
     });
     
   } catch (error) {
-    console.error('Error uploading business logo:', error);
+    console.error('❌ Error uploading business logo:', error);
+    console.error('❌ Error stack:', error.stack);
     
     res.status(500).json({
       success: false,
@@ -1097,7 +1122,16 @@ app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoU
 // Remove business logo endpoint
 app.delete('/api/remove-business-logo', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
+    console.log('🗑️  Logo removal request received for merchant:', req.merchant?.id);
+    
     const currentSettings = await database.getBusinessSettings() || {};
+    console.log('📋 Current business settings:', {
+      hasLogoUrl: !!currentSettings.logo_url,
+      hasLogoPublicId: !!currentSettings.logo_public_id,
+      hasLogoFilename: !!currentSettings.logo_filename,
+      logoUrl: currentSettings.logo_url,
+      logoPublicId: currentSettings.logo_public_id
+    });
     
     // Delete from Cloudinary if it exists
     if (currentSettings.logo_public_id) {
@@ -1110,6 +1144,8 @@ app.delete('/api/remove-business-logo', authMiddleware.authenticateMerchant, asy
         console.error('⚠️  Failed to delete logo from Cloudinary:', deleteResult.error);
         // Continue with database update even if Cloudinary deletion fails
       }
+    } else {
+      console.log('ℹ️  No logo_public_id found, skipping Cloudinary deletion');
     }
     
     // Remove logo info from database
@@ -1123,18 +1159,26 @@ app.delete('/api/remove-business-logo', authMiddleware.authenticateMerchant, asy
     console.log('📋 Removing logo from business settings:', {
       before_logo_url: currentSettings.logo_url,
       before_logo_public_id: currentSettings.logo_public_id,
-      after_logo_url: updatedSettings.logo_url
+      after_logo_url: updatedSettings.logo_url,
+      updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
     });
     
-    await database.updateBusinessSettings(updatedSettings);
+    const updateResult = await database.updateBusinessSettings(updatedSettings);
+    console.log('✅ Database update result:', { success: !!updateResult });
     
     res.json({
       success: true,
-      message: 'Logo removed successfully from cloud storage'
+      message: 'Logo removed successfully from cloud storage',
+      debug: {
+        hadLogo: !!currentSettings.logo_url,
+        removedFromCloudinary: !!currentSettings.logo_public_id,
+        updatedDatabase: true
+      }
     });
     
   } catch (error) {
-    console.error('Error removing business logo:', error);
+    console.error('❌ Error removing business logo:', error);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({
       success: false,
       error: 'Failed to remove logo: ' + error.message
@@ -1543,6 +1587,14 @@ app.post('/api/invoices/:id/confirm-down-payment', async (req, res) => {
       });
     }
 
+    // Check if invoice is in down payment stage
+    if (invoice.payment_stage !== 'down_payment') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invoice is not in down payment stage. Current stage: ' + invoice.payment_stage 
+      });
+    }
+
     // Check if invoice has payment schedule
     const paymentSchedule = typeof invoice.payment_schedule_json === 'string' 
       ? JSON.parse(invoice.payment_schedule_json || 'null') 
@@ -1587,12 +1639,8 @@ app.post('/api/invoices/:id/confirm-down-payment', async (req, res) => {
     
     updatedInvoice.payment_schedule_json = JSON.stringify(paymentSchedule);
 
-    // Save changes to database
-    const index = database.data.invoices.findIndex(i => i.id === parseInt(invoiceId));
-    if (index !== -1) {
-      database.data.invoices[index] = updatedInvoice;
-      database.saveData();
-    }
+    // Save changes to Supabase database
+    await database.updateInvoice(invoiceId, updatedInvoice);
     
     console.log(`✅ Down payment confirmed for invoice ${invoice.invoice_number}`);
     
@@ -1627,11 +1675,11 @@ app.post('/api/invoices/:id/confirm-final-payment', async (req, res) => {
       });
     }
 
-    // Check if invoice is in final payment stage
+    // Check if invoice is in final payment stage (should be 'final_payment' for this endpoint)
     if (invoice.payment_stage !== 'final_payment') {
       return res.status(400).json({ 
         success: false, 
-        error: 'Invoice is not in final payment stage' 
+        error: 'Invoice is not in final payment stage. Current stage: ' + invoice.payment_stage 
       });
     }
 
@@ -1655,12 +1703,8 @@ app.post('/api/invoices/:id/confirm-final-payment', async (req, res) => {
       updatedInvoice.payment_schedule_json = JSON.stringify(paymentSchedule);
     }
 
-    // Save changes to database
-    const index = database.data.invoices.findIndex(i => i.id === parseInt(invoiceId));
-    if (index !== -1) {
-      database.data.invoices[index] = updatedInvoice;
-      database.saveData();
-    }
+    // Save changes to Supabase database
+    await database.updateInvoice(invoiceId, updatedInvoice);
     
     // Auto-create order from fully paid invoice
     let orderResult = null;
@@ -3454,14 +3498,14 @@ app.put('/api/invoices/:id/payment-stage', async (req, res) => {
           error: 'Invoice is not in down payment stage'
         });
       }
-      newStage = 'remaining_balance';
+      newStage = 'final_payment';
       newStatus = 'partial';
-      message = 'Down payment confirmed, moved to remaining balance stage';
+      message = 'Down payment confirmed, moved to final payment stage';
     } else if (action === 'confirm_final_payment') {
-      if (invoice.payment_stage !== 'remaining_balance') {
+      if (invoice.payment_stage !== 'final_payment') {
         return res.status(400).json({
           success: false,
-          error: 'Invoice is not in remaining balance stage'
+          error: 'Invoice is not in final payment stage'
         });
       }
       newStage = 'completed';
