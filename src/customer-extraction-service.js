@@ -1,9 +1,9 @@
-import SimpleDatabase from './simple-database.js';
+import SupabaseDatabase from './supabase-database.js';
 import AIDataExtractor from './ai-extractor.js';
 
 class CustomerExtractionService {
   constructor(database = null, aiExtractor = null) {
-    this.database = database || new SimpleDatabase();
+    this.database = database || new SupabaseDatabase();
     this.aiExtractor = aiExtractor || new AIDataExtractor();
   }
 
