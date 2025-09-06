@@ -967,11 +967,11 @@ class SimpleDatabase {
       
       // For payment schedule invoices, update payment status based on stage
       if (invoice.payment_stage === 'down_payment') {
-        // Down payment completed, move to remaining balance stage
-        invoice.payment_stage = 'remaining_balance';
+        // Down payment completed, move to final payment stage
+        invoice.payment_stage = 'final_payment';
         invoice.payment_status = 'partial';
-        console.log(`Invoice ${invoice.invoice_number} - Down payment completed, moved to remaining balance stage`);
-      } else if (invoice.payment_stage === 'remaining_balance') {
+        console.log(`Invoice ${invoice.invoice_number} - Down payment completed, moved to final payment stage`);
+      } else if (invoice.payment_stage === 'final_payment') {
         // Final payment completed
         invoice.payment_stage = 'completed';
         invoice.payment_status = 'completed';
