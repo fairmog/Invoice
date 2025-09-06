@@ -2002,7 +2002,7 @@
                                         description: `Uang muka untuk invoice ini. Sisa pembayaran: ${formatCurrency(paymentSchedule.remainingBalance.amount)}`,
                                         stage: 'down_payment'
                                     };
-                                } else if (currentStage === 'remaining_balance' || currentStage === 'final_payment') {
+                                } else if (currentStage === 'final_payment') {
                                     // Use final_payment_amount if available, otherwise use remainingBalance.amount
                                     const finalAmount = invoice.final_payment_amount || paymentSchedule.remainingBalance.amount;
                                     return {
