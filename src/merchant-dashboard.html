@@ -97,6 +97,14 @@
             font-size: 18px;
         }
 
+        .logo-icon img {
+            max-height: 36px;
+            max-width: 200px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
         .header-actions {
             display: flex;
             gap: 16px;
@@ -1588,6 +1596,12 @@
                 padding: 0 16px;
             }
 
+            /* Mobile logo sizing */
+            .logo-icon img {
+                max-height: 28px;
+                max-width: 150px;
+            }
+
             .user-info {
                 padding: 6px 12px;
                 gap: 8px;
@@ -1881,6 +1895,12 @@
                 padding: 0.75rem;
             }
 
+            /* Extra small mobile logo sizing */
+            .logo-icon img {
+                max-height: 24px;
+                max-width: 120px;
+            }
+
             .nav-btn {
                 min-width: 100%;
                 margin-bottom: 0.5rem;
@@ -2081,7 +2101,7 @@
         <div class="header-content">
             <a href="/generator" class="logo">
                 <div class="logo-icon">
-                    <img src="/assets/aspree-header-logo.png" alt="AI Invoice" style="height: 32px; width: auto;" onerror="this.style.display='none'; this.parentNode.innerHTML='🤖';">
+                    <img src="/assets/aspree-header-logo.png" alt="AI Invoice" onerror="this.style.display='none'; this.parentNode.innerHTML='🤖';">
                 </div>
             </a>
             <div class="header-actions">
@@ -4310,11 +4330,20 @@
             // Confirm Payment button - based on payment stage and status
             if (status === 'sent' || status === 'dp_paid') {
                 const paymentStage = invoice.payment_stage || 'full_payment';
+                
+                // Debug logging for payment stage
+                console.log(`🔍 Invoice ${invoice.invoice_number} - Status: ${status}, Payment Stage: ${paymentStage}, Final Payment Token: ${invoice.final_payment_token ? 'Yes' : 'No'}`);
+                
                 if (paymentStage === 'down_payment') {
                     actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmDownPayment(${invoice.id})" title="Confirm down payment received">✅ Confirm DP</button>`);
                 } else if (paymentStage === 'final_payment') {
                     // Show confirm button only - final payment link is now in View modal
                     actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmFinalPayment(${invoice.id})" title="Confirm final payment received">✅ Confirm Final</button>`);
+                    
+                    // Add debug info for final payment stage
+                    if (!invoice.final_payment_token) {
+                        console.warn(`⚠️ Invoice ${invoice.invoice_number} is in final_payment stage but missing final_payment_token`);
+                    }
                 } else if (paymentStage === 'full_payment') {
                     actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmPaymentAndMoveToOrders(${invoice.id}, 'full')" title="Confirm payment received">✅ Confirm Payment</button>`);
                 }
@@ -5552,6 +5581,8 @@ Terima kasih! 🙏`;
                 return;
             }
             
+            console.log('💰 Confirming down payment for invoice ID:', invoiceId);
+            
             try {
                 const response = await fetch(`/api/invoices/${invoiceId}/confirm-down-payment`, {
                     method: 'POST',
@@ -5560,29 +5591,59 @@ Terima kasih! 🙏`;
                     }
                 });
                 
+                console.log('📡 DP confirmation response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
+                console.log('📡 DP confirmation response data:', data);
                 
                 if (data.success) {
                     showSuccess('✅ Down payment confirmed! Final payment link generated.');
                     
-                    // Show final payment link modal
-                    if (data.finalPaymentToken) {
-                        // Get the invoice data to access invoice number
-                        const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`);
-                        const invoiceData = await invoiceResponse.json();
-                        if (invoiceData.success) {
-                            setTimeout(() => {
-                                showFinalPaymentLink(invoiceData.invoice.invoice_number);
-                            }, 1000);
-                        }
+                    // Validate we have the required data
+                    if (!data.finalPaymentToken) {
+                        showError('Warning: Final payment token not received from server');
+                        console.error('❌ Missing finalPaymentToken in response:', data);
                     }
                     
-                    loadInvoices();
-                    loadInvoiceStats();
+                    // Refresh invoices list first to get updated data
+                    await loadInvoices();
+                    await loadInvoiceStats();
+                    
+                    // Show final payment link modal with updated invoice data
+                    if (data.finalPaymentToken) {
+                        try {
+                            const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`);
+                            console.log('📡 Invoice fetch response status:', invoiceResponse.status);
+                            
+                            if (!invoiceResponse.ok) {
+                                throw new Error(`Failed to fetch updated invoice: HTTP ${invoiceResponse.status}`);
+                            }
+                            
+                            const invoiceData = await invoiceResponse.json();
+                            console.log('📡 Updated invoice data:', invoiceData);
+                            
+                            if (invoiceData.success && invoiceData.invoice) {
+                                setTimeout(() => {
+                                    showFinalPaymentLink(invoiceData.invoice.invoice_number);
+                                }, 1000);
+                            } else {
+                                showError('Failed to fetch updated invoice data: ' + (invoiceData.error || 'Unknown error'));
+                            }
+                        } catch (invoiceError) {
+                            console.error('❌ Error fetching updated invoice:', invoiceError);
+                            showError('Warning: Could not show final payment link. Please refresh and try again.');
+                        }
+                    }
                 } else {
-                    showError('Failed to confirm down payment: ' + data.error);
+                    showError('Failed to confirm down payment: ' + (data.error || 'Unknown error'));
+                    console.error('❌ DP confirmation failed:', data);
                 }
             } catch (error) {
+                console.error('❌ Error confirming down payment:', error);
                 showError('Error confirming down payment: ' + error.message);
             }
         }
@@ -5592,6 +5653,8 @@ Terima kasih! 🙏`;
                 return;
             }
             
+            console.log('💰 Confirming final payment for invoice ID:', invoiceId);
+            
             try {
                 const response = await fetch(`/api/invoices/${invoiceId}/confirm-final-payment`, {
                     method: 'POST',
@@ -5600,30 +5663,72 @@ Terima kasih! 🙏`;
                     }
                 });
                 
+                console.log('📡 Final payment confirmation response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
+                console.log('📡 Final payment confirmation response data:', data);
                 
                 if (data.success) {
-                    showSuccess(`✅ Final payment confirmed! Invoice completed and moved to orders. ${data.orderNumber ? `Order: ${data.orderNumber}` : ''}`);
-                    loadInvoices();
-                    loadInvoiceStats();
+                    const orderMessage = data.orderNumber ? ` Order created: ${data.orderNumber}` : '';
+                    showSuccess(`✅ Final payment confirmed! Invoice completed and moved to orders.${orderMessage}`);
+                    
+                    console.log('✅ Final payment confirmed successfully:', {
+                        invoiceId: invoiceId,
+                        orderNumber: data.orderNumber,
+                        orderResult: data.orderResult
+                    });
+                    
+                    // Refresh data
+                    await loadInvoices();
+                    await loadInvoiceStats();
                     
                     // If on orders tab, refresh orders too
                     if (document.querySelector('.nav-btn.active')?.textContent?.includes('Orders')) {
-                        loadOrders();
+                        await loadOrders();
+                    }
+                    
+                    // Optional: Navigate to orders section after a delay
+                    if (data.orderNumber) {
+                        setTimeout(() => {
+                            if (confirm('Would you like to view the new order?')) {
+                                document.querySelector('[data-section="orders"]')?.click();
+                            }
+                        }, 2000);
                     }
                 } else {
-                    showError('Failed to confirm final payment: ' + data.error);
+                    showError('Failed to confirm final payment: ' + (data.error || 'Unknown error'));
+                    console.error('❌ Final payment confirmation failed:', data);
                 }
             } catch (error) {
+                console.error('❌ Error confirming final payment:', error);
                 showError('Error confirming final payment: ' + error.message);
             }
         }
 
         function showFinalPaymentLink(invoiceNumber) {
             const invoice = invoices.find(inv => inv.invoice_number === invoiceNumber);
-            const invoiceUrl = `${window.location.origin}/invoice?token=${invoice.customer_token}`;
             
-            // Show modal with invoice link for final payment
+            console.log('🔗 Showing final payment link for invoice:', invoiceNumber);
+            console.log('📄 Invoice data:', invoice);
+            
+            if (!invoice) {
+                showError('Invoice not found for final payment link');
+                return;
+            }
+            
+            if (!invoice.final_payment_token) {
+                showError('Final payment token not found. Please try confirming the down payment again.');
+                return;
+            }
+            
+            const finalPaymentUrl = `${window.location.origin}/final-payment?token=${invoice.final_payment_token}`;
+            console.log('🔗 Generated final payment URL:', finalPaymentUrl);
+            
+            // Show modal with final payment link
             const modal = document.createElement('div');
             modal.className = 'modal-overlay';
             modal.innerHTML = `
@@ -5635,8 +5740,8 @@ Terima kasih! 🙏`;
                     <div class="modal-body">
                         <p>Send this invoice link to the customer for final payment:</p>
                         <div class="link-box">
-                            <input type="text" value="${invoiceUrl}" readonly onclick="this.select()" class="link-input">
-                            <button onclick="copyToClipboard('${invoiceUrl}'); showSuccess('Link copied to clipboard!')" class="btn btn-sm btn-primary">📋 Copy</button>
+                            <input type="text" value="${finalPaymentUrl}" readonly onclick="this.select()" class="link-input">
+                            <button onclick="copyToClipboard('${finalPaymentUrl}'); showSuccess('Link copied to clipboard!')" class="btn btn-sm btn-primary">📋 Copy</button>
                         </div>
                         
                         <!-- Email Section -->
