@@ -155,7 +155,7 @@ CREATE TABLE order_items (
 -- Payment Methods Table
 CREATE TABLE payment_methods (
   id SERIAL PRIMARY KEY,
-  method_type TEXT NOT NULL, -- 'bank_transfer', 'xendit', etc.
+  method_type TEXT NOT NULL UNIQUE, -- 'bank_transfer', 'xendit', etc.
   enabled BOOLEAN DEFAULT false,
   config_json JSONB, -- Store method-specific configuration
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -209,6 +209,8 @@ CREATE INDEX idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_products_sku ON products(sku);
 CREATE INDEX idx_products_active ON products(is_active);
+CREATE INDEX idx_payment_methods_method_type ON payment_methods(method_type);
+CREATE INDEX idx_payment_methods_enabled ON payment_methods(enabled);
 CREATE INDEX idx_merchants_email ON merchants(email);
 CREATE INDEX idx_merchants_status ON merchants(status);
 CREATE INDEX idx_merchants_reset_token ON merchants(reset_token);
