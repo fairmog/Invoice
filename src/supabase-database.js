@@ -516,6 +516,23 @@ class SupabaseDatabase {
     return data;
   }
 
+  async getInvoiceByFinalPaymentToken(token) {
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .select('*')
+      .eq('final_payment_token', token)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Normalize invoice items if data exists
+    if (data && data.items_json) {
+      data.items_json = this.normalizeInvoiceItems(data.items_json);
+    }
+    
+    return data;
+  }
+
   async updateInvoiceStatus(invoiceId, status) {
     const updateData = { 
       status,
