@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import nodemailer from 'nodemailer';
+import config from '../config/config.js';
 
 class SimpleEmailService {
   constructor() {
@@ -262,7 +263,7 @@ class SimpleEmailService {
   }
 
   generateInvoiceEmailHTML(invoice, businessSettings = null) {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = config.server.baseUrl;
     const invoiceUrl = `${baseUrl}/invoice?token=${invoice.customer_token}`;
     const formattedAmount = new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -690,7 +691,7 @@ class SimpleEmailService {
     const businessWebsite = businessSettings?.website || process.env.MERCHANT_WEBSITE || '';
     
     // Construct absolute logo URL for email clients
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = config.server.baseUrl;
     let businessLogo = null;
     const logoPath = businessSettings?.logo;
     console.log('📧 ===== FINAL PAYMENT EMAIL LOGO DEBUG =====');
@@ -1189,7 +1190,7 @@ class SimpleEmailService {
     }
 
     try {
-      const resetUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+      const resetUrl = `${config.server.baseUrl}/auth/reset-password?token=${resetToken}`;
       
       const htmlContent = this.generatePasswordResetEmailHTML(merchantEmail, resetUrl, businessName);
 
@@ -1223,7 +1224,7 @@ class SimpleEmailService {
   }
 
   async sendMockPasswordResetEmail(merchantEmail, resetToken, businessName) {
-    const resetUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+    const resetUrl = `${config.server.baseUrl}/auth/reset-password?token=${resetToken}`;
     
     console.log('\n📧 ========== MOCK PASSWORD RESET EMAIL ==========');
     console.log(`📧 Type: Password Reset`);
@@ -1248,7 +1249,7 @@ class SimpleEmailService {
     }
 
     try {
-      const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/verify-email?token=${verificationToken}`;
+      const verificationUrl = `${config.server.baseUrl}/auth/verify-email?token=${verificationToken}`;
       
       const htmlContent = this.generateEmailVerificationHTML(merchantEmail, verificationUrl, businessName);
 
@@ -1282,7 +1283,7 @@ class SimpleEmailService {
   }
 
   async sendMockEmailVerificationEmail(merchantEmail, verificationToken, businessName) {
-    const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/auth/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${config.server.baseUrl}/auth/verify-email?token=${verificationToken}`;
     
     console.log('\n📧 ======== MOCK EMAIL VERIFICATION EMAIL ========');
     console.log(`📧 Type: Email Verification`);
