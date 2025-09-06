@@ -1749,7 +1749,7 @@ app.post('/api/final-payment/:token/payment-confirmation', upload.single('paymen
     }
     
     // Find invoice by final payment token
-    const invoice = database.data.invoices.find(i => i.final_payment_token === token);
+    const invoice = await database.getInvoiceByFinalPaymentToken(token);
     if (!invoice) {
       // Clean up uploaded file if invoice not found
       fs.unlinkSync(req.file.path);
