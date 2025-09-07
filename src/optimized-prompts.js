@@ -133,8 +133,8 @@ Return JSON only:
   generateInvoice: (orderData, merchantConfig, paymentOptions = {}) => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      // Always generate a due date - default to 30 days from today if not specified
-      const defaultDueDate = new Date(new Date(today).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      // Always generate a due date - default to same day as invoice (immediate payment expected)
+      const defaultDueDate = today; // Same as invoice date for immediate payment
       const dueDate = orderData.dueDate || merchantConfig.defaultDueDate || defaultDueDate;
       const invoiceNum = `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
       
