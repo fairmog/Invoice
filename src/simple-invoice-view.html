@@ -1622,9 +1622,9 @@
                             
                             <div class="summary-label total-label">TOTAL</div>
                             <div class="summary-value total-value">${formatCurrency(totals.grandTotal)}</div>
-                        </div>`;
-                    })()
-                    </div>
+                        </div>
+                    </div>`;
+                    })()}
 
                     <!-- Payment Schedule section -->
                     ${(() => {
@@ -2702,400 +2702,119 @@
             }
             
             // Get business settings for payment information
-            let bankInfo = '';
-            let paymentMethods = '';
-            console.log('🔧 Fetching payment methods for WhatsApp message...');
-            
-            try {
-                const response = await fetch('/api/settings/payment-methods');
-                console.log('📡 API Response status:', response.status);
+            const generatePaymentInfo = async () => {
+                let bankInfo = '';
+                let paymentMethods = '';
+                console.log('🔧 Fetching payment methods for WhatsApp message...');
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('📊 Payment methods data received:', data);
+                try {
+                    const response = await fetch('/api/settings/payment-methods');
+                    console.log('📡 API Response status:', response.status);
                     
-                    if (data.success && data.paymentMethods) {
-                        // Handle both camelCase and snake_case formats
-                        const bank = data.paymentMethods.bankTransfer || data.paymentMethods.bank_transfer;
-                        console.log('🏦 Bank transfer data:', bank);
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('📊 Payment methods data received:', data);
                         
-                        if (bank && bank.enabled) {
-                            const bankName = bank.bankName || bank.bank_name || '';
-                            const accountNumber = bank.accountNumber || bank.account_number || '';
-                            const accountHolder = bank.accountHolderName || bank.account_holder_name || '';
-                            const instructions = bank.instructions || '';
+                        if (data.success && data.paymentMethods) {
+                            // Handle both camelCase and snake_case formats
+                            const bank = data.paymentMethods.bankTransfer || data.paymentMethods.bank_transfer;
+                            console.log('🏦 Bank transfer data:', bank);
                             
-                            bankInfo = `\n💳 *PEMBAYARAN BANK TRANSFER*\nBank: ${bankName}\nNo. Rekening: ${accountNumber}\nAtas Nama: ${accountHolder}\n${instructions ? `Catatan: ${instructions}` : ''}`;
-                            console.log('✅ Bank info generated:', bankInfo);
-                        } else {
-                            console.log('❌ Bank transfer not enabled or missing');
-                        }
-                        
-                        const methods = [];
-                        if (bank && bank.enabled) methods.push('Transfer Bank');
-                        if (data.paymentMethods.xendit && data.paymentMethods.xendit.enabled) {
-                            methods.push('E-Wallet', 'Kartu Kredit');
-                        }
-                        if (methods.length > 0) {
-                            paymentMethods = `\n💸 *METODE PEMBAYARAN TERSEDIA*\n${methods.map(m => `• ${m}`).join('\n')}`;
-                            console.log('✅ Payment methods list generated:', paymentMethods);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('❌ Error fetching payment methods for WhatsApp message:', error);
-            }
-            
-            // Fallback bank info if API fails
-            if (!bankInfo) {
-                console.log('🔄 No bank info found, applying static fallback...');
-                bankInfo = `\n💳 *PEMBAYARAN BANK TRANSFER*\nBank: BCA\nNo. Rekening: 4800273949\nAtas Nama: Fairtel Mong\n`;
-                paymentMethods = `\n💸 *METODE PEMBAYARAN TERSEDIA*\n• Transfer Bank\n• E-Wallet\n• Kartu Kredit`;
-                console.log('✅ Static fallback bank info applied:', bankInfo);
-            }
-            
-            // Format items list with proper field name handling
-            let itemsList = '';
-            if (items.length > 0) {
-                itemsList = items.map((item, index) => {
-                    const qty = item.quantity || 0;
-                    const price = item.unit_price || item.unitPrice || 0;
-                    const total = item.line_total || item.lineTotal || (qty * price);
-                    const productName = item.product_name || item.productName || 'Produk';
-                    return `${index + 1}. ${productName}\n   ${qty}x @ Rp ${price.toLocaleString('id-ID')} = Rp ${total.toLocaleString('id-ID')}`;
-                }).join('\n\n');
-            }
-            
-            // Check for payment schedule with proper date formatting
-            let paymentSchedule = '';
-            try {
-                if (invoice.payment_schedule_json) {
-                    const schedule = JSON.parse(invoice.payment_schedule_json);
-                    if (schedule && schedule.scheduleType === 'down_payment') {
-                        const dp = schedule.downPayment;
-                        const remaining = schedule.remainingBalance;
-                        if (dp && remaining) {
-                            // Format DP date
-                            const dpDate = dp.dueDate ? new Date(dp.dueDate).toLocaleDateString('id-ID') : 'Segera';
-                            // Format final payment date
-                            const finalDate = remaining.dueDate ? new Date(remaining.dueDate).toLocaleDateString('id-ID') : (dueDate || 'Sesuai kesepakatan');
+                            if (bank && bank.enabled) {
+                                const bankName = bank.bankName || bank.bank_name || '';
+                                const accountNumber = bank.accountNumber || bank.account_number || '';
+                                const accountHolder = bank.accountHolderName || bank.account_holder_name || '';
+                                const instructions = bank.instructions || '';
+                                
+                                bankInfo = `\n💳 *PEMBAYARAN BANK TRANSFER*\nBank: ${bankName}\nNo. Rekening: ${accountNumber}\nAtas Nama: ${accountHolder}\n${instructions ? `Catatan: ${instructions}` : ''}`;
+                                console.log('✅ Bank info generated:', bankInfo);
+                            } else {
+                                console.log('❌ Bank transfer not enabled or missing');
+                            }
                             
-                            paymentSchedule = `\n📅 *JADWAL PEMBAYARAN*\n• DP (${dp.percentage}%): Rp ${dp.amount.toLocaleString('id-ID')} - Jatuh tempo: ${dpDate}\n• Pelunasan: Rp ${remaining.amount.toLocaleString('id-ID')} - Jatuh tempo: ${finalDate}`;
+                            const methods = [];
+                            if (bank && bank.enabled) methods.push('Transfer Bank');
+                            if (data.paymentMethods.xendit && data.paymentMethods.xendit.enabled) {
+                                methods.push('E-Wallet', 'Kartu Kredit');
+                            }
+                            if (methods.length > 0) {
+                                paymentMethods = `\n📱 *METODE PEMBAYARAN:* ${methods.join(', ')}`;
+                            }
                         }
                     }
-                }
-            } catch (error) {
-                console.log('No payment schedule found');
-            }
-            
-            // Get notes
-            let notes = '';
-            try {
-                if (invoice.notes_json) {
-                    const notesData = JSON.parse(invoice.notes_json);
-                    if (notesData && notesData.publicNotes) {
-                        notes = `\n📝 *CATATAN*\n${notesData.publicNotes}`;
-                    }
-                }
-            } catch (error) {
-                console.log('No notes found');
-            }
-            
-            // Create invoice URL
-            const invoiceUrl = window.location.href;
-            
-            // Format comprehensive WhatsApp message
-            const message = `🧾 *FAKTUR #${invoiceNumber}*
-
-*DARI:* ${businessName}
-*KEPADA:* ${customerName}
-
-👤 *MOHON KONFIRMASI DATA ANDA:*
-📱 Telepon: ${customerPhone}
-📍 Alamat: ${customerAddress}
-${customerPhone || customerAddress ? '\n*Jika ada yang salah, silakan beritahu kami.*' : '\n*Silakan berikan no. telepon dan alamat lengkap Anda.*'}
-
-🛒 *DETAIL PEMBELIAN:*${itemsList ? `\n${itemsList}` : '\nTidak ada detail item'}
-
-💰 *RINGKASAN BIAYA:*
-• Subtotal: Rp ${subtotal.toLocaleString('id-ID')}${discount > 0 ? `\n• Diskon: -Rp ${discount.toLocaleString('id-ID')}` : ''}${shippingCost > 0 ? `\n• Ongkos Kirim: Rp ${shippingCost.toLocaleString('id-ID')}` : ''}
-• *TOTAL: Rp ${total.toLocaleString('id-ID')}*${paymentSchedule}${bankInfo}${paymentMethods}${notes}
-
-📋 *LIHAT FAKTUR LENGKAP:*
-${invoiceUrl}
-
-Terima kasih! 🙏`;
-            
-            console.log('📱 Final WhatsApp message generated:', message);
-            
-            // Open WhatsApp with the message
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-
-        // ============================================================================
-        // MOBILE INVOICE VIEW ZOOM & PAN FUNCTIONALITY
-        // ============================================================================
-
-        let currentScale = 1.0;
-        let initialScale = 0.45;
-        let minScale = 0.2;
-        let maxScale = 3.0;
-        let zoomIndicatorTimeout;
-        let isMobile = window.innerWidth <= 768;
-        let isDragging = false;
-        let startX, startY, scrollLeft, scrollTop;
-
-        // Initialize mobile zoom functionality when invoice is loaded
-        function initializeMobileZoom() {
-            if (!isMobile) return;
-
-            const container = document.getElementById('main-container');
-            const mobileControls = document.getElementById('mobile-zoom-controls');
-            
-            if (!container || !mobileControls) return;
-
-            // Calculate initial scale to fit A4 in mobile screen
-            const containerWidth = container.clientWidth - 16;
-            const a4WidthPx = 794; // 210mm in pixels at 96 DPI
-            initialScale = Math.max(containerWidth / a4WidthPx, 0.25);
-            currentScale = initialScale;
-
-            // Set CSS custom property for mobile scaling
-            document.documentElement.style.setProperty('--mobile-scale-factor', currentScale);
-
-            // Show mobile zoom controls
-            mobileControls.style.display = 'flex';
-
-            // Update zoom indicator
-            updateZoomIndicator();
-
-            // Add touch gesture support
-            addTouchGestureSupport();
-
-            // Add pan support when zoomed in
-            addPanSupport();
-
-            console.log('📱 Mobile zoom initialized for customer view', {
-                initialScale: initialScale,
-                containerWidth: containerWidth,
-                a4Width: a4WidthPx
-            });
-        }
-
-        // Adjust zoom level
-        function adjustZoom(delta) {
-            const newScale = Math.max(minScale, Math.min(maxScale, currentScale + delta));
-            
-            if (newScale !== currentScale) {
-                currentScale = newScale;
-                applyZoom();
-            }
-        }
-
-        // Fit invoice to screen width
-        function fitToScreen() {
-            const container = document.getElementById('main-container');
-            const containerWidth = container.clientWidth - 16;
-            const a4WidthPx = 794;
-            
-            currentScale = Math.max(containerWidth / a4WidthPx, 0.25);
-            applyZoom();
-        }
-
-        // Apply current zoom level
-        function applyZoom() {
-            document.documentElement.style.setProperty('--mobile-scale-factor', currentScale);
-            updateZoomIndicator();
-            
-            const panIndicator = document.getElementById('pan-indicator');
-            if (currentScale > initialScale + 0.1) {
-                panIndicator.classList.add('show');
-            } else {
-                panIndicator.classList.remove('show');
-            }
-        }
-
-        // Update zoom indicator
-        function updateZoomIndicator() {
-            const indicator = document.getElementById('zoom-indicator');
-            if (indicator) {
-                indicator.textContent = Math.round(currentScale * 100) + '%';
-                indicator.classList.add('show');
-                
-                // Hide after 2 seconds
-                clearTimeout(zoomIndicatorTimeout);
-                zoomIndicatorTimeout = setTimeout(() => {
-                    indicator.classList.remove('show');
-                }, 2000);
-            }
-        }
-
-        // Add touch gesture support for pinch-zoom and double-tap
-        function addTouchGestureSupport() {
-            const container = document.getElementById('main-container');
-            if (!container) return;
-
-            let lastTouchDistance = 0;
-            let lastTapTime = 0;
-            let touchStartScale = currentScale;
-
-            // Pinch-to-zoom
-            container.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const touch1 = e.touches[0];
-                    const touch2 = e.touches[1];
-                    lastTouchDistance = Math.hypot(
-                        touch1.clientX - touch2.clientX,
-                        touch1.clientY - touch2.clientY
-                    );
-                    touchStartScale = currentScale;
-                }
-                
-                // Double-tap detection
-                if (e.touches.length === 1) {
-                    const currentTime = new Date().getTime();
-                    const tapGap = currentTime - lastTapTime;
                     
-                    if (tapGap < 300 && tapGap > 0) {
-                        e.preventDefault();
-                        // Double-tap: toggle between fit-to-screen and 2x zoom
-                        if (Math.abs(currentScale - initialScale) < 0.05) {
-                            currentScale = Math.min(initialScale * 2.5, maxScale);
-                        } else {
-                            currentScale = initialScale;
-                        }
-                        applyZoom();
-                    }
-                    lastTapTime = currentTime;
+                    return paymentMethods + bankInfo;
+                } catch (error) {
+                    console.error('❌ Error fetching payment methods:', error);
+                    return '';
                 }
-            }, { passive: false });
+            };
 
-            container.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const touch1 = e.touches[0];
-                    const touch2 = e.touches[1];
-                    const currentDistance = Math.hypot(
-                        touch1.clientX - touch2.clientX,
-                        touch1.clientY - touch2.clientY
-                    );
+            // Complete WhatsApp message generation
+            const paymentInfo = await generatePaymentInfo();
+            
+            const whatsappMessage = `📋 *INVOICE ${invoiceNumber}*
+
+🏢 *${businessName}*
+📅 Tanggal: ${invoiceDate}
+${dueDate ? `⏰ Jatuh Tempo: ${formatDate(dueDate)}` : ''}
+
+👤 *Pelanggan:*
+${customerName}
+${customerPhone ? `📱 ${customerPhone}` : ''}
+${customerAddress ? `📍 ${customerAddress}` : ''}
+
+📦 *Detail Pesanan:*
+${items.map(item => `• ${item.description || item.name || 'Item'} - ${formatCurrency(item.lineTotal || item.total || 0)}`).join('\n')}
+
+💰 *Ringkasan:*
+Subtotal: ${formatCurrency(subtotal)}
+${discount > 0 ? `Diskon: -${formatCurrency(discount)}` : ''}
+${shippingCost > 0 ? `Biaya Kirim: ${formatCurrency(shippingCost)}` : ''}
+*TOTAL: ${formatCurrency(total)}*
+
+${paymentInfo}
+
+Terima kasih atas kepercayaan Anda! 🙏`;
+
+                return whatsappMessage;
+            }
+
+            // Initialize the page
+            async function initializePage() {
+                try {
+                    console.log('🚀 Initializing invoice view page...');
                     
-                    if (lastTouchDistance > 0) {
-                        const scale = touchStartScale * (currentDistance / lastTouchDistance);
-                        currentScale = Math.max(minScale, Math.min(maxScale, scale));
-                        applyZoom();
+                    // Get invoice ID from URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const invoiceId = urlParams.get('id');
+                    
+                    if (!invoiceId) {
+                        throw new Error('Invoice ID not provided');
                     }
-                }
-            }, { passive: false });
-
-            container.addEventListener('touchend', (e) => {
-                if (e.touches.length < 2) {
-                    lastTouchDistance = 0;
-                }
-            });
-        }
-
-        // Add pan support when zoomed in
-        function addPanSupport() {
-            const container = document.getElementById('main-container');
-            if (!container) return;
-
-            // Mouse events for testing
-            container.addEventListener('mousedown', startDrag);
-            container.addEventListener('mousemove', doDrag);
-            container.addEventListener('mouseup', endDrag);
-            container.addEventListener('mouseleave', endDrag);
-
-            // Touch events
-            container.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1 && currentScale > initialScale + 0.1) {
-                    startDrag(e.touches[0]);
-                }
-            });
-            
-            container.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1 && isDragging) {
-                    e.preventDefault();
-                    doDrag(e.touches[0]);
-                }
-            }, { passive: false });
-            
-            container.addEventListener('touchend', endDrag);
-
-            function startDrag(e) {
-                if (currentScale <= initialScale + 0.1) return;
-                
-                isDragging = true;
-                startX = e.clientX - container.offsetLeft;
-                startY = e.clientY - container.offsetTop;
-                scrollLeft = container.scrollLeft;
-                scrollTop = container.scrollTop;
-                
-                container.style.cursor = 'grabbing';
-            }
-
-            function doDrag(e) {
-                if (!isDragging) return;
-                
-                e.preventDefault();
-                const x = e.clientX - container.offsetLeft;
-                const y = e.clientY - container.offsetTop;
-                const walkX = (x - startX) * 1.5;
-                const walkY = (y - startY) * 1.5;
-                
-                container.scrollLeft = scrollLeft - walkX;
-                container.scrollTop = scrollTop - walkY;
-            }
-
-            function endDrag() {
-                isDragging = false;
-                const container = document.getElementById('main-container');
-                container.style.cursor = currentScale > initialScale + 0.1 ? 'grab' : 'auto';
-            }
-        }
-
-        // Update mobile detection on window resize
-        window.addEventListener('resize', () => {
-            const wasMobile = isMobile;
-            isMobile = window.innerWidth <= 768;
-            
-            if (wasMobile !== isMobile) {
-                const mobileControls = document.getElementById('mobile-zoom-controls');
-                if (mobileControls) {
-                    mobileControls.style.display = isMobile ? 'flex' : 'none';
-                }
-                
-                if (isMobile) {
-                    initializeMobileZoom();
-                } else {
-                    // Reset to desktop styles
-                    document.documentElement.style.setProperty('--mobile-scale-factor', '1');
-                    currentScale = 1.0;
+                    
+                    console.log('📋 Loading invoice:', invoiceId);
+                    await loadInvoice(invoiceId);
+                    
+                } catch (error) {
+                    console.error('❌ Error initializing page:', error);
+                    document.body.innerHTML = `
+                        <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+                            <h2 style="color: #e53e3e;">Error Loading Invoice</h2>
+                            <p style="color: #666;">${error.message}</p>
+                            <button onclick="window.location.reload()" style="padding: 10px 20px; background: #3182ce; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                Try Again
+                            </button>
+                        </div>
+                    `;
                 }
             }
-        });
 
-        // Initialize mobile zoom after invoice is loaded
-        function initializeMobileZoomAfterLoad() {
-            setTimeout(() => {
-                initializeMobileZoom();
-            }, 100);
-        }
+            // Start the application
+            document.addEventListener('DOMContentLoaded', initializePage);
 
-        // Hook into existing displayInvoice function
-        const originalDisplayInvoice = displayInvoice;
-        displayInvoice = function(invoice) {
-            const result = originalDisplayInvoice(invoice);
-            initializeMobileZoomAfterLoad();
-            return result;
-        };
-
-        console.log('📱 Customer invoice mobile zoom functionality loaded');
-
-        // Load invoice when page loads
-        loadInvoice();
+        // Initialize when DOM is loaded
+        // document.addEventListener('DOMContentLoaded', initializePage);
     </script>
 </body>
 </html>
