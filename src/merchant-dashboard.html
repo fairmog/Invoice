@@ -3090,15 +3090,63 @@
 
         function calculateOrderStatsFromData() {
             if (!orders || orders.length === 0) {
+                console.log('📊 No orders data available for stats calculation');
                 return;
             }
+
+            console.log('📊 Calculating order stats from', orders.length, 'orders');
+
+            // Improved total value calculation with multiple field fallbacks and validation
+            let totalValue = 0;
+            let processedOrders = 0;
+            let skippedOrders = 0;
+            
+            const totalOrderValue = orders.reduce((sum, order, index) => {
+                // Try multiple field names and parsing approaches
+                let orderAmount = 0;
+                
+                // Primary field attempts with validation
+                if (order.total_amount !== undefined && order.total_amount !== null) {
+                    orderAmount = parseFloat(order.total_amount) || 0;
+                } else if (order.grand_total !== undefined && order.grand_total !== null) {
+                    orderAmount = parseFloat(order.grand_total) || 0;
+                } else if (order.subtotal !== undefined && order.subtotal !== null) {
+                    orderAmount = parseFloat(order.subtotal) || 0;
+                } else if (order.amount !== undefined && order.amount !== null) {
+                    orderAmount = parseFloat(order.amount) || 0;
+                }
+                
+                // Validate the amount is reasonable
+                if (orderAmount > 0 && orderAmount < 1000000000) { // Less than 1B IDR seems reasonable
+                    processedOrders++;
+                    return sum + orderAmount;
+                } else {
+                    skippedOrders++;
+                    console.warn(`📊 Order ${index + 1} (ID: ${order.id}) has invalid amount:`, {
+                        total_amount: order.total_amount,
+                        grand_total: order.grand_total,
+                        subtotal: order.subtotal,
+                        amount: order.amount,
+                        calculated: orderAmount
+                    });
+                    return sum;
+                }
+            }, 0);
+
+            console.log(`📊 Order value calculation complete:`, {
+                totalOrders: orders.length,
+                processedOrders,
+                skippedOrders,
+                totalValue: totalOrderValue,
+                formatted: formatCurrency(totalOrderValue)
+            });
 
             const stats = {
                 total_orders: orders.length,
                 pending_orders: orders.filter(o => o.status === 'pending').length,
                 shipped_orders: orders.filter(o => o.status === 'shipped').length,
                 delivered_orders: orders.filter(o => o.status === 'delivered').length,
-                total_order_value: orders.reduce((sum, o) => sum + (o.total_amount || 0), 0)
+                total_order_value: totalOrderValue
             };
 
             // Update elements if they exist
@@ -3106,6 +3154,9 @@
                 const element = document.getElementById(id);
                 if (element) {
                     element.textContent = value;
+                    console.log(`📊 Updated ${id} with value:`, value);
+                } else {
+                    console.warn(`📊 Element ${id} not found`);
                 }
             };
 
@@ -5220,12 +5271,12 @@ Terima kasih! 🙏`;
             document.getElementById(`share-menu-${invoiceId}`).classList.remove('show');
         }
 
-        // Print Function - Open invoice view in new window for printing
+        // Direct Print Function - Generate and print immediately like faktur preview
         async function printInvoice(invoiceNumber) {
-            console.log('🖨️ Print function called for invoice:', invoiceNumber);
+            console.log('🖨️ Direct print function called for invoice:', invoiceNumber);
             
             try {
-                // Get the invoice by number to get the customer token
+                // Get the invoice by number
                 const invoiceResponse = await fetch(`/api/invoices/number/${invoiceNumber}`);
                 const invoiceResult = await invoiceResponse.json();
                 
@@ -5237,12 +5288,574 @@ Terima kasih! 🙏`;
                 const invoice = invoiceResult.invoice;
                 console.log('🔍 Found invoice for printing:', invoice);
                 
-                // Use the fallback print method to open in new window
-                fallbackPrintInvoice(invoice);
+                // Get business settings for consistent footer and branding
+                let businessSettings = {};
+                try {
+                    const businessResponse = await fetch('/api/business-settings');
+                    if (businessResponse.ok) {
+                        const businessData = await businessResponse.json();
+                        businessSettings = businessData.settings || businessData;
+                    }
+                } catch (error) {
+                    console.warn('Could not load business settings for printing:', error);
+                }
+                
+                // Create print-ready invoice data structure
+                const printInvoiceData = {
+                    invoice: {
+                        header: {
+                            invoiceNumber: invoice.invoice_number,
+                            invoiceDate: invoice.invoice_date,
+                            dueDate: invoice.due_date || invoice.invoice_date,
+                            status: invoice.status
+                        },
+                        merchant: {
+                            businessName: businessSettings.name || invoice.merchant_name || 'Business Name',
+                            address: businessSettings.address || invoice.merchant_address || 'Business Address',
+                            phone: businessSettings.phone || invoice.merchant_phone || 'Business Phone',
+                            email: businessSettings.email || invoice.merchant_email || 'business@email.com'
+                        },
+                        customer: {
+                            name: invoice.customer_name,
+                            phone: invoice.customer_phone || '',
+                            email: invoice.customer_email || '',
+                            address: invoice.customer_address || ''
+                        },
+                        items: Array.isArray(invoice.items_json) ? invoice.items_json : 
+                               (invoice.items_json ? JSON.parse(invoice.items_json) : []),
+                        calculations: {
+                            subtotal: invoice.subtotal || 0,
+                            totalTax: invoice.tax_amount || 0,
+                            shippingCost: invoice.shipping_cost || 0,
+                            discount: invoice.discount || 0,
+                            grandTotal: invoice.grand_total || 0,
+                            currency: 'IDR'
+                        },
+                        notes: {
+                            publicNotes: invoice.notes || '',
+                            termsAndConditions: businessSettings.termsAndConditions || 'Standard payment terms apply'
+                        }
+                    }
+                };
+                
+                // Generate and print directly
+                directPrintInvoice(printInvoiceData);
+                
             } catch (error) {
                 console.error('Error loading invoice for printing:', error);
                 alert('Error loading invoice for printing: ' + error.message);
             }
+        }
+
+        // Direct print function that generates unified invoice template
+        function directPrintInvoice(invoiceData) {
+            console.log('🖨️ Generating unified invoice template for direct printing');
+            
+            try {
+                // Generate the printable HTML using unified template
+                const printableHTML = generateUnifiedInvoiceForPrint(invoiceData);
+                
+                // Create new window and print immediately
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                if (!printWindow) {
+                    alert('Popup blocked. Please allow popups for this site and try again.');
+                    return;
+                }
+                
+                printWindow.document.write(printableHTML);
+                printWindow.document.close();
+                
+                // Wait for content to load then print immediately
+                printWindow.onload = function() {
+                    setTimeout(() => {
+                        console.log('🖨️ Triggering print dialog');
+                        printWindow.print();
+                        // Close after printing (or user cancels)
+                        setTimeout(() => {
+                            printWindow.close();
+                        }, 100);
+                    }, 250); // Small delay to ensure styles are loaded
+                };
+                
+            } catch (error) {
+                console.error('Error generating invoice for direct printing:', error);
+                alert('Error generating invoice for printing: ' + error.message);
+            }
+        }
+
+        // Generate unified invoice template for printing (simplified version)
+        function generateUnifiedInvoiceForPrint(invoiceData) {
+            const invoice = invoiceData.invoice;
+            
+            // Currency formatting function
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amount || 0).replace('IDR', 'Rp');
+            };
+            
+            // Date formatting function
+            const formatDate = (dateString) => {
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                } catch (e) {
+                    return dateString || new Date().toLocaleDateString('id-ID');
+                }
+            };
+
+            // Generate items HTML
+            const itemsHTML = invoice.items?.map((item, index) => `
+                <tr>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">${index + 1}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0;">${item.productName || item.name || 'Product'}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity || 1}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatCurrency(item.unitPrice || item.price || 0)}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600;">${formatCurrency((item.quantity || 1) * (item.unitPrice || item.price || 0))}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #666;">No items found</td></tr>';
+
+            return `
+                <!DOCTYPE html>
+                <html lang="id">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Invoice ${invoice.header?.invoiceNumber || 'Unknown'}</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        
+                        body {
+                            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+                            font-size: 14px;
+                            line-height: 1.5;
+                            color: #2d3748;
+                            background: white;
+                            margin: 0;
+                            padding: 20px;
+                        }
+                        
+                        .invoice-container {
+                            max-width: 794px;
+                            margin: 0 auto;
+                            background: white;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 8px;
+                            overflow: hidden;
+                        }
+                        
+                        .invoice-header {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 40px;
+                            padding: 24px 32px;
+                            border-bottom: 2px solid #e2e8f0;
+                        }
+                        
+                        .merchant-info h1 {
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: #1a202c;
+                            margin-bottom: 8px;
+                        }
+                        
+                        .merchant-info p {
+                            color: #718096;
+                            margin-bottom: 4px;
+                        }
+                        
+                        .invoice-meta {
+                            text-align: right;
+                        }
+                        
+                        .invoice-title {
+                            font-size: 28px;
+                            font-weight: 800;
+                            color: #2d3748;
+                            margin-bottom: 8px;
+                        }
+                        
+                        .invoice-details {
+                            color: #718096;
+                        }
+                        
+                        .invoice-details div {
+                            margin-bottom: 4px;
+                        }
+                        
+                        .customer-section {
+                            padding: 24px 32px;
+                            background: #f7fafc;
+                            border-bottom: 1px solid #e2e8f0;
+                        }
+                        
+                        .customer-title {
+                            font-size: 16px;
+                            font-weight: 600;
+                            color: #2d3748;
+                            margin-bottom: 12px;
+                        }
+                        
+                        .customer-info p {
+                            margin-bottom: 4px;
+                            color: #4a5568;
+                        }
+                        
+                        .items-section {
+                            padding: 0;
+                        }
+                        
+                        .items-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        
+                        .items-table th {
+                            background: #f7fafc;
+                            padding: 16px 8px;
+                            font-weight: 600;
+                            text-align: left;
+                            border-bottom: 2px solid #e2e8f0;
+                        }
+                        
+                        .items-table th:first-child,
+                        .items-table th:nth-child(3) { text-align: center; }
+                        
+                        .items-table th:nth-child(4),
+                        .items-table th:last-child { text-align: right; }
+                        
+                        .summary-section {
+                            padding: 24px 32px;
+                            background: #f7fafc;
+                            border-top: 2px solid #e2e8f0;
+                        }
+                        
+                        .summary-grid {
+                            display: grid;
+                            grid-template-columns: 1fr auto;
+                            gap: 20px;
+                            max-width: 400px;
+                            margin-left: auto;
+                        }
+                        
+                        .summary-row {
+                            display: contents;
+                        }
+                        
+                        .summary-label {
+                            color: #4a5568;
+                            padding: 8px 0;
+                        }
+                        
+                        .summary-value {
+                            font-weight: 600;
+                            text-align: right;
+                            padding: 8px 0;
+                        }
+                        
+                        .summary-row.total .summary-label,
+                        .summary-row.total .summary-value {
+                            font-size: 18px;
+                            font-weight: 800;
+                            color: #1a202c;
+                            border-top: 2px solid #e2e8f0;
+                            padding-top: 12px;
+                        }
+                        
+                        .footer {
+                            padding: 24px 32px;
+                            background: #2d3748;
+                            color: white;
+                        }
+                        
+                        .footer-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 40px;
+                        }
+                        
+                        .footer h4 {
+                            font-size: 14px;
+                            font-weight: 600;
+                            margin-bottom: 12px;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        }
+                        
+                        .footer p, .footer div {
+                            font-size: 13px;
+                            line-height: 1.6;
+                            opacity: 0.9;
+                        }
+                        
+                        /* Mobile responsive styles */
+                        @media screen and (max-width: 768px) {
+                            body { padding: 10px; }
+                            
+                            .invoice-container {
+                                border-radius: 4px;
+                            }
+                            
+                            .invoice-header {
+                                grid-template-columns: 1fr;
+                                gap: 20px;
+                                padding: 20px 16px;
+                                text-align: left;
+                            }
+                            
+                            .invoice-meta {
+                                text-align: left;
+                            }
+                            
+                            .invoice-title {
+                                font-size: 24px;
+                            }
+                            
+                            .customer-section {
+                                padding: 20px 16px;
+                            }
+                            
+                            .items-table th,
+                            .items-table td {
+                                padding: 8px 4px;
+                                font-size: 12px;
+                            }
+                            
+                            .items-table th:first-child,
+                            .items-table td:first-child {
+                                width: 30px;
+                            }
+                            
+                            .items-table th:nth-child(3),
+                            .items-table td:nth-child(3) {
+                                width: 50px;
+                            }
+                            
+                            .items-table th:nth-child(4),
+                            .items-table td:nth-child(4),
+                            .items-table th:last-child,
+                            .items-table td:last-child {
+                                width: 80px;
+                            }
+                            
+                            .summary-section {
+                                padding: 20px 16px;
+                            }
+                            
+                            .footer {
+                                padding: 20px 16px;
+                            }
+                            
+                            .footer-grid {
+                                grid-template-columns: 1fr;
+                                gap: 20px;
+                            }
+                        }
+
+                        /* Print-specific styles for all devices */
+                        @media print {
+                            body { 
+                                padding: 0; 
+                                background: white;
+                                font-size: 12px;
+                            }
+                            
+                            .invoice-container { 
+                                border: none; 
+                                border-radius: 0; 
+                                box-shadow: none; 
+                                max-width: none;
+                                width: 100%;
+                                margin: 0;
+                            }
+                            
+                            .invoice-header {
+                                page-break-after: avoid;
+                                padding: 15px 20px;
+                            }
+                            
+                            .customer-section {
+                                page-break-after: avoid;
+                                padding: 15px 20px;
+                            }
+                            
+                            .items-section {
+                                page-break-inside: avoid;
+                            }
+                            
+                            .items-table {
+                                page-break-inside: auto;
+                            }
+                            
+                            .items-table tr {
+                                page-break-inside: avoid;
+                                page-break-after: auto;
+                            }
+                            
+                            .summary-section {
+                                page-break-before: avoid;
+                                padding: 15px 20px;
+                            }
+                            
+                            .footer {
+                                page-break-before: avoid;
+                                padding: 15px 20px;
+                                background: #2d3748 !important;
+                                color: white !important;
+                                -webkit-print-color-adjust: exact;
+                                color-adjust: exact;
+                            }
+                        }
+
+                        /* Mobile print-specific styles */
+                        @media print and (max-width: 768px) {
+                            .invoice-header {
+                                grid-template-columns: 1fr;
+                                gap: 15px;
+                                padding: 10px 15px;
+                            }
+                            
+                            .invoice-meta {
+                                text-align: left;
+                                margin-top: 10px;
+                            }
+                            
+                            .invoice-title {
+                                font-size: 20px;
+                            }
+                            
+                            .customer-section,
+                            .summary-section,
+                            .footer {
+                                padding: 10px 15px;
+                            }
+                            
+                            .items-table {
+                                font-size: 10px;
+                            }
+                            
+                            .items-table th,
+                            .items-table td {
+                                padding: 6px 3px;
+                            }
+                            
+                            .footer-grid {
+                                grid-template-columns: 1fr;
+                                gap: 15px;
+                            }
+                            
+                            .footer h4 {
+                                font-size: 12px;
+                            }
+                            
+                            .footer p, 
+                            .footer div {
+                                font-size: 11px;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-container">
+                        <div class="invoice-header">
+                            <div class="merchant-info">
+                                <h1>${invoice.merchant?.businessName || 'Business Name'}</h1>
+                                <p>${invoice.merchant?.address || 'Business Address'}</p>
+                                <p>📞 ${invoice.merchant?.phone || 'Business Phone'}</p>
+                                <p>📧 ${invoice.merchant?.email || 'business@email.com'}</p>
+                            </div>
+                            <div class="invoice-meta">
+                                <h1 class="invoice-title">FAKTUR</h1>
+                                <div class="invoice-details">
+                                    <div><strong>No:</strong> ${invoice.header?.invoiceNumber || 'INV-UNKNOWN'}</div>
+                                    <div><strong>Tanggal:</strong> ${formatDate(invoice.header?.invoiceDate)}</div>
+                                    <div><strong>Jatuh Tempo:</strong> ${formatDate(invoice.header?.dueDate)}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="customer-section">
+                            <div class="customer-title">Kepada:</div>
+                            <div class="customer-info">
+                                <p><strong>${invoice.customer?.name || 'Customer'}</strong></p>
+                                ${invoice.customer?.phone ? `<p>📞 ${invoice.customer.phone}</p>` : ''}
+                                ${invoice.customer?.email ? `<p>📧 ${invoice.customer.email}</p>` : ''}
+                                ${invoice.customer?.address ? `<p>${invoice.customer.address}</p>` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="items-section">
+                            <table class="items-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">#</th>
+                                        <th>Nama Produk/Jasa</th>
+                                        <th style="width: 100px;">Qty</th>
+                                        <th style="width: 120px;">Harga Satuan</th>
+                                        <th style="width: 120px;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <div class="summary-grid">
+                                <div class="summary-row">
+                                    <div class="summary-label">Subtotal:</div>
+                                    <div class="summary-value">${formatCurrency(invoice.calculations?.subtotal || 0)}</div>
+                                </div>
+                                ${invoice.calculations?.totalTax > 0 ? `
+                                <div class="summary-row">
+                                    <div class="summary-label">Pajak:</div>
+                                    <div class="summary-value">${formatCurrency(invoice.calculations.totalTax)}</div>
+                                </div>
+                                ` : ''}
+                                ${invoice.calculations?.shippingCost > 0 ? `
+                                <div class="summary-row">
+                                    <div class="summary-label">Ongkir:</div>
+                                    <div class="summary-value">${formatCurrency(invoice.calculations.shippingCost)}</div>
+                                </div>
+                                ` : ''}
+                                ${invoice.calculations?.discount > 0 ? `
+                                <div class="summary-row">
+                                    <div class="summary-label">Diskon:</div>
+                                    <div class="summary-value">-${formatCurrency(invoice.calculations.discount)}</div>
+                                </div>
+                                ` : ''}
+                                <div class="summary-row total">
+                                    <div class="summary-label">TOTAL:</div>
+                                    <div class="summary-value">${formatCurrency(invoice.calculations?.grandTotal || 0)}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="footer">
+                            <div class="footer-grid">
+                                <div>
+                                    <h4>Syarat & Ketentuan</h4>
+                                    <p>${invoice.notes?.termsAndConditions || 'Pembayaran segera setelah penerimaan faktur'}</p>
+                                </div>
+                                <div>
+                                    <h4>Kontak</h4>
+                                    <div>📞 ${invoice.merchant?.phone || 'Business Phone'}</div>
+                                    <div>📧 ${invoice.merchant?.email || 'business@email.com'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
         }
 
         // Payment Confirmation Functions
@@ -6299,10 +6912,84 @@ Terima kasih! 🙏`;
                             margin-top: 5px;
                         }
                         
+                        /* Mobile thermal ticket adjustments */
+                        @media screen and (max-width: 768px) {
+                            body {
+                                width: 100%;
+                                max-width: 100%;
+                                padding: 0.1cm;
+                                font-size: 9px;
+                            }
+                            
+                            .thermal-ticket {
+                                border-width: 1px;
+                                padding: 8px;
+                            }
+                            
+                            .thermal-title {
+                                font-size: 12px;
+                            }
+                            
+                            .thermal-section h4 {
+                                font-size: 9px;
+                            }
+                            
+                            .thermal-row {
+                                flex-direction: column;
+                                gap: 2px;
+                            }
+                            
+                            .thermal-total {
+                                font-size: 10px;
+                            }
+                        }
+
                         @media print {
                             body {
                                 margin: 0 !important;
                                 padding: 0 !important;
+                                width: 9.6cm;
+                            }
+                            
+                            .thermal-ticket {
+                                page-break-inside: avoid;
+                            }
+                        }
+                        
+                        /* Mobile print-specific adjustments */
+                        @media print and (max-width: 768px) {
+                            body {
+                                width: 100% !important;
+                                max-width: 100% !important;
+                                font-size: 8px;
+                            }
+                            
+                            .thermal-ticket {
+                                width: 100%;
+                                max-width: 100%;
+                                border-width: 1px;
+                                padding: 6px;
+                                margin: 0;
+                            }
+                            
+                            .thermal-title {
+                                font-size: 11px;
+                            }
+                            
+                            .thermal-subtitle {
+                                font-size: 8px;
+                            }
+                            
+                            .thermal-section h4 {
+                                font-size: 8px;
+                            }
+                            
+                            .thermal-row {
+                                font-size: 7px;
+                            }
+                            
+                            .thermal-total {
+                                font-size: 9px;
                             }
                         }
                     </style>
