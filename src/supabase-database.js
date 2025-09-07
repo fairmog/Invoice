@@ -337,6 +337,59 @@ class SupabaseDatabase {
       const invoice = invoiceData.invoice || invoiceData;
       const invoiceNumber = await this.generateInvoiceNumber();
       
+      // === ENHANCED DATA VALIDATION AND CALCULATION FIXES ===
+      console.log('🔧 Validating and fixing invoice data before save...');
+      
+      // Fix 1: Ensure due date is properly set
+      if (!invoice.header) invoice.header = {};
+      if (!invoice.header.dueDate || invoice.header.dueDate === '') {
+        const invoiceDate = new Date(invoice.header.invoiceDate || Date.now());
+        const dueDate = new Date(invoiceDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days later
+        invoice.header.dueDate = dueDate.toISOString().split('T')[0];
+        console.log('🗓️ Generated due date:', invoice.header.dueDate);
+      }
+      
+      // Fix 2: Recalculate subtotal from items to match validation expectations
+      if (invoice.items && Array.isArray(invoice.items)) {
+        let calculatedSubtotal = 0;
+        invoice.items.forEach((item, index) => {
+          const quantity = parseFloat(item.quantity || 0);
+          const unitPrice = parseFloat(item.unitPrice || item.unit_price || 0);
+          const lineTotal = quantity * unitPrice;
+          calculatedSubtotal += lineTotal;
+          
+          // Ensure item has consistent structure
+          item.lineTotal = lineTotal;
+          console.log(`📊 Item ${index + 1}: ${quantity} × ${unitPrice} = ${lineTotal}`);
+        });
+        
+        // Update calculations object
+        if (!invoice.calculations) invoice.calculations = {};
+        invoice.calculations.subtotal = calculatedSubtotal;
+        console.log('💰 Calculated subtotal from items:', calculatedSubtotal);
+      }
+      
+      // Fix 3: Ensure proper tax calculation
+      if (!invoice.calculations) invoice.calculations = {};
+      const subtotal = parseFloat(invoice.calculations.subtotal || 0);
+      const taxRate = parseFloat(invoice.calculations.taxRate || 0);
+      const calculatedTax = subtotal * (taxRate / 100);
+      invoice.calculations.totalTax = calculatedTax;
+      
+      // Fix 4: Recalculate grand total
+      const shippingCost = parseFloat(invoice.calculations.shippingCost || 0);
+      const discount = parseFloat(invoice.calculations.discount || 0);
+      const grandTotal = subtotal + calculatedTax + shippingCost - discount;
+      invoice.calculations.grandTotal = grandTotal;
+      
+      console.log('🧮 Final calculations:', {
+        subtotal,
+        tax: calculatedTax,
+        shipping: shippingCost,
+        discount,
+        grandTotal
+      });
+      
       if (!invoice || !invoice.customer) {
         throw new Error('Invoice data or customer information is missing');
       }
@@ -366,17 +419,17 @@ class SupabaseDatabase {
         merchant_phone: invoice.merchant?.phone || invoice.businessProfile?.phone || '',
         merchant_email: invoice.merchant?.email || invoice.businessProfile?.email || '',
         invoice_date: invoice.header?.invoiceDate || new Date().toISOString().split('T')[0],
-        due_date: invoice.header?.dueDate || new Date().toISOString().split('T')[0],
-        original_due_date: invoice.header?.dueDate || new Date().toISOString().split('T')[0],
+        due_date: invoice.header.dueDate, // Now guaranteed to have value from validation above
+        original_due_date: invoice.header.dueDate,
         status: 'draft',
         payment_stage: invoice.paymentSchedule ? 'down_payment' : 'full_payment',
         payment_status: 'pending',
-        subtotal: parseFloat(invoice.calculations?.subtotal || invoice.summary?.subtotal || 0),
-        tax_amount: parseFloat(invoice.calculations?.totalTax || invoice.summary?.tax_amount || 0),
-        shipping_cost: parseFloat(invoice.calculations?.shippingCost || invoice.summary?.shipping_cost || 0),
-        discount: parseFloat(invoice.calculations?.discount || invoice.summary?.discount || 0),
-        discount_amount: parseFloat(invoice.calculations?.discount || invoice.summary?.discount || 0),
-        grand_total: parseFloat(invoice.calculations?.grandTotal || invoice.summary?.grand_total || 0),
+        subtotal: invoice.calculations.subtotal, // Using validated/corrected values
+        tax_amount: invoice.calculations.totalTax,
+        shipping_cost: invoice.calculations.shippingCost || 0,
+        discount: invoice.calculations.discount || 0,
+        discount_amount: invoice.calculations.discount || 0,
+        grand_total: invoice.calculations.grandTotal, // Using corrected grand total
         currency: invoice.calculations?.currency || invoice.summary?.currency || 'IDR',
         payment_terms: invoice.payment?.paymentTerms || 'Net 30',
         notes: invoice.notes?.publicNotes || '',
