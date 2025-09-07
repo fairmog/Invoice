@@ -1106,31 +1106,45 @@
                     }
                 }
                 
-                // If still no logo found, try to load from business settings API
-                if (!businessLogo || businessLogo === '') {
-                    console.log('🔧 Trying business settings API fallback for logo...');
-                    // Use Promise-based approach since this function is not async
-                    fetch('/api/business-settings')
-                        .then(response => {
-                            if (response.ok) {
-                                return response.json();
-                            }
-                            throw new Error('Failed to fetch business settings');
-                        })
-                        .then(settings => {
-                            if (settings.logoUrl) {
-                                businessLogo = settings.logoUrl;
-                                console.log('✅ Found logo in business settings:', businessLogo);
-                                // Update the logo in the already rendered template
-                                updateLogoInTemplate(businessLogo);
-                            } else {
-                                console.log('❌ No logo found in business settings');
-                            }
-                        })
-                        .catch(settingsError => {
-                            console.log('❌ Error loading business settings:', settingsError);
-                        });
-                }
+                // Always fetch business settings as single source of truth
+                console.log('🔧 Loading business settings as single source of truth...');
+                // Use Promise-based approach since this function is not async
+                fetch('/api/business-settings')
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('Failed to fetch business settings');
+                    })
+                    .then(settings => {
+                        console.log('✅ Business settings loaded:', settings);
+                        
+                        // Update business logo from settings (single source of truth)
+                        if (settings.logoUrl) {
+                            businessLogo = settings.logoUrl;
+                            console.log('✅ Using logo from business settings:', businessLogo);
+                            updateLogoInTemplate(businessLogo);
+                        }
+                        
+                        // Update business profile from settings (override localStorage/metadata)
+                        const apiBusinessProfile = {
+                            name: settings.name || (businessProfile ? businessProfile.name : null),
+                            email: settings.email || (businessProfile ? businessProfile.email : null),
+                            phone: settings.phone || (businessProfile ? businessProfile.phone : null),
+                            address: settings.address || (businessProfile ? businessProfile.address : null),
+                            website: settings.website || (businessProfile ? businessProfile.website : null),
+                            termsAndConditions: settings.termsAndConditions || (businessProfile ? businessProfile.termsAndConditions : null),
+                            category: settings.category || (businessProfile ? businessProfile.category : 'general'),
+                            logoUrl: settings.logoUrl || businessLogo
+                        };
+                        
+                        // Update contact information and terms in footer
+                        updateFooterFromBusinessSettings(apiBusinessProfile);
+                        console.log('✅ Footer updated with business settings');
+                    })
+                    .catch(settingsError => {
+                        console.log('❌ Error loading business settings, using fallback data:', settingsError);
+                    });
             } catch(e) {
                 // Fallback to general if no metadata
                 console.error('❌ Error parsing invoice metadata:', e);
@@ -1796,6 +1810,44 @@
             }
         }
 
+        function updateFooterFromBusinessSettings(businessSettings) {
+            try {
+                console.log('🔄 Updating footer with business settings:', businessSettings);
+                
+                // Update terms and conditions
+                const termsSection = document.querySelector('.footer-section p');
+                if (termsSection && businessSettings.termsAndConditions) {
+                    termsSection.textContent = businessSettings.termsAndConditions;
+                    console.log('✅ Terms updated:', businessSettings.termsAndConditions);
+                }
+                
+                // Update contact information
+                const contactList = document.querySelector('.footer-section ul');
+                if (contactList && businessSettings) {
+                    const phone = businessSettings.phone || '-';
+                    const email = businessSettings.email || '-';
+                    const website = businessSettings.website || '';
+                    
+                    contactList.innerHTML = `
+                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                            <span style="opacity: 0.7;">📞</span>
+                            ${phone}
+                        </li>
+                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                            <span style="opacity: 0.7;">📧</span>
+                            ${email}
+                        </li>
+                        ${website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${website}</li>` : ''}
+                    `;
+                    console.log('✅ Contact information updated:', { phone, email, website });
+                }
+                
+                console.log('✅ Footer successfully updated with business settings');
+            } catch (error) {
+                console.error('❌ Error updating footer from business settings:', error);
+            }
+        }
+
         // Generate payment schedule breakdown for online payment section
         function generatePaymentScheduleBreakdown(invoice, paymentInfo, formatCurrency) {
             try {
@@ -2453,7 +2505,47 @@
             } catch (error) {
                 console.error('Error uploading payment confirmation:', error);
                 statusDiv.className = 'payment-status error';
-                statusDiv.textContent = '❌ Gagal mengupload bukti pembayaran: ' + error.message;
+                
+                // Provide user-friendly error messages
+                let errorMessage = 'Gagal mengupload bukti pembayaran';
+                
+                if (error.message.includes('500')) {
+                    errorMessage = 'Server mengalami masalah. Silakan coba lagi dalam beberapa saat atau hubungi customer service.';
+                } else if (error.message.includes('404')) {
+                    errorMessage = 'Invoice tidak ditemukan. Silakan periksa kembali link invoice Anda.';
+                } else if (error.message.includes('400')) {
+                    errorMessage = 'File yang diupload tidak valid. Pastikan file berformat gambar (JPG, PNG) atau PDF.';
+                } else if (error.message.includes('Database schema issue')) {
+                    errorMessage = 'Sistem sedang dalam maintenance. Silakan coba lagi nanti atau hubungi customer service.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Koneksi timeout. Silakan periksa koneksi internet dan coba lagi.';
+                } else if (error.message.includes('Network')) {
+                    errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+                } else if (error.message) {
+                    // Use the server's error message if it's user-friendly
+                    errorMessage = error.message;
+                }
+                
+                statusDiv.innerHTML = `
+                    <div style="margin-bottom: 15px;">❌ ${errorMessage}</div>
+                    <button onclick="location.reload()" style="
+                        background: var(--primary-purple); 
+                        color: white; 
+                        border: none; 
+                        padding: 8px 16px; 
+                        border-radius: 4px; 
+                        cursor: pointer;
+                        margin-right: 10px;
+                    ">🔄 Coba Lagi</button>
+                    <button onclick="window.location.href='/customer-support'" style="
+                        background: #28a745; 
+                        color: white; 
+                        border: none; 
+                        padding: 8px 16px; 
+                        border-radius: 4px; 
+                        cursor: pointer;
+                    ">💬 Customer Service</button>
+                `;
             }
         }
 
@@ -2580,12 +2672,28 @@
                 if (e.target.id === 'payment-file') {
                     const file = e.target.files[0];
                     if (file) {
+                        // Validate file type
+                        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                        if (!allowedTypes.includes(file.type)) {
+                            alert('File harus berformat gambar (JPG, PNG) atau PDF!');
+                            e.target.value = '';
+                            return;
+                        }
+                        
                         // Validate file size (10MB limit)
                         if (file.size > 10 * 1024 * 1024) {
                             alert('File terlalu besar! Maksimal 10MB.');
                             e.target.value = '';
                             return;
                         }
+                        
+                        // Additional validation for very small files (likely corrupted)
+                        if (file.size < 1024) { // Less than 1KB
+                            alert('File terlalu kecil atau rusak. Silakan pilih file yang valid.');
+                            e.target.value = '';
+                            return;
+                        }
+                        
                         previewFile(file);
                     }
                 }
