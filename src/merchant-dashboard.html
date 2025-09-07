@@ -5334,7 +5334,8 @@ Terima kasih! 🙏`;
                         notes: {
                             publicNotes: invoice.notes || '',
                             termsAndConditions: businessSettings.termsAndConditions || 'Standard payment terms apply'
-                        }
+                        },
+                        businessSettings: businessSettings
                     }
                 };
                 
@@ -5383,9 +5384,65 @@ Terima kasih! 🙏`;
             }
         }
 
-        // Generate unified invoice template for printing (simplified version)
+        // Generate unified invoice template for printing (full version matching faktur preview)
         function generateUnifiedInvoiceForPrint(invoiceData) {
             const invoice = invoiceData.invoice;
+            
+            // Get business profile data - prioritize passed business settings over localStorage
+            let businessLogo = '';
+            let businessCategory = 'general';
+            let businessTerms = 'Pembayaran dalam 30 hari';
+            let businessProfile = null;
+            
+            // First priority: Use business settings passed in with invoice data
+            if (invoice.businessSettings) {
+                businessLogo = invoice.businessSettings.logoUrl || '';
+                businessCategory = invoice.businessSettings.category || 'general';
+                businessTerms = invoice.businessSettings.termsAndConditions || 'Pembayaran dalam 30 hari';
+                console.log('🏢 Using business settings from API:', {
+                    category: businessCategory,
+                    hasLogo: !!businessLogo,
+                    termsLength: businessTerms.length
+                });
+            } else {
+                // Fallback: Try localStorage for backward compatibility
+                try {
+                    const savedProfile = localStorage.getItem('businessProfile');
+                    if (savedProfile) {
+                        businessProfile = JSON.parse(savedProfile);
+                        businessLogo = businessProfile.logo || '';
+                        businessCategory = businessProfile.category || 'general';
+                        businessTerms = businessProfile.termsAndConditions || 'Pembayaran dalam 30 hari';
+                        console.log('💾 Using business profile from localStorage (fallback)');
+                    }
+                } catch (e) {
+                    console.warn('Could not load business profile from localStorage:', e);
+                }
+            }
+            
+            // Final fallback: Use terms from invoice notes if available
+            if (businessTerms === 'Pembayaran dalam 30 hari' && invoice.notes?.termsAndConditions) {
+                businessTerms = invoice.notes.termsAndConditions;
+                console.log('📝 Using terms from invoice notes as final fallback');
+            }
+            
+            // Category-based titles (consistent with faktur preview)
+            const getCategoryTitle = (category) => {
+                const categoryTitles = {
+                    'trade': 'FAKTUR PENJUALAN',
+                    'services': 'FAKTUR JASA',
+                    'manufacturing': 'FAKTUR PRODUKSI',
+                    'logistics': 'FAKTUR PENGIRIMAN',
+                    'digital_creative': 'FAKTUR LISENSI DIGITAL',
+                    'agriculture': 'FAKTUR PERTANIAN',
+                    'construction': 'FAKTUR KONSTRUKSI',
+                    'tourism': 'FAKTUR PERHOTELAN',
+                    'general': 'FAKTUR'
+                };
+                return categoryTitles[category] || 'FAKTUR';
+            };
+            
+            const invoiceTitle = getCategoryTitle(businessCategory);
             
             // Currency formatting function
             const formatCurrency = (amount) => {
@@ -5766,13 +5823,14 @@ Terima kasih! 🙏`;
                     <div class="invoice-container">
                         <div class="invoice-header">
                             <div class="merchant-info">
+                                ${businessLogo ? `<img src="${businessLogo}" alt="Logo" style="max-height: 80px; max-width: 200px; object-fit: contain; margin-bottom: 12px; border-radius: 4px;">` : ''}
                                 <h1>${invoice.merchant?.businessName || 'Business Name'}</h1>
                                 <p>${invoice.merchant?.address || 'Business Address'}</p>
                                 <p>📞 ${invoice.merchant?.phone || 'Business Phone'}</p>
                                 <p>📧 ${invoice.merchant?.email || 'business@email.com'}</p>
                             </div>
                             <div class="invoice-meta">
-                                <h1 class="invoice-title">FAKTUR</h1>
+                                <h1 class="invoice-title">${invoiceTitle}</h1>
                                 <div class="invoice-details">
                                     <div><strong>No:</strong> ${invoice.header?.invoiceNumber || 'INV-UNKNOWN'}</div>
                                     <div><strong>Tanggal:</strong> ${formatDate(invoice.header?.invoiceDate)}</div>
@@ -5843,12 +5901,13 @@ Terima kasih! 🙏`;
                             <div class="footer-grid">
                                 <div>
                                     <h4>Syarat & Ketentuan</h4>
-                                    <p>${invoice.notes?.termsAndConditions || 'Pembayaran segera setelah penerimaan faktur'}</p>
+                                    <p>${businessTerms}</p>
                                 </div>
                                 <div>
                                     <h4>Kontak</h4>
                                     <div>📞 ${invoice.merchant?.phone || 'Business Phone'}</div>
                                     <div>📧 ${invoice.merchant?.email || 'business@email.com'}</div>
+                                    ${businessProfile?.website ? `<div>🌐 ${businessProfile.website}</div>` : ''}
                                 </div>
                             </div>
                         </div>
