@@ -104,6 +104,9 @@ CREATE TABLE invoices (
   confirmation_status TEXT,
   merchant_confirmation_notes TEXT,
   confirmation_reviewed_date TIMESTAMP WITH TIME ZONE,
+  dp_confirmed_date TIMESTAMP WITH TIME ZONE,
+  final_payment_token TEXT,
+  final_payment_amount DECIMAL(15,2),
   sent_at TIMESTAMP WITH TIME ZONE,
   paid_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -204,6 +207,10 @@ CREATE INDEX idx_invoices_number ON invoices(invoice_number);
 CREATE INDEX idx_invoices_customer_email ON invoices(customer_email);
 CREATE INDEX idx_invoices_status ON invoices(status);
 CREATE INDEX idx_invoices_date ON invoices(invoice_date);
+CREATE INDEX idx_invoices_payment_stage ON invoices(payment_stage);
+CREATE INDEX idx_invoices_payment_status ON invoices(payment_status);
+CREATE INDEX idx_invoices_final_payment_token ON invoices(final_payment_token);
+CREATE INDEX idx_invoices_dp_confirmed_date ON invoices(dp_confirmed_date);
 CREATE INDEX idx_orders_number ON orders(order_number);
 CREATE INDEX idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX idx_orders_status ON orders(status);
