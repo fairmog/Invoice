@@ -34,9 +34,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = config.server.port;
 
-// Trust proxy for Render deployment (fixes X-Forwarded-For header issues)
-app.set('trust proxy', 1);
-
 // Performance optimization: In-memory cache for frequently accessed data
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -856,7 +853,7 @@ app.get('/merchant-dashboard.html', authMiddleware.authenticateMerchant, (req, r
 });
 
 // Serve the business settings page (Protected)
-app.get('/business-settings', (req, res) => {
+app.get('/business-settings', authMiddleware.authenticateMerchant, (req, res) => {
   res.sendFile(path.join(__dirname, 'business-settings.html'));
 });
 
@@ -934,7 +931,7 @@ app.post('/api/business-profile', authMiddleware.authenticateMerchant, (req, res
 });
 
 // Business settings API endpoints
-app.get('/api/business-settings', async (req, res) => {
+app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = await database.getBusinessSettings();
     
@@ -965,7 +962,7 @@ app.get('/api/business-settings', async (req, res) => {
   }
 });
 
-app.post('/api/business-settings', async (req, res) => {
+app.post('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = req.body;
     console.log('🏢 Updating business settings:', settings);
@@ -1023,7 +1020,7 @@ app.get('/api/payment-methods', async (req, res) => {
 });
 
 // Business logo upload endpoint
-app.post('/api/upload-business-logo', logoUpload.single('logo'), async (req, res) => {
+app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoUpload.single('logo'), async (req, res) => {
   try {
     console.log('📸 Logo upload request received for merchant:', req.merchant?.id);
     
@@ -1123,7 +1120,7 @@ app.post('/api/upload-business-logo', logoUpload.single('logo'), async (req, res
 });
 
 // Remove business logo endpoint
-app.delete('/api/remove-business-logo', async (req, res) => {
+app.delete('/api/remove-business-logo', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     console.log('🗑️  Logo removal request received for merchant:', req.merchant?.id);
     
@@ -1823,7 +1820,7 @@ app.post('/api/final-payment/:token/payment-confirmation', upload.single('paymen
 app.get('/api/final-payment/:token', async (req, res) => {
   try {
     const token = req.params.token;
-    const invoice = await database.getInvoiceByFinalPaymentToken(token);
+    const invoice = database.data.invoices.find(i => i.final_payment_token === token);
     
     if (!invoice) {
       return res.status(404).json({ 
@@ -2258,8 +2255,8 @@ app.post('/api/confirm-invoice', authMiddleware.authenticateMerchant, async (req
         },
         databaseId: savedInvoice.id,
         customerToken: savedInvoice.customerToken,
-        customerPortalUrl: `${config.server.baseUrl}/customer/invoice/${savedInvoice.customerToken}`,
-        customerGeneralPortalUrl: `${config.server.baseUrl}/customer`,
+        customerPortalUrl: `http://localhost:${PORT}/customer/invoice/${savedInvoice.customerToken}`,
+        customerGeneralPortalUrl: `http://localhost:${PORT}/customer`,
         // AI Auto-learning results
         autoLearning: autoLearningResults,
         newCustomerDetected: autoLearningResults?.confirmationsNeeded.some(c => c.type === 'customer') || false,
@@ -2329,7 +2326,7 @@ app.post('/api/process-message', authMiddleware.authenticateMerchant, async (req
     console.log('🔄 Redirecting to preview-only API...');
     
     // Make internal request to preview API
-    const previewResponse = await fetch(`${config.server.baseUrl}/api/preview-invoice`, {
+    const previewResponse = await fetch(`http://localhost:${PORT}/api/preview-invoice`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3250,45 +3247,10 @@ app.get('/api/invoices/:id', async (req, res) => {
         error: 'Invoice not found'
       });
     }
-
-    // Get current business settings to ensure consistent display
-    const currentBusinessSettings = await getCurrentBusinessSettings();
-    
-    // Enhance invoice with business settings for consistent template rendering
-    const enhancedInvoice = {
-      ...invoice,
-      // Ensure business information is available
-      merchant_logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
-      merchant_name: invoice.merchant_name || currentBusinessSettings.name,
-      merchant_address: invoice.merchant_address || currentBusinessSettings.address,
-      merchant_phone: invoice.merchant_phone || currentBusinessSettings.phone,
-      merchant_email: invoice.merchant_email || currentBusinessSettings.email,
-      merchant_website: invoice.merchant_website || currentBusinessSettings.website,
-      
-      // Add metadata for business profile (needed for template logic)
-      businessProfile: {
-        name: invoice.merchant_name || currentBusinessSettings.name,
-        address: invoice.merchant_address || currentBusinessSettings.address,
-        phone: invoice.merchant_phone || currentBusinessSettings.phone,
-        email: invoice.merchant_email || currentBusinessSettings.email,
-        website: invoice.merchant_website || currentBusinessSettings.website,
-        logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
-        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
-        taxEnabled: currentBusinessSettings.taxEnabled || false,
-        taxRate: currentBusinessSettings.taxRate || 0,
-        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
-      }
-    };
-    
-    console.log('📄 Enhanced invoice data for consistent display:', {
-      invoice_number: enhancedInvoice.invoice_number,
-      hasLogo: !!enhancedInvoice.merchant_logo,
-      hasBusinessProfile: !!enhancedInvoice.businessProfile
-    });
     
     res.json({
       success: true,
-      invoice: enhancedInvoice
+      invoice
     });
   } catch (error) {
     console.error('Error fetching invoice:', error);
@@ -3667,45 +3629,9 @@ app.get('/api/customer/invoice/:token', async (req, res) => {
       success: true
     });
     
-    // Get current business settings to ensure consistent display (same as main invoice endpoint)
-    const currentBusinessSettings = await getCurrentBusinessSettings();
-    
-    // Enhance invoice with business settings for consistent template rendering
-    const enhancedInvoice = {
-      ...invoice,
-      // Ensure business information is available
-      merchant_logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
-      merchant_name: invoice.merchant_name || currentBusinessSettings.name,
-      merchant_address: invoice.merchant_address || currentBusinessSettings.address,
-      merchant_phone: invoice.merchant_phone || currentBusinessSettings.phone,
-      merchant_email: invoice.merchant_email || currentBusinessSettings.email,
-      merchant_website: invoice.merchant_website || currentBusinessSettings.website,
-      
-      // Add metadata for business profile (needed for template logic)
-      businessProfile: {
-        name: invoice.merchant_name || currentBusinessSettings.name,
-        address: invoice.merchant_address || currentBusinessSettings.address,
-        phone: invoice.merchant_phone || currentBusinessSettings.phone,
-        email: invoice.merchant_email || currentBusinessSettings.email,
-        website: invoice.merchant_website || currentBusinessSettings.website,
-        logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
-        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
-        taxEnabled: currentBusinessSettings.taxEnabled || false,
-        taxRate: currentBusinessSettings.taxRate || 0,
-        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
-      }
-    };
-    
-    console.log('📄 Enhanced customer invoice data for consistent display:', {
-      invoice_number: enhancedInvoice.invoice_number,
-      token: req.params.token,
-      hasLogo: !!enhancedInvoice.merchant_logo,
-      hasBusinessProfile: !!enhancedInvoice.businessProfile
-    });
-    
     res.json({
       success: true,
-      invoice: enhancedInvoice
+      invoice
     });
   } catch (error) {
     console.error('Error fetching customer invoice:', error);
