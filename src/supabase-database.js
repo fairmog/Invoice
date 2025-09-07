@@ -2057,6 +2057,145 @@ class SupabaseDatabase {
     }
   }
 
+  // Payment confirmation methods
+  async addPaymentConfirmation(invoiceId, confirmationData) {
+    try {
+      console.log(`💳 Adding payment confirmation for invoice ${invoiceId}:`, {
+        hasFilePath: !!confirmationData.filePath,
+        hasNotes: !!confirmationData.notes,
+        fileSize: confirmationData.size
+      });
+
+      // Update the invoice with payment confirmation data
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .update({
+          payment_confirmation_file: confirmationData.filePath,
+          payment_confirmation_notes: confirmationData.notes || '',
+          payment_confirmation_date: new Date().toISOString(),
+          confirmation_status: 'pending',
+          payment_status: 'confirmation_pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', parseInt(invoiceId))
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('❌ Invoice not found for payment confirmation:', invoiceId);
+          return null;
+        }
+        throw error;
+      }
+
+      console.log(`✅ Payment confirmation added for invoice ${data.invoice_number}`);
+      return data;
+    } catch (error) {
+      console.error('Error adding payment confirmation:', error);
+      throw error;
+    }
+  }
+
+  // Update payment confirmation status (for merchant approval/rejection)
+  async updatePaymentConfirmationStatus(invoiceId, status, merchantNotes = '') {
+    try {
+      console.log(`🔄 Updating payment confirmation status for invoice ${invoiceId}:`, {
+        status,
+        hasMerchantNotes: !!merchantNotes
+      });
+
+      // First get the current invoice to check payment stage
+      const invoice = await this.getInvoice(invoiceId);
+      if (!invoice) {
+        console.log('❌ Invoice not found for confirmation status update:', invoiceId);
+        return null;
+      }
+
+      const updateData = {
+        confirmation_status: status,
+        merchant_confirmation_notes: merchantNotes,
+        confirmation_reviewed_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Update payment status based on confirmation status and payment stage
+      if (status === 'approved') {
+        const paymentStage = invoice.payment_stage || 'full_payment';
+        
+        if (paymentStage === 'down_payment') {
+          // Down payment confirmed - move to final payment stage
+          updateData.payment_status = 'partial';
+          updateData.status = 'dp_paid';
+          updateData.payment_stage = 'final_payment';
+          updateData.dp_confirmed_date = new Date().toISOString();
+          console.log(`Down payment confirmed for invoice ${invoice.invoice_number} - moved to final payment stage`);
+        } else if (paymentStage === 'final_payment') {
+          // Final payment confirmed - complete the invoice
+          updateData.payment_status = 'paid';
+          updateData.status = 'paid';
+          console.log(`Final payment confirmed for invoice ${invoice.invoice_number} - invoice completed`);
+        } else {
+          // Full payment confirmed
+          updateData.payment_status = 'paid';
+          updateData.status = 'paid';
+          console.log(`Full payment confirmed for invoice ${invoice.invoice_number}`);
+        }
+      } else if (status === 'rejected') {
+        // Payment confirmation rejected - revert to pending payment
+        updateData.payment_status = 'pending';
+        updateData.status = 'pending';
+        console.log(`Payment confirmation rejected for invoice ${invoice.invoice_number}`);
+      }
+
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .update(updateData)
+        .eq('id', parseInt(invoiceId))
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating payment confirmation status:', error);
+      throw error;
+    }
+  }
+
+  // Update payment stage (down_payment -> final_payment -> completed)
+  async updatePaymentStage(invoiceId, newStage, newStatus) {
+    try {
+      console.log(`🔄 Updating payment stage for invoice ${invoiceId}:`, { newStage, newStatus });
+
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .update({
+          payment_stage: newStage,
+          payment_status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', parseInt(invoiceId))
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating payment stage:', error);
+      throw error;
+    }
+  }
+
   close() {
     // No-op for compatibility
   }
