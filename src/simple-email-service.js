@@ -264,7 +264,8 @@ class SimpleEmailService {
 
   generateInvoiceEmailHTML(invoice, businessSettings = null) {
     const baseUrl = config.server.baseUrl;
-    const invoiceUrl = `${baseUrl}/invoice?token=${invoice.customer_token}`;
+    // Include both invoice ID and token for proper invoice loading
+    const invoiceUrl = `${baseUrl}/invoice?id=${invoice.invoice_number}&token=${invoice.customer_token}`;
     const formattedAmount = new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR'
