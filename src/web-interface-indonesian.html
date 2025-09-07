@@ -5303,7 +5303,7 @@ Terima kasih! 🙏`;
             addMessage(`⏭️ <strong>Skipped adding ${type}.</strong><br>You can manually add it later if needed.`, 'ai');
         }
 
-        function openBusinessProfile() {
+        async function openBusinessProfile() {
             // Get current business data from localStorage if available
             const savedProfile = localStorage.getItem('businessProfile');
             let currentData = {
@@ -5314,12 +5314,38 @@ Terima kasih! 🙏`;
                 category: 'general',
                 logo: document.getElementById('business-logo-img').src || '',
                 taxRate: 0,
-                termsAndConditions: ''
+                termsAndConditions: '',
+                website: '',
+                taxId: '',
+                taxName: 'PPN',
+                taxDescription: '',
+                hideBusinessName: false
             };
             
             if (savedProfile) {
                 const savedData = JSON.parse(savedProfile);
                 currentData = { ...currentData, ...savedData };
+            }
+            
+            // Load complete business settings from database to ensure synchronization
+            try {
+                console.log('📥 Loading business settings for modal...');
+                const businessResponse = await fetch('/api/business-settings');
+                if (businessResponse.ok) {
+                    const businessData = await businessResponse.json();
+                    if (businessData.settings) {
+                        // Merge database settings with current data, giving priority to database
+                        currentData = { 
+                            ...currentData, 
+                            ...businessData.settings,
+                            // Keep logo from current display if database doesn't have one
+                            logo: businessData.settings.logoUrl || currentData.logo
+                        };
+                        console.log('✅ Business settings loaded for modal:', currentData);
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️  Could not load business settings for modal:', error);
             }
 
             // Create tabbed modal content
@@ -5766,8 +5792,26 @@ Terima kasih! 🙏`;
                     }
                 }
 
-                // Save business settings to database
+                // First, get existing business settings to avoid overwriting other fields
+                console.log('📥 Getting existing business settings to merge...');
+                let existingSettings = {};
+                try {
+                    const existingResponse = await fetch('/api/business-settings');
+                    if (existingResponse.ok) {
+                        const existingData = await existingResponse.json();
+                        existingSettings = existingData.settings || {};
+                        console.log('✅ Existing settings loaded:', existingSettings);
+                    }
+                } catch (error) {
+                    console.warn('⚠️  Could not load existing settings, proceeding with new data only:', error);
+                }
+
+                // Save business settings to database - MERGE with existing settings to avoid data loss
                 const businessSettings = {
+                    // Preserve existing fields that are not in the modal
+                    ...existingSettings,
+                    
+                    // Update only the fields that are in the modal form
                     name,
                     email,
                     phone,
@@ -5775,12 +5819,18 @@ Terima kasih! 🙏`;
                     category,
                     taxRate,
                     taxEnabled: taxRate > 0,
-                    taxName: 'PPN',
-                    taxDescription: `${taxRate}% PPN`,
+                    taxName: existingSettings.taxName || 'PPN',
+                    taxDescription: existingSettings.taxDescription || `${taxRate}% PPN`,
                     termsAndConditions,
                     hideBusinessName,
-                    logoUrl: logoUrl
+                    logoUrl: logoUrl,
+                    
+                    // Preserve important fields that modal doesn't handle
+                    website: existingSettings.website || '',
+                    taxId: existingSettings.taxId || ''
                 };
+                
+                console.log('💾 Saving merged business settings:', businessSettings);
 
                 const response = await fetch('/api/business-settings', {
                     method: 'POST',
