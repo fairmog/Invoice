@@ -782,10 +782,16 @@
             .parties {
                 padding: 12px;
                 gap: 15px;
+                background: var(--bg-light) !important;
+                margin: 0 8px;
+                border-radius: 8px;
             }
             
             .items-section {
                 padding: 12px;
+                background: white !important;
+                margin: 0 8px;
+                border-radius: 8px;
             }
             
             /* Stack table vertically for very small screens */
@@ -807,8 +813,10 @@
             .items-table tr {
                 border: 1px solid var(--border);
                 border-radius: 8px;
-                margin-bottom: 10px;
-                padding: 10px;
+                margin-bottom: 12px;
+                padding: 12px;
+                background: white;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
             .items-table td {
@@ -816,6 +824,10 @@
                 position: relative;
                 padding: 8px 10px 8px 35%;
                 text-align: right;
+                min-height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
             }
             
             .items-table td:before {
@@ -827,10 +839,15 @@
                 white-space: nowrap;
                 font-weight: 600;
                 color: var(--text);
+                display: flex;
+                align-items: center;
             }
             
             .summary {
                 padding: 12px;
+                background: white !important;
+                margin: 0 8px;
+                border-radius: 8px;
             }
             
             .summary-grid {
@@ -845,6 +862,10 @@
             .payment-method {
                 padding: 12px;
                 font-size: 13px;
+                background: white !important;
+                margin: 4px 8px;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
             .payment-method span {
@@ -1493,13 +1514,13 @@
                                     '<tr><td colspan="4" style="text-align: center; color: #666;">No items found</td></tr>' :
                                     items.map(item => `
                                         <tr>
-                                            <td>
+                                            <td data-label="Produk/Layanan">
                                                 <div class="product-name">${item.productName || 'Product'}</div>
                                                 ${item.description && item.description.trim() ? `<div class="product-description">${item.description}</div>` : ''}
                                             </td>
-                                            <td class="text-center">${item.quantity || 1}</td>
-                                            <td class="text-right">${formatCurrency(item.unitPrice || 0)}</td>
-                                            <td class="text-right">${formatCurrency(item.lineTotal || 0)}</td>
+                                            <td class="text-center" data-label="QTY">${item.quantity || 1}</td>
+                                            <td class="text-right" data-label="Harga Satuan">${formatCurrency(item.unitPrice || 0)}</td>
+                                            <td class="text-right" data-label="Total">${formatCurrency(item.lineTotal || 0)}</td>
                                         </tr>
                                     `).join('')
                                 }
