@@ -77,12 +77,24 @@ DISCOUNT EXTRACTION RULES (PROCESS FIRST - HIGH PRIORITY):
 PAYMENT SCHEDULE EXTRACTION RULES (PROCESS AFTER DISCOUNTS):
 - Extract down payment requests ONLY from these exact keywords: "Down Payment", "DP", "uang muka", "bayar muka"
 - NEVER interpret "discount X%" as down payment - only "DP X%" or "Down Payment X%"
-- Handle percentage format: "Down Payment 20%", "DP 30%", "uang muka 25%" → downPaymentType: "percentage", downPaymentValue: number
-- Handle fixed amount format: "DP 500000", "uang muka 1000000", "Down Payment 2000000" → downPaymentType: "fixed", downPaymentValue: number
+
+CRITICAL RULES FOR AMOUNT TYPE DETECTION:
+- Percentage format: "DP 20%", "DP 30%", "uang muka 25%" → downPaymentType: "percentage", downPaymentValue: number (just the percentage, e.g. 20)
+- Fixed amount format: "DP 500000", "DP 800000", "uang muka 1000000" → downPaymentType: "fixed", downPaymentValue: number (the full amount)
+- IMPORTANT: Numbers WITHOUT % symbol and GREATER than 100 are ALWAYS fixed amounts, not percentages
+- IMPORTANT: "DP 800000" means downPaymentType: "fixed", downPaymentValue: 800000 (NOT percentage)
+- IMPORTANT: "DP 30%" means downPaymentType: "percentage", downPaymentValue: 30 (NOT 0.3 or 30000)
+
 - Detect immediate payment keywords: "DP dulu", "bayar dulu", "down payment first" → set isImmediateDownPayment: true
 - Extract final payment date from: "sisa pembayaran tanggal X", "sisanya di tanggal X", "final payment X", "pembayaran sisanya di tanggal X"
 - Date formats: "20/08/2025", "20-08-2025", "2025-08-20" → convert to YYYY-MM-DD format
-- Examples: "DP dulu 10%" → immediate DP percentage, "DP 500000" → fixed amount DP
+
+EXAMPLES:
+- "DP dulu 10%" → downPaymentType: "percentage", downPaymentValue: 10, isImmediateDownPayment: true
+- "DP 500000" → downPaymentType: "fixed", downPaymentValue: 500000, isImmediateDownPayment: false
+- "uang muka 800000" → downPaymentType: "fixed", downPaymentValue: 800000
+- "DP 25%" → downPaymentType: "percentage", downPaymentValue: 25
+
 - If down payment found: set enablePaymentSchedule: true, downPaymentType: "percentage"/"fixed", downPaymentValue: number
 - If no down payment: set enablePaymentSchedule: false
 
@@ -150,8 +162,14 @@ Return JSON only:
       const enablePaymentSchedule = paymentOptions.enablePaymentSchedule || false;
       const downPaymentType = paymentOptions.downPaymentType || 'percentage';
       const downPaymentValue = paymentOptions.downPaymentValue || (downPaymentType === 'percentage' ? 30 : 0);
-      // Legacy support for old downPaymentPercentage field
-      const downPaymentPercentage = paymentOptions.downPaymentPercentage || (downPaymentType === 'percentage' ? downPaymentValue : 30);
+      // Legacy support for old downPaymentPercentage field - use downPaymentValue if available
+      const downPaymentPercentage = downPaymentValue || paymentOptions.downPaymentPercentage || 30;
+      
+      console.log('🔧 Payment options received in generateInvoice:');
+      console.log('  - enablePaymentSchedule:', enablePaymentSchedule);
+      console.log('  - downPaymentType:', downPaymentType);
+      console.log('  - downPaymentValue:', downPaymentValue);
+      console.log('  - legacy downPaymentPercentage:', paymentOptions.downPaymentPercentage);
       
       // Use extracted dates or fallback to day-based calculation
       const extractedFinalDate = paymentOptions.finalPaymentDate;
@@ -199,12 +217,15 @@ Return JSON only:
       let downPaymentAmount = 0;
       if (downPaymentType === 'percentage') {
         downPaymentAmount = Math.round(grandTotal * (downPaymentValue / 100));
+        console.log(`🧮 Calculated percentage down payment: ${downPaymentValue}% of ${grandTotal} = ${downPaymentAmount}`);
       } else if (downPaymentType === 'fixed') {
         downPaymentAmount = downPaymentValue;
+        console.log(`🧮 Using fixed down payment: ${downPaymentAmount}`);
       }
       
       // Ensure downPaymentAmount doesn't exceed grandTotal
       if (downPaymentAmount > grandTotal) {
+        console.log(`⚠️  Down payment ${downPaymentAmount} exceeds grand total ${grandTotal}, capping to grand total`);
         downPaymentAmount = grandTotal;
       }
       
