@@ -697,9 +697,18 @@
             }
             
             .footer-band > div:first-child {
-                grid-template-columns: 1fr !important;
-                gap: 16px !important;
-                margin-bottom: 16px !important;
+                grid-template-columns: 1fr 1fr !important; /* Two columns on mobile */
+                gap: 12px !important;
+                margin-bottom: 12px !important;
+            }
+            
+            /* Keep logo in its own row but right-aligned */
+            .footer-band .footer-section:last-child {
+                grid-column: 1 / -1; /* Span full width */
+                display: flex;
+                justify-content: flex-end !important;
+                align-items: flex-end !important;
+                margin-top: 16px;
             }
             
             .footer-band h4 {
@@ -780,67 +789,57 @@
             }
             
             .parties {
-                padding: 12px;
-                gap: 15px;
+                padding: 16px;
+                gap: 20px;
                 background: var(--bg-light) !important;
                 margin: 0 8px;
                 border-radius: 8px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
             }
             
             .items-section {
-                padding: 12px;
+                padding: 16px 8px;
                 background: white !important;
-                margin: 0 8px;
+                margin: 8px;
                 border-radius: 8px;
             }
             
-            /* Stack table vertically for very small screens */
-            .items-table,
-            .items-table thead,
-            .items-table tbody,
-            .items-table th,
-            .items-table td,
-            .items-table tr {
-                display: block;
+            /* Keep table structure but optimize for mobile */
+            .items-section {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
             
-            .items-table thead tr {
-                position: absolute;
-                top: -9999px;
-                left: -9999px;
+            .items-table {
+                min-width: 600px; /* Ensure table doesn't get too cramped */
+                font-size: 13px;
             }
             
-            .items-table tr {
-                border: 1px solid var(--border);
-                border-radius: 8px;
-                margin-bottom: 12px;
-                padding: 12px;
-                background: white;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            .items-table th {
+                font-size: 12px;
+                padding: 12px 8px;
+                white-space: nowrap;
             }
             
             .items-table td {
-                border: none;
-                position: relative;
-                padding: 8px 10px 8px 35%;
-                text-align: right;
-                min-height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
+                padding: 12px 8px;
+                font-size: 13px;
+                border-bottom: 1px solid var(--border);
             }
             
-            .items-table td:before {
-                content: attr(data-label) ": ";
-                position: absolute;
-                left: 10px;
-                width: 30%;
-                padding-right: 10px;
-                white-space: nowrap;
-                font-weight: 600;
-                color: var(--text);
-                display: flex;
-                align-items: center;
+            .items-table td:first-child {
+                min-width: 150px; /* Ensure product name has enough space */
+            }
+            
+            .items-table .text-center {
+                text-align: center;
+                min-width: 50px;
+            }
+            
+            .items-table .text-right {
+                text-align: right;
+                min-width: 100px;
             }
             
             .summary {
@@ -848,6 +847,15 @@
                 background: white !important;
                 margin: 0 8px;
                 border-radius: 8px;
+            }
+            
+            .summary-grid {
+                font-size: 13px;
+            }
+            
+            .summary-total {
+                font-size: 16px;
+                font-weight: 700;
             }
             
             .summary-grid {
@@ -866,6 +874,11 @@
                 margin: 4px 8px;
                 border-radius: 8px;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            
+            /* Mobile scaling adjustments */
+            .paper {
+                padding: 16px !important;
             }
             
             .payment-method span {
@@ -1807,8 +1820,8 @@
                                     ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${escapeHtml(businessProfile.website)}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${escapeHtml(invoice.merchant_website)}</li>` : ''}
                                 </ul>
                             </div>
-                            <div class="footer-section" style="display: flex; align-items: center; justify-content: center; padding: 0; margin-bottom: 0;">
-                                <img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 80px; width: auto; opacity: 0.9;">
+                            <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 0; margin-bottom: 0;">
+                                <img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 100px; width: auto; opacity: 0.9;">
                             </div>
                         </div>
                     </div>
