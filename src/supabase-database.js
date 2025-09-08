@@ -337,8 +337,18 @@ class SupabaseDatabase {
       const invoice = invoiceData.invoice || invoiceData;
       const invoiceNumber = await this.generateInvoiceNumber();
       
+      console.log('🔍 DEBUG: Generated invoice number:', invoiceNumber);
+      console.log('🔍 DEBUG: Generated customer token:', customerToken);
+      
       // === ENHANCED DATA VALIDATION AND CALCULATION FIXES ===
       console.log('🔧 Validating and fixing invoice data before save...');
+      console.log('🔍 DEBUG: Invoice structure check:', {
+        hasMerchant: !!invoice.merchant,
+        hasBusinessProfile: !!invoice.businessProfile,
+        merchantEmail: invoice.merchant?.email,
+        businessProfileEmail: invoice.businessProfile?.email,
+        customerEmail: invoice.customer?.email
+      });
       
       // Fix 1: Ensure due date is properly set
       if (!invoice.header) invoice.header = {};
@@ -451,6 +461,14 @@ class SupabaseDatabase {
         itemsCount: Array.isArray(invoiceInsertData.items_json) ? invoiceInsertData.items_json.length : 0
       });
       
+      console.log('📤 Attempting to insert invoice data...', {
+        invoice_number: invoiceInsertData.invoice_number,
+        customer_name: invoiceInsertData.customer_name,
+        merchant_name: invoiceInsertData.merchant_name,
+        merchant_email: invoiceInsertData.merchant_email,
+        grand_total: invoiceInsertData.grand_total
+      });
+
       const { data, error } = await this.supabase
         .from('invoices')
         .insert(invoiceInsertData)
@@ -459,6 +477,8 @@ class SupabaseDatabase {
 
       if (error) {
         console.error('💥 Invoice insert error:', error.message, error.details);
+        console.error('💥 Full error object:', JSON.stringify(error, null, 2));
+        console.error('💥 Failed insert data keys:', Object.keys(invoiceInsertData));
         throw error;
       }
 
@@ -468,11 +488,22 @@ class SupabaseDatabase {
         grand_total: data.grand_total
       });
 
-      return {
+      const returnObject = {
         ...data,
         invoiceNumber: invoiceNumber,
         customerToken
       };
+      
+      console.log('🔍 DEBUG: Return object structure:', {
+        hasId: !!returnObject.id,
+        hasInvoiceNumber: !!returnObject.invoiceNumber,
+        invoiceNumberValue: returnObject.invoiceNumber,
+        hasCustomerToken: !!returnObject.customerToken,
+        customerTokenValue: returnObject.customerToken,
+        dbInvoiceNumber: data.invoice_number
+      });
+
+      return returnObject;
     } catch (error) {
       console.error('💥 saveInvoice failed:', error.message);
       throw error;
