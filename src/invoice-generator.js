@@ -506,8 +506,24 @@ Rules:
             console.log('🔧 Regenerating complete payment schedule...');
             
             const grandTotal = calculationResult.calculations.grandTotal;
-            const percentage = paymentSchedule.downPayment?.percentage || 25; // Default to 25%
-            const downPaymentAmount = Math.round(grandTotal * (percentage / 100));
+            
+            // Respect the original down payment type from AI extraction
+            const originalType = paymentSchedule.downPayment?.type || 'percentage';
+            let downPaymentAmount = 0;
+            let percentage = 25; // Default percentage
+            
+            if (originalType === 'fixed' && paymentSchedule.downPayment?.amount) {
+              // Use the fixed amount from AI extraction
+              downPaymentAmount = paymentSchedule.downPayment.amount;
+              percentage = Math.round((downPaymentAmount / grandTotal) * 100);
+              console.log('🔢 Using fixed down payment amount:', downPaymentAmount, `(${percentage}%)`);
+            } else {
+              // Use percentage calculation
+              percentage = paymentSchedule.downPayment?.percentage || 25;
+              downPaymentAmount = Math.round(grandTotal * (percentage / 100));
+              console.log('🔢 Using percentage down payment:', `${percentage}% = ${downPaymentAmount}`);
+            }
+            
             const remainingAmount = grandTotal - downPaymentAmount;
             
             const today = new Date().toISOString().split('T')[0];
@@ -522,6 +538,7 @@ Rules:
               scheduleType: 'down_payment',
               totalAmount: grandTotal,
               downPayment: {
+                type: originalType,
                 percentage: percentage,
                 amount: downPaymentAmount,
                 dueDate: downPaymentDueDate,
