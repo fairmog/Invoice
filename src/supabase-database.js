@@ -428,9 +428,6 @@ class SupabaseDatabase {
         tax_amount: invoice.calculations.totalTax,
         shipping_cost: invoice.calculations.shippingCost || 0,
         discount: invoice.calculations.discount || 0,
-        discount_amount: invoice.calculations.discount || 0,
-        discount_type: invoice.calculations.discountType || 'fixed',
-        discount_value: invoice.calculations.discountValue || 0,
         grand_total: invoice.calculations.grandTotal, // Using corrected grand total
         currency: invoice.calculations?.currency || invoice.summary?.currency || 'IDR',
         payment_terms: invoice.payment?.paymentTerms || 'Net 30',
