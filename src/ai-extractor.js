@@ -92,7 +92,11 @@ class AIDataExtractor {
     console.log('🔍 Full extractedData structure:', JSON.stringify(parseResult.data, null, 2));
     console.log('🔍 Extracted paymentSchedule:', parseResult.data.paymentSchedule);
     console.log('🔍 paymentSchedule.enablePaymentSchedule:', parseResult.data.paymentSchedule?.enablePaymentSchedule);
-    console.log('🔍 paymentSchedule.downPaymentPercentage:', parseResult.data.paymentSchedule?.downPaymentPercentage);
+    console.log('🔍 paymentSchedule.downPaymentType:', parseResult.data.paymentSchedule?.downPaymentType);
+    console.log('🔍 paymentSchedule.downPaymentValue:', parseResult.data.paymentSchedule?.downPaymentValue);
+    console.log('🔍 paymentSchedule.downPaymentPercentage (legacy):', parseResult.data.paymentSchedule?.downPaymentPercentage);
+    console.log('🔍 paymentSchedule.isImmediateDownPayment:', parseResult.data.paymentSchedule?.isImmediateDownPayment);
+    console.log('🔍 paymentSchedule.finalPaymentDate:', parseResult.data.paymentSchedule?.finalPaymentDate);
     
     return parseResult.data;
   }
