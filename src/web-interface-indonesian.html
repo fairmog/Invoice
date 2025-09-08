@@ -4113,6 +4113,23 @@
                 value = currentInvoiceData.invoice.header.invoiceDate;
             }
             
+            // Special handling for down payment amount direct editing
+            if (field === 'paymentSchedule.downPayment.amount') {
+                const numericValue = Math.round(parseFloat(value) || 0);
+                obj[lastPart] = numericValue;
+                
+                // Convert to fixed type and recalculate percentage
+                const schedule = currentInvoiceData.invoice.paymentSchedule;
+                const grandTotal = currentInvoiceData.invoice.calculations.grandTotal;
+                if (schedule && grandTotal > 0) {
+                    schedule.downPayment.type = 'fixed';
+                    schedule.downPayment.percentage = Math.round((numericValue / grandTotal) * 100);
+                    schedule.remainingBalance.amount = grandTotal - numericValue;
+                    console.log('💰 Direct DP edit - converted to fixed type:', numericValue, `(${schedule.downPayment.percentage}%)`);
+                }
+                return; // Skip general processing
+            }
+            
             // Special handling for notes - filter out AI extraction artifacts
             if (field === 'notes.publicNotes' && value && typeof value === 'string') {
                 // Check if value contains AI extraction patterns
@@ -4323,18 +4340,24 @@
                 
                 // Recalculate payment amounts based on type
                 let newDownPaymentAmount = 0;
+                let newPercentage = dp.percentage;
+                
                 if (dp.type === 'percentage' || !dp.type) {
-                    // Default to percentage if type is missing (backward compatibility)
+                    // Recalculate amount based on percentage
                     const percentage = dp.percentage;
                     newDownPaymentAmount = Math.round((grandTotal * percentage) / 100);
+                    console.log('💰 Recalculated percentage-based DP:', `${percentage}% = ${newDownPaymentAmount}`);
                 } else if (dp.type === 'fixed') {
-                    // For fixed amounts, don't recalculate - keep the original amount
+                    // For fixed amounts, keep the amount but update the displayed percentage
                     newDownPaymentAmount = dp.amount;
+                    newPercentage = Math.round((newDownPaymentAmount / grandTotal) * 100);
+                    console.log('💰 Kept fixed DP amount:', `${newDownPaymentAmount} (${newPercentage}%)`);
                 }
                 const newRemainingAmount = grandTotal - newDownPaymentAmount;
                 
                 // Update the payment schedule data
                 schedule.downPayment.amount = newDownPaymentAmount;
+                schedule.downPayment.percentage = newPercentage;
                 schedule.remainingBalance.amount = newRemainingAmount;
                 
                 console.log('💰 Updated payment schedule:', {
