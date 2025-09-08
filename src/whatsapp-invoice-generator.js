@@ -52,10 +52,14 @@ class WhatsAppInvoiceGenerator {
           // Extract payment options from the extracted data
           const paymentOptions = {
             enablePaymentSchedule: extractedData.paymentSchedule?.enablePaymentSchedule || false,
+            downPaymentType: extractedData.paymentSchedule?.downPaymentType || 'percentage',
+            downPaymentValue: extractedData.paymentSchedule?.downPaymentValue || 30,
+            // Legacy support for old downPaymentPercentage field
             downPaymentPercentage: extractedData.paymentSchedule?.downPaymentPercentage || 30,
             downPaymentDays: 15, // default
             finalPaymentDays: 30, // default
-            finalPaymentDate: extractedData.paymentSchedule?.finalPaymentDate || null
+            finalPaymentDate: extractedData.paymentSchedule?.finalPaymentDate || null,
+            isImmediateDownPayment: extractedData.paymentSchedule?.isImmediateDownPayment || false
           };
           
           // DEBUG: Log extracted data for payment schedule
@@ -64,7 +68,14 @@ class WhatsAppInvoiceGenerator {
           
           // Log payment schedule detection
           if (paymentOptions.enablePaymentSchedule) {
-            console.log(`💰 Payment schedule detected: ${paymentOptions.downPaymentPercentage}% down payment`);
+            if (paymentOptions.downPaymentType === 'fixed') {
+              console.log(`💰 Payment schedule detected: ${paymentOptions.downPaymentValue} IDR fixed down payment`);
+            } else {
+              console.log(`💰 Payment schedule detected: ${paymentOptions.downPaymentValue}% down payment`);
+            }
+            if (paymentOptions.isImmediateDownPayment) {
+              console.log('⚡ Immediate down payment requested');
+            }
             if (paymentOptions.finalPaymentDate) {
               console.log(`📅 Final payment date: ${paymentOptions.finalPaymentDate}`);
             }
