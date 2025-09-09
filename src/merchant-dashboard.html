@@ -2079,6 +2079,139 @@
             background-color: var(--primary-purple-dark, #7c3aed);
         }
 
+        /* New Service Ticket Styles - matching service-ticket.html */
+        .service-ticket .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            text-align: left;
+            flex-wrap: wrap;
+        }
+
+        .service-ticket .company-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #000;
+            margin: 0;
+        }
+
+        .service-ticket .order-info {
+            text-align: right;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .service-ticket .order-number {
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 4px;
+        }
+
+        .ship-to-section {
+            padding: 20px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .address-info {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .customer-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .items-section {
+            padding: 20px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .items-header .section-title {
+            margin-bottom: 0;
+        }
+
+        .quantity-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        .items-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-name {
+            font-size: 14px;
+            color: #333;
+            flex-grow: 1;
+            padding-right: 20px;
+        }
+
+        .item-quantity {
+            font-size: 14px;
+            color: #000;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .ticket-footer {
+            padding: 20px 0;
+            text-align: center;
+            background: #f9f9f9;
+        }
+
+        .thank-you {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .company-info {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .company-info strong {
+            color: #000;
+            display: block;
+            margin-bottom: 5px;
+        }
+
         @media print {
             .modal, .modal-content, .modal-header {
                 display: none !important;
@@ -6187,85 +6320,78 @@ Terima kasih! 🙏`;
                                   order.shipping_address || 
                                   order.billing_address;
             
+            // Group items by name and sum quantities for simplified display
+            const itemGroups = {};
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    const name = item.product_name || item.description || 'Unknown Item';
+                    const quantity = item.quantity || 1;
+                    
+                    if (itemGroups[name]) {
+                        itemGroups[name] += quantity;
+                    } else {
+                        itemGroups[name] = quantity;
+                    }
+                });
+            }
+            
             return `
                 <div class="service-ticket-modal">
                     <div class="service-ticket">
+                        <!-- Header Section -->
                         <div class="ticket-header">
-                            <div class="ticket-title">${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Business Name'}</div>
-                            <div class="business-contact">
-                                <div class="business-address">${businessSettings.address || 'Business address not provided'}</div>
-                                <div class="business-phone">${businessSettings.phone || 'Phone not provided'}</div>
+                            <h1 class="company-name">${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Business Name'}</h1>
+                            <div class="order-info">
+                                <div class="order-number">${order.order_number || `Order #${order.id}`}</div>
+                                <div class="order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                }) : 'N/A'}</div>
                             </div>
                         </div>
                         
-                        <div class="ticket-body">
-                            <div class="ticket-info">
-                                <div class="info-section">
-                                    <h3>Order Information</h3>
-                                    <div class="info-item">
-                                        <span class="info-label">Ticket #:</span>
-                                        <span class="info-value">${order.order_number || 'N/A'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Date:</span>
-                                        <span class="info-value">${order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Total:</span>
-                                        <span class="info-value">${formatCurrency(order.total_amount || 0)}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="info-section">
-                                    <h3>Customer Information</h3>
-                                    <div class="info-item">
-                                        <span class="info-label">Name:</span>
-                                        <span class="info-value">${order.customer_name || 'Walk-in Customer'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Phone:</span>
-                                        <span class="info-value">${order.customer_phone || 'N/A'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Email:</span>
-                                        <span class="info-value">${order.customer_email || 'N/A'}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Address:</span>
-                                        <span class="info-value">${customerAddress || 'N/A'}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="info-section">
-                                    <h3>Items</h3>
-                                    <table class="items-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Item</th>
-                                                <th>Qty</th>
-                                                <th>Price</th>
-                                                <th>Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${order.items?.map(item => `
-                                                <tr>
-                                                    <td>${item.product_name}</td>
-                                                    <td>${item.quantity}</td>
-                                                    <td>${formatCurrency(item.unit_price)}</td>
-                                                    <td>${formatCurrency(item.quantity * item.unit_price)}</td>
-                                                </tr>
-                                            `).join('') || '<tr><td colspan="4">No items</td></tr>'}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                ${order.notes ? `
-                                <div class="info-section">
-                                    <h3>Notes</h3>
-                                    <div class="notes">${order.notes}</div>
-                                </div>
-                                ` : ''}
+                        <!-- Ship To Section -->
+                        <div class="ship-to-section">
+                            <h2 class="section-title">Ship To</h2>
+                            <div class="address-info">
+                                <div class="customer-name">${order.customer_name || 'Walk-in Customer'}</div>
+                                <div>${customerAddress || 'Address not provided'}</div>
+                                <div>${order.customer_phone || 'Phone not provided'}</div>
+                                <div>${order.customer_email || 'Email not provided'}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Items Section -->
+                        <div class="items-section">
+                            <div class="items-header">
+                                <h2 class="section-title">Items</h2>
+                                <div class="quantity-header">Quantity</div>
+                            </div>
+                            <ul class="items-list">
+                                ${Object.keys(itemGroups).length > 0 
+                                    ? Object.entries(itemGroups).map(([name, totalQuantity]) => `
+                                        <li class="item-row">
+                                            <div class="item-name">${name}</div>
+                                            <div class="item-quantity">${totalQuantity} of ${totalQuantity}</div>
+                                        </li>
+                                    `).join('')
+                                    : `<li class="item-row">
+                                        <div class="item-name">No items found</div>
+                                        <div class="item-quantity">0</div>
+                                    </li>`
+                                }
+                            </ul>
+                        </div>
+                        
+                        <!-- Footer Section -->
+                        <div class="ticket-footer">
+                            <div class="thank-you">Thank you for shopping with us!</div>
+                            <div class="company-info">
+                                <strong>${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Your Business'}</strong>
+                                <div>${businessSettings.address || 'Business Address'}</div>
+                                <div>${businessSettings.phone || 'Phone'} | ${businessSettings.email || 'business@email.com'}</div>
+                                <div>${businessSettings.website || 'company.com'}</div>
                             </div>
                         </div>
                     </div>
