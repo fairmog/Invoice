@@ -458,6 +458,34 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
+            
+            /* Hide all price/money related elements */
+            .summary-section,
+            .summary-label,
+            .summary-value,
+            .total-label,
+            .total-value,
+            .payment-section {
+                display: none !important;
+            }
+            
+            /* Hide price columns in invoice table */
+            th:contains("Harga Satuan"),
+            th:contains("Total"),
+            th:nth-child(4), /* Harga Satuan column */
+            th:nth-child(5), /* Total column */
+            td:nth-child(4), /* Harga Satuan data */
+            td:nth-child(5)  /* Total data */ {
+                display: none !important;
+            }
+            
+            /* Hide specific price table headers and cells */
+            .invoice-table th:nth-child(4),
+            .invoice-table th:nth-child(5),
+            .invoice-table td:nth-child(4),
+            .invoice-table td:nth-child(5) {
+                display: none !important;
+            }
 
             .footer-section img {
                 -webkit-print-color-adjust: exact !important;
