@@ -1974,21 +1974,24 @@
         
         .service-ticket-modal {
             padding: 20px;
-            font-family: 'Courier New', monospace;
+            font-family: 'Arial', 'Helvetica', sans-serif;
         }
 
         .service-ticket {
             background: white;
-            border: 2px solid #000;
-            padding: 20px;
+            border: 1px solid #000;
+            padding: 0;
             margin-bottom: 20px;
+            max-width: 600px;
+            margin: 0 auto 20px auto;
         }
 
         .ticket-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid #000;
+            padding: 15px 20px;
         }
 
         .ticket-title {
@@ -2089,41 +2092,41 @@
         }
 
         .service-ticket .company-name {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: bold;
             color: #000;
             margin: 0;
         }
 
         .service-ticket .order-info {
             text-align: right;
-            font-size: 14px;
-            color: #666;
+            font-size: 11px;
+            color: #000;
         }
 
         .service-ticket .order-number {
-            font-weight: 600;
+            font-weight: bold;
             color: #000;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .ship-to-section {
-            padding: 20px 0;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 15px 20px;
+            border-bottom: 1px solid #000;
         }
 
         .section-title {
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: bold;
             color: #000;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-transform: uppercase;
         }
 
         .address-info {
-            font-size: 14px;
-            line-height: 1.6;
-            color: #333;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #000;
         }
 
         .customer-name {
@@ -2220,6 +2223,52 @@
             .service-ticket-modal {
                 padding: 0;
                 margin: 0;
+                font-size: 10px;
+            }
+            
+            .service-ticket {
+                border: 1px solid #000;
+                max-width: none;
+                width: 100%;
+                margin: 0;
+            }
+            
+            .ticket-header {
+                padding: 10px 15px;
+                border-bottom: 1px solid #000;
+            }
+            
+            .ship-to-section {
+                padding: 10px 15px;
+                border-bottom: 1px solid #000;
+            }
+            
+            .items-section {
+                padding: 10px 15px;
+                border-bottom: 1px solid #000;
+            }
+            
+            .ticket-footer {
+                padding: 10px 15px;
+                background: #f5f5f5;
+            }
+            
+            .company-name {
+                font-size: 14px;
+                font-weight: bold;
+            }
+            
+            .order-info {
+                font-size: 9px;
+            }
+            
+            .section-title {
+                font-size: 9px;
+                font-weight: bold;
+            }
+            
+            .address-info {
+                font-size: 8px;
             }
             
             .print-button {
@@ -6373,7 +6422,7 @@ Terima kasih! 🙏`;
                                     ? Object.entries(itemGroups).map(([name, totalQuantity]) => `
                                         <li class="item-row">
                                             <div class="item-name">${name}</div>
-                                            <div class="item-quantity">${totalQuantity} of ${totalQuantity}</div>
+                                            <div class="item-quantity">${totalQuantity}</div>
                                         </li>
                                     `).join('')
                                     : `<li class="item-row">
