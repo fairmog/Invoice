@@ -14,9 +14,9 @@
         body {
             font-family: 'Arial', 'Helvetica', sans-serif;
             font-size: 12px;
-            line-height: 1.4;
-            color: #000;
-            background: #fff;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
             margin: 0;
             padding: 20px;
         }
@@ -31,9 +31,10 @@
             width: 100%;
             max-width: 600px;
             background: white;
-            border: 1px solid #000;
+            border: 1px solid #ddd;
             margin: 0 auto;
             overflow-x: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
         /* Header Section */
@@ -41,68 +42,78 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            padding: 15px 20px;
-            border-bottom: 1px solid #000;
+            padding: 24px 24px 16px 24px;
+            border-bottom: 1px solid #ddd;
             flex-wrap: wrap;
         }
         
         .company-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #000;
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
             margin: 0;
         }
         
         .order-info {
             text-align: right;
-            font-size: 11px;
-            color: #000;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
         }
         
         .order-number {
-            font-weight: bold;
-            color: #000;
-            margin-bottom: 2px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+        
+        .order-updated {
+            font-size: 10px;
+            color: #888;
+            margin-top: 2px;
         }
         
         /* Ship To Section */
         .ship-to-section {
-            padding: 15px 20px;
-            border-bottom: 1px solid #000;
+            padding: 20px 24px;
+            border-bottom: 1px solid #eee;
         }
         
         .section-title {
-            font-size: 11px;
-            font-weight: bold;
-            color: #000;
-            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .address-info {
-            font-size: 10px;
-            line-height: 1.4;
-            color: #000;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #555;
         }
         
         .customer-name {
-            font-weight: bold;
-            margin-bottom: 2px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+            font-size: 13px;
         }
         
         /* Items Section */
         .items-section {
-            padding: 15px 20px;
-            border-bottom: 1px solid #000;
+            padding: 20px 24px;
         }
         
         .items-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #000;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
         }
         
         .items-header .section-title {
@@ -110,10 +121,11 @@
         }
         
         .quantity-header {
-            font-size: 11px;
-            font-weight: bold;
-            color: #000;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .items-list {
@@ -126,8 +138,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 0;
-            border-bottom: none;
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
         }
         
         .item-row:last-child {
@@ -135,43 +147,46 @@
         }
         
         .item-name {
-            font-size: 10px;
-            color: #000;
+            font-size: 12px;
+            color: #333;
             flex-grow: 1;
             padding-right: 20px;
         }
         
         .item-quantity {
-            font-size: 10px;
-            color: #000;
-            font-weight: normal;
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
             white-space: nowrap;
         }
         
         /* Footer Section */
         .ticket-footer {
-            padding: 15px 20px;
+            padding: 20px 24px;
             text-align: center;
-            background: #f5f5f5;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
         }
         
         .thank-you {
-            font-size: 10px;
-            color: #000;
-            margin-bottom: 10px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 16px;
+            font-weight: 500;
         }
         
         .company-info {
-            font-size: 8px;
-            color: #000;
-            line-height: 1.3;
+            font-size: 11px;
+            color: #777;
+            line-height: 1.5;
         }
         
         .company-info strong {
-            color: #000;
+            color: #333;
             display: block;
-            margin-bottom: 3px;
-            font-weight: bold;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 12px;
         }
         
         /* Print Button */
@@ -179,37 +194,46 @@
             background: #2563eb;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
+            padding: 12px 32px;
+            border-radius: 8px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            margin: 20px auto;
+            margin: 24px auto;
             display: block;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
         }
         
         .print-button:hover {
             background: #1d4ed8;
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
         }
         
         .loading, .error {
             text-align: center;
-            padding: 40px 20px;
+            padding: 40px 24px;
             font-size: 14px;
         }
         
+        .loading {
+            color: #666;
+        }
+        
         .error {
-            color: #f56565;
-            background: #fed7d7;
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
             border-radius: 8px;
+            margin: 20px;
         }
         
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             body {
-                padding: 5px;
-                font-size: 14px;
+                padding: 8px;
+                background: #fff;
             }
             
             .container {
@@ -220,17 +244,18 @@
                 border: none;
                 max-width: 100vw;
                 overflow-x: hidden;
+                box-shadow: none;
             }
             
             .ticket-header {
                 flex-direction: column;
                 align-items: flex-start;
-                padding: 15px;
-                gap: 10px;
+                padding: 20px 16px 12px 16px;
+                gap: 12px;
             }
             
             .company-name {
-                font-size: 20px;
+                font-size: 18px;
             }
             
             .order-info {
@@ -240,66 +265,77 @@
             
             .ship-to-section,
             .items-section {
-                padding: 15px;
-            }
-            
-            .section-title {
-                font-size: 14px;
-            }
-            
-            .items-header {
-                margin-bottom: 10px;
-            }
-            
-            .item-row {
-                padding: 8px 0;
-            }
-            
-            .item-name {
-                font-size: 13px;
-                padding-right: 10px;
-            }
-            
-            .item-quantity {
-                font-size: 13px;
+                padding: 16px;
             }
             
             .ticket-footer {
-                padding: 15px;
+                padding: 16px;
+            }
+            
+            .section-title {
+                font-size: 11px;
+            }
+            
+            .items-header {
+                margin-bottom: 12px;
+            }
+            
+            .item-row {
+                padding: 6px 0;
+            }
+            
+            .item-name {
+                font-size: 11px;
+                padding-right: 12px;
+            }
+            
+            .item-quantity {
+                font-size: 11px;
             }
             
             .thank-you {
-                font-size: 14px;
+                font-size: 12px;
             }
             
             .print-button {
-                width: 100%;
-                margin: 10px 0;
+                width: calc(100% - 32px);
+                margin: 16px 16px 8px 16px;
             }
         }
         
         @media (max-width: 480px) {
             body {
-                padding: 2px;
+                padding: 4px;
             }
             
-            .ticket-header,
+            .ticket-header {
+                padding: 16px 12px 8px 12px;
+            }
+            
             .ship-to-section,
-            .items-section,
+            .items-section {
+                padding: 12px;
+            }
+            
             .ticket-footer {
-                padding: 10px;
+                padding: 12px;
             }
             
             .company-name {
-                font-size: 18px;
+                font-size: 16px;
             }
             
             .item-name {
-                font-size: 12px;
+                font-size: 10px;
             }
             
             .item-quantity {
-                font-size: 12px;
+                font-size: 10px;
+            }
+            
+            .print-button {
+                margin: 12px 12px 4px 12px;
+                width: calc(100% - 24px);
             }
         }
         
@@ -309,7 +345,9 @@
                 padding: 0;
                 margin: 0;
                 background: white;
-                font-size: 10px;
+                font-size: 11px;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             
             .container {
@@ -319,10 +357,11 @@
             }
             
             .order-ticket {
-                border: 1px solid #000;
+                border: 1px solid #ddd;
                 max-width: none;
                 width: 100%;
                 margin: 0;
+                box-shadow: none;
             }
             
             .print-button {
@@ -330,50 +369,63 @@
             }
             
             .ticket-header {
-                padding: 10px 15px;
-                border-bottom: 1px solid #000;
+                padding: 16px 20px 12px 20px;
+                border-bottom: 1px solid #ddd;
                 page-break-inside: avoid;
             }
             
-            .ship-to-section,
+            .ship-to-section {
+                padding: 16px 20px;
+                border-bottom: 1px solid #eee;
+                page-break-inside: avoid;
+            }
+            
             .items-section {
-                padding: 10px 15px;
-                border-bottom: 1px solid #000;
+                padding: 16px 20px;
                 page-break-inside: avoid;
             }
             
             .ticket-footer {
-                padding: 10px 15px;
+                padding: 16px 20px;
                 page-break-inside: avoid;
-                background: #f5f5f5;
+                background: #f8f9fa;
+                border-top: 1px solid #eee;
             }
             
             .company-name {
-                font-size: 14px;
-                font-weight: bold;
+                font-size: 16px;
+                font-weight: 600;
             }
             
             .order-info {
-                font-size: 9px;
+                font-size: 10px;
             }
             
             .section-title {
-                font-size: 9px;
-                font-weight: bold;
+                font-size: 10px;
+                font-weight: 600;
             }
             
             .item-name,
             .item-quantity,
             .address-info {
-                font-size: 8px;
+                font-size: 10px;
+            }
+            
+            .customer-name {
+                font-size: 11px;
             }
             
             .thank-you {
-                font-size: 8px;
+                font-size: 11px;
             }
             
             .company-info {
-                font-size: 7px;
+                font-size: 9px;
+            }
+            
+            .item-row {
+                border-bottom: 1px solid #f5f5f5;
             }
         }
     </style>
@@ -390,6 +442,7 @@
                     <div class="order-info">
                         <div class="order-number" id="order-number">Order #1006</div>
                         <div class="order-date" id="order-date">September 6, 2025</div>
+                        <div class="order-updated" id="order-updated" style="font-size: 9px; color: #666; margin-top: 2px;"></div>
                     </div>
                 </div>
                 
@@ -469,8 +522,8 @@
         function displayOrderTicket(order, businessSettings) {
             document.getElementById('loading').style.display = 'none';
             
-            // Company info
-            const companyName = businessSettings.name || 'Your Business';
+            // Company info - comprehensive business name fallback
+            const companyName = businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Your Business';
             document.getElementById('company-name').textContent = companyName;
             document.getElementById('company-name-footer').textContent = companyName;
             
@@ -482,9 +535,21 @@
                 day: 'numeric'
             });
             
-            // Customer info (Ship To)
-            document.getElementById('customer-name').textContent = order.customer_name || 'Customer Name';
-            document.getElementById('customer-address').textContent = order.customer_address || 'Address not provided';
+            // Show last updated if different from created date
+            if (order.updated_at && order.updated_at !== order.created_at) {
+                const updatedDate = new Date(order.updated_at);
+                document.getElementById('order-updated').textContent = `Last updated: ${updatedDate.toLocaleDateString('en-US')} at ${updatedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+            }
+            
+            // Customer info (Ship To) - comprehensive address fallback
+            const customerAddress = order.customer_address || 
+                                  order.home_address || 
+                                  order.address || 
+                                  order.shipping_address || 
+                                  order.billing_address;
+                                  
+            document.getElementById('customer-name').textContent = order.customer_name || 'Walk-in Customer';
+            document.getElementById('customer-address').textContent = customerAddress || 'Address not provided';
             document.getElementById('customer-phone').textContent = order.customer_phone || 'Phone not provided';
             document.getElementById('customer-email').textContent = order.customer_email || 'Email not provided';
             
