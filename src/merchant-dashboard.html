@@ -6650,23 +6650,45 @@ Terima kasih! 🙏`;
                             line-height: 1.0;
                         }
                         
-                        .thermal-items {
-                            font-size: 8px;
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin-top: 3px;
+                        .thermal-items-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 8px;
+                            padding-bottom: 4px;
+                            border-bottom: 1px solid #333;
                         }
                         
-                        .thermal-items th,
-                        .thermal-items td {
-                            padding: 1px 2px;
-                            border: 1px solid #000;
-                            text-align: left;
-                        }
-                        
-                        .thermal-items th {
-                            background-color: #f0f0f0;
+                        .thermal-items-header h4 {
+                            margin: 0;
+                            font-size: 11px;
                             font-weight: bold;
+                        }
+                        
+                        .thermal-items-list {
+                            margin-top: 6px;
+                        }
+                        
+                        .thermal-item-row {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 3px 0;
+                            line-height: 1.3;
+                        }
+                        
+                        .thermal-item-name {
+                            font-size: 10px;
+                            color: #000;
+                            flex-grow: 1;
+                            padding-right: 20px;
+                        }
+                        
+                        .thermal-item-quantity {
+                            font-size: 10px;
+                            color: #000;
+                            text-align: right;
+                            min-width: 30px;
                         }
                         
                         .thermal-notes {
@@ -6674,6 +6696,30 @@ Terima kasih! 🙏`;
                             border-top: 1px dashed #000;
                             padding-top: 3px;
                             margin-top: 5px;
+                        }
+                        
+                        .thermal-footer {
+                            text-align: center;
+                            margin-top: 20px;
+                            padding-top: 16px;
+                        }
+                        
+                        .thermal-thank-you {
+                            font-size: 12px;
+                            margin-bottom: 12px;
+                            font-weight: normal;
+                        }
+                        
+                        .thermal-business-info {
+                            font-size: 10px;
+                            line-height: 1.3;
+                        }
+                        
+                        .thermal-business-info strong {
+                            font-weight: bold;
+                            font-size: 11px;
+                            margin-bottom: 4px;
+                            display: block;
                         }
                         
                         /* Mobile thermal ticket adjustments */
@@ -6828,30 +6874,34 @@ Terima kasih! 🙏`;
                     </div>
                     
                     ${order.items && order.items.length > 0 ? `
-                    <div class="thermal-section">
-                        <h4>Items</h4>
-                        <table class="thermal-items">
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Qty</th>
-                                    <th>Price</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${order.items.map(item => `
-                                    <tr>
-                                        <td>${item.product_name || 'Item'}</td>
-                                        <td>${item.quantity || 1}</td>
-                                        <td>${formatCurrency(item.unit_price || 0)}</td>
-                                        <td>${formatCurrency((item.quantity || 1) * (item.unit_price || 0))}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                    <div class="thermal-section items-section">
+                        <div class="thermal-items-header">
+                            <h4>ITEMS</h4>
+                            <h4>QUANTITY</h4>
+                        </div>
+                        <div class="thermal-items-list">
+                            ${order.items.map(item => `
+                                <div class="thermal-item-row">
+                                    <div class="thermal-item-name">${item.product_name || item.description || 'Item'}</div>
+                                    <div class="thermal-item-quantity">${item.quantity || 1}</div>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                    ` : ''}
+                    ` : `
+                    <div class="thermal-section items-section">
+                        <div class="thermal-items-header">
+                            <h4>ITEMS</h4>
+                            <h4>QUANTITY</h4>
+                        </div>
+                        <div class="thermal-items-list">
+                            <div class="thermal-item-row">
+                                <div class="thermal-item-name">No items found</div>
+                                <div class="thermal-item-quantity">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    `}
                     
                     ${order.notes ? `
                     <div class="thermal-notes">
@@ -6859,6 +6909,16 @@ Terima kasih! 🙏`;
                         ${order.notes}
                     </div>
                     ` : ''}
+                    
+                    <div class="thermal-footer">
+                        <div class="thermal-thank-you">Thank you for shopping with us!</div>
+                        <div class="thermal-business-info">
+                            <strong>${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Your Business'}</strong>
+                            <div>${businessSettings.address || 'Business Address'}</div>
+                            <div>${businessSettings.phone || 'Phone'} | ${businessSettings.email || 'business@email.com'}</div>
+                            <div>${businessSettings.website || 'company.com'}</div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
