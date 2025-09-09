@@ -408,59 +408,55 @@
             color: var(--info);
         }
 
-        /* Print styles */
+        /* Print styles - maintain exact screen appearance */
         @media print {
             @page {
                 margin: 10mm;
                 size: A4 portrait;
             }
             
+            /* Keep all original styling intact */
             body {
                 background: white !important;
-                padding: 0 !important;
+                padding: 20px !important;
+                font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+                font-size: 16px !important;
+                line-height: 1.5 !important;
+                color: var(--text) !important;
             }
             
+            /* Keep original paper styling */
             .paper {
-                box-shadow: none !important;
-                border: none !important;
-                margin: 0 !important;
-                max-width: none !important;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+                border-radius: 12px !important;
+                background: white !important;
+                margin: 0 auto !important;
+                max-width: 800px !important;
                 page-break-inside: avoid !important;
+                overflow: visible !important;
             }
             
-            .payment-section,
+            /* Hide only management actions, keep everything else */
+            .payment-section {
+                display: block !important;
+            }
+            
             .paid-notice {
-                display: none !important;
+                display: block !important;
             }
             
-            /* Prevent page breaks within important sections */
-            .inv-header,
-            .invoice-table,
-            .summary-section,
-            .footer-band {
-                page-break-inside: avoid !important;
-            }
-            
-            /* Reduce spacing to fit on one page */
-            .inv-header {
-                margin-bottom: 10px !important;
-            }
-            
-            .invoice-table {
-                margin-bottom: 10px !important;
-            }
-            
-            .summary-section {
-                margin-bottom: 10px !important;
-            }
-
+            /* Keep all gradients and colors */
             .footer-band {
                 background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
                 color: white !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                margin-bottom: 0 !important;
-                padding-bottom: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* Ensure all colors print exactly */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
             .footer-section img {
@@ -1000,19 +996,10 @@
                 display: none !important;
             }
             
-            /* Optimize print layout */
-            body {
-                margin: 0;
-                padding: 20px;
-                font-size: 12pt;
-                line-height: 1.4;
-                color: #000 !important;
-                background: white !important;
-            }
-            
+            /* Keep original layout - no optimization changes */
             .container {
-                max-width: none !important;
-                margin: 0 !important;
+                max-width: 800px !important;
+                margin: 0 auto !important;
                 padding: 0 !important;
                 box-shadow: none !important;
             }
