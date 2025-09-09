@@ -1223,7 +1223,19 @@ class SupabaseDatabase {
       .single();
 
     if (error) throw error;
-    return data;
+    
+    // Get order items for this order
+    const { data: items, error: itemsError } = await this.supabase
+      .from('order_items')
+      .select('*')
+      .eq('order_id', id);
+    
+    if (itemsError) throw itemsError;
+    
+    return {
+      ...data,
+      items: items || []
+    };
   }
 
   async getOrderStats(dateFrom = null, dateTo = null) {
