@@ -910,6 +910,11 @@ app.get('/simple-invoice-view.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
 });
 
+// Service ticket printing page
+app.get('/service-ticket', (req, res) => {
+  res.sendFile(path.join(__dirname, 'service-ticket.html'));
+});
+
 // Final payment page
 app.get('/final-payment', (req, res) => {
   res.sendFile(path.join(__dirname, 'final-payment.html'));
