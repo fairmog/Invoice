@@ -69,10 +69,15 @@ class SupabaseDatabase {
     return data;
   }
 
-  async getAllProducts(limit = 50, offset = 0, category = null, active_only = true) {
+  async getAllProducts(limit = 50, offset = 0, category = null, active_only = true, merchantId = null) {
     let query = this.supabase
       .from('products')
       .select('*');
+
+    // Filter by merchant if provided
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
 
     if (active_only) {
       query = query.eq('is_active', true);
@@ -1318,12 +1323,17 @@ class SupabaseDatabase {
     return `${prefix}-${dateString}-${hash}`;
   }
 
-  async getAllOrders(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null) {
+  async getAllOrders(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null, merchantId = null) {
     let query = this.supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    // Filter by merchant if provided
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
 
     if (status) {
       query = query.eq('status', status);
