@@ -1066,7 +1066,7 @@ app.put('/api/business/settings', async (req, res) => {
     const settings = req.body;
     console.log('🏢 Updating business settings via PUT /api/business/settings:', settings);
     
-    const updatedSettings = await database.updateBusinessSettings(settings);
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
     
     res.json({
       success: true,
@@ -1102,7 +1102,7 @@ app.get('/api/premium/status', async (req, res) => {
   }
 });
 
-app.post('/api/premium/activate', async (req, res) => {
+app.post('/api/premium/activate', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { premiumSettings = {} } = req.body;
     
@@ -1129,7 +1129,7 @@ app.post('/api/premium/activate', async (req, res) => {
   }
 });
 
-app.post('/api/premium/deactivate', async (req, res) => {
+app.post('/api/premium/deactivate', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const result = await database.deactivatePremiumBranding();
     
@@ -1147,7 +1147,7 @@ app.post('/api/premium/deactivate', async (req, res) => {
   }
 });
 
-app.put('/api/premium/branding', async (req, res) => {
+app.put('/api/premium/branding', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const isPremium = await database.isPremiumActive();
     if (!isPremium) {
@@ -1164,7 +1164,7 @@ app.put('/api/premium/branding', async (req, res) => {
     const result = await database.updateBusinessSettings({
       ...brandingSettings,
       premiumActive: true // Ensure premium remains active
-    });
+    }, req.merchant.id);
     
     res.json({
       success: true,
@@ -1181,7 +1181,7 @@ app.put('/api/premium/branding', async (req, res) => {
 });
 
 // Premium Logo Upload Endpoints
-app.post('/api/premium/upload/header-logo', upload.single('headerLogo'), async (req, res) => {
+app.post('/api/premium/upload/header-logo', authMiddleware.authenticateMerchant, upload.single('headerLogo'), async (req, res) => {
   try {
     const isPremium = await database.isPremiumActive();
     if (!isPremium) {
@@ -1205,7 +1205,7 @@ app.post('/api/premium/upload/header-logo', upload.single('headerLogo'), async (
     // Update business settings with new header logo
     const result = await database.updateBusinessSettings({
       customHeaderLogoUrl: logoUrl
-    });
+    }, req.merchant.id);
     
     res.json({
       success: true,
@@ -1222,7 +1222,7 @@ app.post('/api/premium/upload/header-logo', upload.single('headerLogo'), async (
   }
 });
 
-app.post('/api/premium/upload/footer-logo', upload.single('footerLogo'), async (req, res) => {
+app.post('/api/premium/upload/footer-logo', authMiddleware.authenticateMerchant, upload.single('footerLogo'), async (req, res) => {
   try {
     const isPremium = await database.isPremiumActive();
     if (!isPremium) {
@@ -1246,7 +1246,7 @@ app.post('/api/premium/upload/footer-logo', upload.single('footerLogo'), async (
     // Update business settings with new footer logo
     const result = await database.updateBusinessSettings({
       customFooterLogoUrl: logoUrl
-    });
+    }, req.merchant.id);
     
     res.json({
       success: true,
