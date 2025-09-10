@@ -1244,13 +1244,15 @@
 
         async function activatePremium() {
             try {
-                const response = await fetch('/api/business/settings', {
-                    method: 'PUT',
+                const response = await fetch('/api/premium/activate', {
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        premiumActive: true
+                        premiumSettings: {
+                            premiumActive: true
+                        }
                     })
                 });
 
@@ -1587,6 +1589,13 @@
             try {
                 const response = await fetch('/api/business-settings');
                 const settings = await response.json();
+                console.log('🔍 Loaded business settings:', settings);
+                console.log('🔍 Logo fields in settings:', {
+                    logoUrl: settings.logoUrl,
+                    logo_url: settings.logo_url,
+                    logoPublicId: settings.logoPublicId,
+                    logo_public_id: settings.logo_public_id
+                });
                 
                 if (settings) {
                     document.getElementById('businessName').value = settings.name || '';
@@ -1695,10 +1704,10 @@
                 hideBusinessName: document.getElementById('hideBusinessName').checked,
                 termsAndConditions: document.getElementById('businessTerms').value || '',
                 
-                // Preserve important fields from existing settings
-                logoUrl: existingSettings.logoUrl || existingSettings.logo_url || '',
-                logoPublicId: existingSettings.logoPublicId || existingSettings.logo_public_id || '',
-                logoFilename: existingSettings.logoFilename || existingSettings.logo_filename || ''
+                // Preserve important fields from existing settings - only include if they have values
+                ...(existingSettings.logoUrl || existingSettings.logo_url ? { logoUrl: existingSettings.logoUrl || existingSettings.logo_url } : {}),
+                ...(existingSettings.logoPublicId || existingSettings.logo_public_id ? { logoPublicId: existingSettings.logoPublicId || existingSettings.logo_public_id } : {}),
+                ...(existingSettings.logoFilename || existingSettings.logo_filename ? { logoFilename: existingSettings.logoFilename || existingSettings.logo_filename } : {})
             };
             
             console.log('💾 Saving merged business settings from dashboard:', settings);
