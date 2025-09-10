@@ -313,12 +313,17 @@ class SupabaseDatabase {
     return digits;
   }
 
-  async getAllCustomers(limit = 50, offset = 0, searchTerm = null) {
+  async getAllCustomers(limit = 50, offset = 0, searchTerm = null, merchantId = null) {
     try {
       let query = this.supabase
         .from('customers')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
       
       // Apply search filter if provided
       if (searchTerm) {
@@ -333,11 +338,16 @@ class SupabaseDatabase {
         return [];
       }
       
-      // Get all invoices and orders to calculate customer statistics
-      const [invoicesResult, ordersResult] = await Promise.all([
-        this.supabase.from('invoices').select('customer_email, grand_total, created_at'),
-        this.supabase.from('orders').select('customer_email, total_amount, order_date, created_at')
-      ]);
+      // Get invoices and orders for this merchant to calculate customer statistics
+      const invoicesQuery = merchantId 
+        ? this.supabase.from('invoices').select('customer_email, grand_total, created_at').eq('merchant_id', merchantId)
+        : this.supabase.from('invoices').select('customer_email, grand_total, created_at');
+      
+      const ordersQuery = merchantId
+        ? this.supabase.from('orders').select('customer_email, total_amount, order_date, created_at').eq('merchant_id', merchantId)
+        : this.supabase.from('orders').select('customer_email, total_amount, order_date, created_at');
+      
+      const [invoicesResult, ordersResult] = await Promise.all([invoicesQuery, ordersQuery]);
       
       if (invoicesResult.error) console.warn('Error fetching invoices for customer stats:', invoicesResult.error);
       if (ordersResult.error) console.warn('Error fetching orders for customer stats:', ordersResult.error);
@@ -560,10 +570,14 @@ class SupabaseDatabase {
     }
   }
 
-  async getAllInvoices(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null) {
+  async getAllInvoices(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null, merchantId = null) {
     let query = this.supabase
       .from('invoices')
       .select('*');
+
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
 
     if (status) {
       query = query.eq('status', status);
@@ -893,6 +907,7 @@ class SupabaseDatabase {
           taxDescription: data.tax_description,
           hideBusinessName: data.hide_business_name,
           businessCode: data.business_code,
+          termsAndConditions: data.terms_conditions,
           logoUrl: data.logo_url,
           logoPublicId: data.logo_public_id,
           logoFilename: data.logo_filename,
