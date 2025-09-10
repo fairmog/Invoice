@@ -1586,11 +1586,11 @@ app.get('/api/subscription-info', async (req, res) => {
 });
 
 // Data Export API endpoint
-app.get('/api/export-data', async (req, res) => {
+app.get('/api/export-data', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    console.log('📥 Exporting account data...');
+    console.log('📥 Exporting account data for merchant:', req.merchant.id);
     
-    const data = await database.exportAllData();
+    const data = await database.exportAllData(req.merchant.id);
     
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename=account-data.json');
@@ -3062,11 +3062,11 @@ app.post('/api/export/analytics/pdf', async (req, res) => {
 */
 
 // API endpoint to get export status and options
-app.get('/api/export/options', async (req, res) => {
+app.get('/api/export/options', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const invoices = await database.getAllInvoices();
-    const customers = await database.getAllCustomers();
-    const products = await database.getAllProducts();
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const customers = await database.getAllCustomers(1000, 0, null, req.merchant.id);
+    const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
     
     res.json({
       success: true,
@@ -5600,15 +5600,15 @@ app.get('/api/performance', async (req, res) => {
 
 
 // Real-time metrics endpoint for live dashboard updates
-app.get('/api/analytics/realtime', async (req, res) => {
+app.get('/api/analytics/realtime', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
     
     // Get today's metrics
-    const todayInvoices = await database.getAllInvoices(1000, 0, null, null);
-    const todayOrders = await database.getAllOrders(1000, 0, null, null, todayStart.toISOString());
+    const todayInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const todayOrders = await database.getAllOrders(1000, 0, null, null, todayStart.toISOString(), null, req.merchant.id);
     
     const todayInvoicesFiltered = todayInvoices.filter(inv => 
       new Date(inv.created_at) >= todayStart
@@ -5671,16 +5671,16 @@ app.get('/api/analytics/realtime', async (req, res) => {
 });
 
 // Revenue analytics endpoint
-app.get('/api/analytics/revenue', async (req, res) => {
+app.get('/api/analytics/revenue', authMiddleware.authenticateMerchant, async (req, res) => {
   const startTime = Date.now();
   try {
     const { period = '30d', groupBy = 'day' } = req.query;
     
-    const cacheKey = getCacheKey('analytics-revenue', period, groupBy);
+    const cacheKey = getCacheKey('analytics-revenue', period, groupBy, req.merchant.id);
     let result = getFromCache(cacheKey);
     
     if (!result) {
-      const revenueData = await getRevenueAnalytics(period, groupBy);
+      const revenueData = await getRevenueAnalytics(period, groupBy, req.merchant.id);
       result = {
         success: true,
         data: revenueData
@@ -5741,16 +5741,16 @@ app.get('/api/analytics/customers', authMiddleware.authenticateMerchant, async (
 });
 
 // Product analytics endpoint
-app.get('/api/analytics/products', async (req, res) => {
+app.get('/api/analytics/products', authMiddleware.authenticateMerchant, async (req, res) => {
   const startTime = Date.now();
   try {
     const { period = '30d' } = req.query;
     
-    const cacheKey = getCacheKey('analytics-products', period);
+    const cacheKey = getCacheKey('analytics-products', period, req.merchant.id);
     let result = getFromCache(cacheKey);
     
     if (!result) {
-      const productAnalytics = await getProductAnalytics(period);
+      const productAnalytics = await getProductAnalytics(period, req.merchant.id);
       result = {
         success: true,
         data: productAnalytics
@@ -5776,14 +5776,14 @@ app.get('/api/analytics/products', async (req, res) => {
 });
 
 // Analytics helper functions
-async function getProductAnalytics(period = '30d') {
+async function getProductAnalytics(period = '30d', merchantId = null) {
   try {
-    const allProducts = await database.getAllProducts(1000, 0, null, false);
-    const categories = await database.getProductCategories();
-    const lowStockProducts = await database.getLowStockProducts();
+    const allProducts = await database.getAllProducts(1000, 0, null, false, merchantId);
+    const categories = await database.getProductCategories(merchantId);
+    const lowStockProducts = await database.getLowStockProducts(merchantId);
     
     // Get all invoices to calculate product sales
-    const allInvoices = await database.getAllInvoices(1000, 0, null, null);
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, merchantId);
     const productSales = {};
     
     allInvoices.forEach(invoice => {
@@ -5844,9 +5844,9 @@ async function getProductAnalytics(period = '30d') {
   }
 }
 
-async function getRevenueAnalytics(period = '30d', groupBy = 'day') {
+async function getRevenueAnalytics(period = '30d', groupBy = 'day', merchantId = null) {
   try {
-    const allInvoices = await database.getAllInvoices(1000, 0, null, null);
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, merchantId);
     const paidInvoices = allInvoices.filter(inv => inv.status === 'paid');
     
     // Calculate date range
@@ -6059,7 +6059,7 @@ async function getPendingOrdersValue() {
 }
 
 // Optimized search endpoints
-app.get('/api/search/invoices', async (req, res) => {
+app.get('/api/search/invoices', authMiddleware.authenticateMerchant, async (req, res) => {
   const startTime = Date.now();
   try {
     const { 
@@ -6308,7 +6308,7 @@ app.get('/api/search/orders', async (req, res) => {
 });
 
 // Advanced search endpoint with faceted search
-app.get('/api/search/advanced', async (req, res) => {
+app.get('/api/search/advanced', authMiddleware.authenticateMerchant, async (req, res) => {
   const startTime = Date.now();
   try {
     const { 
@@ -6317,8 +6317,8 @@ app.get('/api/search/advanced', async (req, res) => {
       limit = 10
     } = req.query;
     
-    // Check cache first
-    const cacheKey = getCacheKey('search-advanced', searchTerm, type, limit);
+    // Check cache first with merchant ID
+    const cacheKey = getCacheKey('search-advanced', searchTerm, type, limit, req.merchant.id);
     let result = getFromCache(cacheKey);
     
     if (!result) {
@@ -6332,7 +6332,7 @@ app.get('/api/search/advanced', async (req, res) => {
       const term = searchTerm.toLowerCase();
       
       if (type === 'all' || type === 'invoices') {
-        const invoices = await database.getAllInvoices();
+        const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
         results.invoices = invoices
           .filter(invoice => 
             invoice.invoice_number?.toLowerCase().includes(term) ||
@@ -6343,7 +6343,7 @@ app.get('/api/search/advanced', async (req, res) => {
       }
       
       if (type === 'all' || type === 'customers') {
-        const customers = await database.getAllCustomers();
+        const customers = await database.getAllCustomers(1000, 0, null, req.merchant.id);
         results.customers = customers
           .filter(customer => 
             customer.name?.toLowerCase().includes(term) ||
@@ -6354,7 +6354,7 @@ app.get('/api/search/advanced', async (req, res) => {
       }
       
       if (type === 'all' || type === 'products') {
-        const products = await database.getAllProducts();
+        const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
         results.products = products
           .filter(product => 
             product.name?.toLowerCase().includes(term) ||
@@ -6365,7 +6365,7 @@ app.get('/api/search/advanced', async (req, res) => {
       }
       
       if (type === 'all' || type === 'orders') {
-        const orders = await database.getAllOrders();
+        const orders = await database.getAllOrders(1000, 0, null, null, null, null, req.merchant.id);
         results.orders = orders
           .filter(order => 
             order.order_number?.toLowerCase().includes(term) ||
@@ -6408,53 +6408,12 @@ app.get('/api/search/advanced', async (req, res) => {
 });
 
 // Analytics API endpoints
-app.get('/api/analytics/revenue', async (req, res) => {
-  try {
-    const invoices = await database.getAllInvoices();
-    const orders = await database.getAllOrders();
-    
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-    
-    // Calculate revenue metrics
-    const totalRevenue = invoices
-      .filter(inv => inv.status === 'paid')
-      .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
-    
-    const monthlyRevenue = invoices
-      .filter(inv => inv.status === 'paid' && new Date(inv.invoice_date) >= startOfMonth)
-      .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
-    
-    const weeklyRevenue = invoices
-      .filter(inv => inv.status === 'paid' && new Date(inv.invoice_date) >= startOfWeek)
-      .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
-    
-    const paidInvoices = invoices.filter(inv => inv.status === 'paid');
-    const avgOrderValue = paidInvoices.length > 0 
-      ? totalRevenue / paidInvoices.length 
-      : 0;
-    
-    res.json({
-      success: true,
-      totalRevenue,
-      monthlyRevenue,
-      weeklyRevenue,
-      avgOrderValue
-    });
-  } catch (error) {
-    console.error('Error fetching revenue analytics:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch revenue analytics'
-    });
-  }
-});
+// REMOVED: Duplicate revenue analytics endpoint - use the one above with proper merchant isolation
 
-app.get('/api/analytics/sales', async (req, res) => {
+app.get('/api/analytics/sales', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const invoices = await database.getAllInvoices();
-    const orders = await database.getAllOrders();
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const orders = await database.getAllOrders(1000, 0, null, null, null, null, req.merchant.id);
     
     const totalOrders = orders.length;
     const completedOrders = orders.filter(order => order.status === 'delivered').length;
@@ -6482,46 +6441,12 @@ app.get('/api/analytics/sales', async (req, res) => {
   }
 });
 
-app.get('/api/analytics/customers', async (req, res) => {
-  try {
-    const customers = await database.getAllCustomers();
-    
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    const totalCustomers = customers.length;
-    const newCustomers = customers.filter(customer => 
-      new Date(customer.created_at) >= startOfMonth
-    ).length;
-    
-    const repeatCustomers = customers.filter(customer => 
-      customer.total_orders > 1
-    ).length;
-    
-    const retentionRate = totalCustomers > 0 
-      ? (repeatCustomers / totalCustomers * 100).toFixed(1) 
-      : 0;
-    
-    res.json({
-      success: true,
-      totalCustomers,
-      newCustomers,
-      repeatCustomers,
-      retentionRate: parseFloat(retentionRate)
-    });
-  } catch (error) {
-    console.error('Error fetching customer analytics:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch customer analytics'
-    });
-  }
-});
+// REMOVED: Duplicate customer analytics endpoint - use the one above with proper merchant isolation
 
-app.get('/api/analytics/top-products', async (req, res) => {
+app.get('/api/analytics/top-products', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const invoices = await database.getAllInvoices();
-    const products = await database.getAllProducts();
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
     
     // Aggregate product sales data
     const productSales = {};
@@ -6572,11 +6497,11 @@ app.get('/api/analytics/top-products', async (req, res) => {
   }
 });
 
-app.get('/api/analytics/recent-activity', async (req, res) => {
+app.get('/api/analytics/recent-activity', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const invoices = await database.getAllInvoices();
-    const orders = await database.getAllOrders();
-    const customers = await database.getAllCustomers();
+    const invoices = await database.getAllInvoices(50, 0, null, null, null, null, req.merchant.id);
+    const orders = await database.getAllOrders(50, 0, null, null, null, null, req.merchant.id);
+    const customers = await database.getAllCustomers(50, 0, null, req.merchant.id);
     
     const activities = [];
     
