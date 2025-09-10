@@ -1002,7 +1002,11 @@ app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (re
         taxEnabled: config.merchant.taxRate > 0,
         taxName: 'PPN',
         taxDescription: '',
-        termsAndConditions: ''
+        termsAndConditions: '',
+        // Include empty logo fields so frontend doesn't get undefined
+        logoUrl: null,
+        logoPublicId: null,
+        logoFilename: null
       };
       console.log('🔍 Returning default settings:', defaults);
       return res.json(defaults);
@@ -1061,7 +1065,11 @@ app.get('/api/business/settings', authMiddleware.authenticateMerchant, async (re
         taxEnabled: config.merchant.taxRate > 0,
         taxName: 'PPN',
         taxDescription: '',
-        termsAndConditions: ''
+        termsAndConditions: '',
+        // Include empty logo fields so frontend doesn't get undefined
+        logoUrl: null,
+        logoPublicId: null,
+        logoFilename: null
       });
     }
     
@@ -1096,10 +1104,10 @@ app.post('/api/business/settings', authMiddleware.authenticateMerchant, async (r
   }
 });
 
-app.put('/api/business/settings', async (req, res) => {
+app.put('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = req.body;
-    console.log('🏢 Updating business settings via PUT /api/business/settings:', settings);
+    console.log('🏢 Updating business settings via PUT /api/business/settings for merchant', req.merchant.id, ':', settings);
     
     const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
     
@@ -1299,9 +1307,9 @@ app.post('/api/premium/upload/footer-logo', authMiddleware.authenticateMerchant,
 });
 
 // Payment methods API endpoint
-app.get('/api/settings/payment-methods', async (req, res) => {
+app.get('/api/settings/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const paymentMethods = await database.getPaymentMethods();
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
     
     res.json({
       success: true,
@@ -1317,9 +1325,9 @@ app.get('/api/settings/payment-methods', async (req, res) => {
 });
 
 // Alternative payment methods API endpoint (without /settings/)
-app.get('/api/payment-methods', async (req, res) => {
+app.get('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const paymentMethods = await database.getPaymentMethods();
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
     
     res.json({
       success: true,
@@ -1543,9 +1551,9 @@ app.post('/api/account-settings', authMiddleware.authenticateMerchant, async (re
 });
 
 // Usage Statistics API endpoint
-app.get('/api/usage-stats', async (req, res) => {
+app.get('/api/usage-stats', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const stats = await database.getUsageStatistics();
+    const stats = await database.getUsageStatistics(req.merchant.id);
     res.json(stats);
   } catch (error) {
     console.error('Error loading usage statistics:', error);
@@ -1644,9 +1652,9 @@ app.post('/api/reset-account', async (req, res) => {
 });
 
 // Payment Methods API endpoints
-app.get('/api/payment-methods', async (req, res) => {
+app.get('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const paymentMethods = await database.getPaymentMethods();
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
     res.json(paymentMethods);
   } catch (error) {
     console.error('Error loading payment methods:', error);
@@ -1657,12 +1665,12 @@ app.get('/api/payment-methods', async (req, res) => {
   }
 });
 
-app.post('/api/payment-methods', async (req, res) => {
+app.post('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const methods = req.body;
-    console.log('💳 Updating payment methods:', methods);
+    console.log('💳 Updating payment methods for merchant', req.merchant.id, ':', methods);
     
-    const updatedMethods = await database.updatePaymentMethods(methods);
+    const updatedMethods = await database.updatePaymentMethods(methods, req.merchant.id);
     
     res.json({
       success: true,
@@ -4409,10 +4417,10 @@ app.get('/api/orders', async (req, res) => {
 });
 
 // Order stats route (must come before :id route)
-app.get('/api/orders/stats', async (req, res) => {
+app.get('/api/orders/stats', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
-    const stats = await database.getOrderStats(dateFrom, dateTo);
+    const stats = await database.getOrderStats(dateFrom, dateTo, req.merchant.id);
     res.json({
       success: true,
       stats
@@ -4712,9 +4720,9 @@ app.get('/api/customers', authMiddleware.authenticateMerchant, async (req, res) 
 });
 
 // Customer stats and export routes (must come before :id route)
-app.get('/api/customers/stats', async (req, res) => {
+app.get('/api/customers/stats', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const stats = await database.getCustomerStats();
+    const stats = await database.getCustomerStats(req.merchant.id);
     res.json({
       success: true,
       stats
@@ -4728,9 +4736,9 @@ app.get('/api/customers/stats', async (req, res) => {
   }
 });
 
-app.get('/api/customers/export/csv', async (req, res) => {
+app.get('/api/customers/export/csv', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const csvData = await database.exportCustomersToCSV();
+    const csvData = await database.exportCustomersToCSV(req.merchant.id);
     
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="customers.csv"');
@@ -4744,9 +4752,9 @@ app.get('/api/customers/export/csv', async (req, res) => {
   }
 });
 
-app.get('/api/customers/:id', async (req, res) => {
+app.get('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const customer = await database.getCustomerById(parseInt(req.params.id));
+    const customer = await database.getCustomerById(parseInt(req.params.id), req.merchant.id);
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -4767,9 +4775,9 @@ app.get('/api/customers/:id', async (req, res) => {
   }
 });
 
-app.put('/api/customers/:id', async (req, res) => {
+app.put('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.updateCustomer(parseInt(req.params.id), req.body);
+    const result = await database.updateCustomer(parseInt(req.params.id), req.body, req.merchant.id);
     if (result.changes === 0) {
       return res.status(404).json({
         success: false,
@@ -4790,9 +4798,9 @@ app.put('/api/customers/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/customers/:id', async (req, res) => {
+app.delete('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.deleteCustomer(parseInt(req.params.id));
+    const result = await database.deleteCustomer(parseInt(req.params.id), req.merchant.id);
     if (result.changes === 0) {
       return res.status(404).json({
         success: false,
@@ -4842,12 +4850,12 @@ app.post('/api/customers/smart-match', async (req, res) => {
 });
 
 // Statistics API (Combined invoice, order, and customer stats)
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
-    const invoiceStats = await database.getInvoiceStats(dateFrom, dateTo);
-    const orderStats = await database.getOrderStats(dateFrom, dateTo);
-    const customerStats = await database.getCustomerStats(dateFrom, dateTo);
+    const invoiceStats = await database.getInvoiceStats(dateFrom, dateTo, req.merchant.id);
+    const orderStats = await database.getOrderStats(dateFrom, dateTo, req.merchant.id);
+    const customerStats = await database.getCustomerStats(req.merchant.id);
     
     res.json({
       success: true,
