@@ -62,6 +62,20 @@ class AuthService {
 
       const merchant = await this.database.createMerchant(merchantData);
 
+      // Create default business settings for the new merchant
+      try {
+        const defaultBusinessSettings = {
+          name: businessName.trim(),
+          email: email.toLowerCase().trim(),
+          merchant_id: merchant.id
+        };
+        
+        await this.database.updateBusinessSettings(defaultBusinessSettings, merchant.id);
+        console.log(`✅ Created default business settings for merchant ${merchant.id} (${email})`);
+        console.error(`⚠️ Failed to create business settings for new merchant ${merchant.id}:`, settingsError);
+        // Continue without failing registration - settings can be created later
+      }
+
       // Send email verification email
       if (this.emailService) {
         try {
@@ -517,3 +531,5 @@ class AuthService {
 }
 
 export default AuthService;
+
+
