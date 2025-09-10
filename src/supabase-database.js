@@ -1955,14 +1955,14 @@ class SupabaseDatabase {
   }
 
   // Account Settings operations (alias for business settings for compatibility)
-  async getAccountSettings() {
+  async getAccountSettings(merchantId = null) {
     // Account settings are the same as business settings in this system
-    return await this.getBusinessSettings();
+    return await this.getBusinessSettings(merchantId);
   }
 
-  async updateAccountSettings(settings) {
+  async updateAccountSettings(settings, merchantId = null) {
     // Account settings are the same as business settings in this system
-    return await this.updateBusinessSettings(settings);
+    return await this.updateBusinessSettings(settings, merchantId);
   }
 
   // Premium Branding Helper Methods
