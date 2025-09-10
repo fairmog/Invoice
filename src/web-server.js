@@ -1383,13 +1383,19 @@ app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoU
     };
     
     console.log('📋 Updating business settings with logo:', {
+      merchantId: req.merchant.id,
+      merchantEmail: req.merchant.email,
       logo_url: updatedSettings.logo_url,
       logo_public_id: updatedSettings.logo_public_id,
       updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
     });
     
     const updateResult = await database.updateBusinessSettings(updatedSettings, req.merchant.id);
-    console.log('✅ Database update result:', { success: !!updateResult });
+    console.log('✅ Database update result:', { 
+      success: !!updateResult,
+      merchantId: req.merchant.id,
+      resultData: updateResult 
+    });
     
     res.json({
       success: true,
@@ -3602,6 +3608,14 @@ app.get('/api/invoices/:id', async (req, res) => {
 
     // Get current business settings for the invoice's merchant to ensure consistent display
     const currentBusinessSettings = await getCurrentBusinessSettings(invoice.merchant_id);
+    console.log('🔍 Debug: Business settings loaded for merchant', invoice.merchant_id, ':', {
+      name: currentBusinessSettings.name,
+      email: currentBusinessSettings.email,
+      logoUrl: currentBusinessSettings.logoUrl,
+      hasLogo: !!currentBusinessSettings.logoUrl,
+      termsAndConditions: currentBusinessSettings.termsAndConditions,
+      termsLength: currentBusinessSettings.termsAndConditions?.length || 0
+    });
     
     // Enhance invoice with business settings for consistent template rendering
     const enhancedInvoice = {
@@ -3622,6 +3636,7 @@ app.get('/api/invoices/:id', async (req, res) => {
         email: invoice.merchant_email || currentBusinessSettings.email,
         website: invoice.merchant_website || currentBusinessSettings.website,
         logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+        logoUrl: currentBusinessSettings.logoUrl || invoice.merchant_logo, // Ensure both fields are set for compatibility
         hideBusinessName: currentBusinessSettings.hideBusinessName || false,
         taxEnabled: currentBusinessSettings.taxEnabled || false,
         taxRate: currentBusinessSettings.taxRate || 0,
@@ -4037,6 +4052,7 @@ app.get('/api/customer/invoice/:token', async (req, res) => {
         email: invoice.merchant_email || currentBusinessSettings.email,
         website: invoice.merchant_website || currentBusinessSettings.website,
         logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+        logoUrl: currentBusinessSettings.logoUrl || invoice.merchant_logo, // Ensure both fields are set for compatibility
         hideBusinessName: currentBusinessSettings.hideBusinessName || false,
         taxEnabled: currentBusinessSettings.taxEnabled || false,
         taxRate: currentBusinessSettings.taxRate || 0,
@@ -5164,6 +5180,44 @@ app.get('/api/test-logo-url', async (req, res) => {
 });
 
 // Business logo test endpoint
+// Debug endpoint to check business settings for current merchant
+app.get('/api/debug-business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🔍 Debug business settings for merchant:', req.merchant.id, req.merchant.email);
+    
+    // Get business settings
+    const businessSettings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Raw business settings from database:', businessSettings);
+    
+    // Get processed settings
+    const currentSettings = await getCurrentBusinessSettings(req.merchant.id);
+    console.log('🔍 Processed business settings:', currentSettings);
+    
+    res.json({
+      success: true,
+      merchant: {
+        id: req.merchant.id,
+        email: req.merchant.email,
+        businessName: req.merchant.businessName
+      },
+      rawBusinessSettings: businessSettings,
+      processedSettings: currentSettings,
+      debug: {
+        hasLogo: !!currentSettings.logoUrl,
+        logoUrl: currentSettings.logoUrl,
+        hasTerms: !!currentSettings.termsAndConditions,
+        termsAndConditions: currentSettings.termsAndConditions
+      }
+    });
+  } catch (error) {
+    console.error('Error getting debug business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 app.get('/api/test-business-logo', async (req, res) => {
   try {
     console.log('🧪 Testing current business logo accessibility...');
