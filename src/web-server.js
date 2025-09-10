@@ -184,18 +184,23 @@ const xenditService = new XenditService();
 // Function to get current business settings
 async function getCurrentBusinessSettings(merchantId = null) {
   try {
+    console.log('🔍 getCurrentBusinessSettings called for merchantId:', merchantId);
     const dbSettings = await database.getBusinessSettings(merchantId) || {};
+    console.log('🔍 Raw dbSettings from database:', dbSettings);
+    
+    // FIXED: Prioritize merchant-specific database settings over environment variables
+    // Environment variables should only be used as fallbacks when no merchant data exists
     return {
-      name: process.env.MERCHANT_NAME || dbSettings.name || config.merchant.businessName,
-      email: process.env.MERCHANT_EMAIL || dbSettings.email || config.merchant.email,
-      address: process.env.MERCHANT_ADDRESS || dbSettings.address || config.merchant.address,
-      phone: process.env.MERCHANT_PHONE || dbSettings.phone || config.merchant.phone,
-      website: process.env.MERCHANT_WEBSITE || dbSettings.website || config.merchant.website,
-      taxId: process.env.MERCHANT_TAX_ID || dbSettings.taxId || config.merchant.taxId,
-      taxEnabled: process.env.MERCHANT_TAX_ENABLED === 'true' || dbSettings.taxEnabled || config.merchant.taxEnabled || false,
-      taxRate: parseFloat(process.env.MERCHANT_TAX_RATE) || dbSettings.taxRate || config.merchant.taxRate || 0,
-      taxName: process.env.MERCHANT_TAX_NAME || dbSettings.taxName || config.merchant.taxName || 'PPN',
-      taxDescription: process.env.MERCHANT_TAX_DESCRIPTION || dbSettings.taxDescription || config.merchant.taxDescription || '',
+      name: dbSettings.name || process.env.MERCHANT_NAME || config.merchant.businessName,
+      email: dbSettings.email || process.env.MERCHANT_EMAIL || config.merchant.email,
+      address: dbSettings.address || process.env.MERCHANT_ADDRESS || config.merchant.address,
+      phone: dbSettings.phone || process.env.MERCHANT_PHONE || config.merchant.phone,
+      website: dbSettings.website || process.env.MERCHANT_WEBSITE || config.merchant.website,
+      taxId: dbSettings.taxId || process.env.MERCHANT_TAX_ID || config.merchant.taxId,
+      taxEnabled: dbSettings.taxEnabled !== undefined ? dbSettings.taxEnabled : (process.env.MERCHANT_TAX_ENABLED === 'true' || config.merchant.taxEnabled || false),
+      taxRate: dbSettings.taxRate !== undefined ? dbSettings.taxRate : (parseFloat(process.env.MERCHANT_TAX_RATE) || config.merchant.taxRate || 0),
+      taxName: dbSettings.taxName || process.env.MERCHANT_TAX_NAME || config.merchant.taxName || 'PPN',
+      taxDescription: dbSettings.taxDescription || process.env.MERCHANT_TAX_DESCRIPTION || config.merchant.taxDescription || '',
       logoUrl: dbSettings.logoUrl || null,
       logoFilename: dbSettings.logoFilename || null,
       hideBusinessName: dbSettings.hideBusinessName || false,
@@ -978,11 +983,15 @@ app.post('/api/business-profile', authMiddleware.authenticateMerchant, (req, res
 // Business settings API endpoints
 app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
+    console.log('🔍 Loading business settings for merchant:', req.merchant.id, req.merchant.email);
     const settings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Raw settings from database:', settings);
+    console.log('🔍 Settings object keys:', Object.keys(settings || {}));
     
     // If no settings in database, return config defaults
     if (!settings || Object.keys(settings).length === 0) {
-      return res.json({
+      console.log('🔍 No settings found, returning defaults');
+      const defaults = {
         name: config.merchant.businessName,
         email: config.merchant.email,
         address: config.merchant.address,
@@ -994,9 +1003,12 @@ app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (re
         taxName: 'PPN',
         taxDescription: '',
         termsAndConditions: ''
-      });
+      };
+      console.log('🔍 Returning default settings:', defaults);
+      return res.json(defaults);
     }
     
+    console.log('🔍 Returning actual settings:', settings);
     res.json(settings);
   } catch (error) {
     console.error('Error loading business settings:', error);
@@ -1010,9 +1022,12 @@ app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (re
 app.post('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = req.body;
-    console.log('🏢 Updating business settings for merchant:', req.merchant.id, settings);
+    console.log('🏢 Updating business settings for merchant:', req.merchant.id, req.merchant.email);
+    console.log('🏢 Settings payload:', JSON.stringify(settings, null, 2));
     
     const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
+    console.log('🏢 Database update result:', updatedSettings ? 'Success' : 'Failed');
+    console.log('🏢 Updated settings returned:', updatedSettings);
     
     res.json({
       success: true,
@@ -3585,17 +3600,23 @@ app.get('/api/invoices', async (req, res) => {
   }
 });
 
-app.get('/api/invoices/:id', async (req, res) => {
+app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
   try {
     const idParam = req.params.id;
     let invoice;
     
+    console.log('🔒 Invoice access attempt for ID:', idParam);
+    console.log('🔒 Request merchant:', req.merchant?.id || 'anonymous');
+    console.log('🔒 Request source IP:', req.ip);
+    
     // Check if the parameter is a numeric ID or an invoice number
     if (/^\d+$/.test(idParam)) {
       // Numeric ID - use original method
+      console.log('🔍 Loading invoice by numeric ID:', parseInt(idParam));
       invoice = await database.getInvoice(parseInt(idParam));
     } else {
       // Invoice number - use invoice number lookup
+      console.log('🔍 Loading invoice by invoice number:', idParam);
       invoice = await database.getInvoiceByNumber(idParam);
     }
     
@@ -3606,16 +3627,33 @@ app.get('/api/invoices/:id', async (req, res) => {
       });
     }
 
+    console.log('🔒 Invoice found with merchant_id:', invoice.merchant_id);
+    
+    // SECURITY CHECK: If request is from an authenticated merchant, ensure they can only access their own invoices
+    if (req.merchant && req.merchant.id !== invoice.merchant_id) {
+      console.log('🚨 SECURITY: Merchant', req.merchant.id, 'attempted to access invoice belonging to merchant', invoice.merchant_id);
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own invoices'
+      });
+    }
+    
+    console.log('🔒 Access validated - Invoice details:', {
+      id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      merchant_id: invoice.merchant_id,
+      accessing_merchant: req.merchant?.id || 'public',
+      access_type: req.merchant ? 'merchant' : 'public'
+    });
+
     // Get current business settings for the invoice's merchant to ensure consistent display
     const currentBusinessSettings = await getCurrentBusinessSettings(invoice.merchant_id);
-    console.log('🔍 Debug: Business settings loaded for merchant', invoice.merchant_id, ':', {
-      name: currentBusinessSettings.name,
-      email: currentBusinessSettings.email,
-      logoUrl: currentBusinessSettings.logoUrl,
-      hasLogo: !!currentBusinessSettings.logoUrl,
-      termsAndConditions: currentBusinessSettings.termsAndConditions,
-      termsLength: currentBusinessSettings.termsAndConditions?.length || 0
-    });
+    console.log('✅ Business settings loaded for merchant_id', invoice.merchant_id);
+    
+    // Data consistency check
+    if (currentBusinessSettings.email && currentBusinessSettings.email !== invoice.merchant_email) {
+      console.log('⚠️  Data inconsistency detected between invoice and business settings for merchant', invoice.merchant_id);
+    }
     
     // Enhance invoice with business settings for consistent template rendering
     const enhancedInvoice = {
