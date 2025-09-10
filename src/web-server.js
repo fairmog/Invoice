@@ -1103,10 +1103,10 @@ app.put('/api/business/settings', async (req, res) => {
 });
 
 // Premium Branding API Endpoints
-app.get('/api/premium/status', async (req, res) => {
+app.get('/api/premium/status', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const isPremium = await database.isPremiumActive();
-    const brandingSettings = isPremium ? await database.getPremiumBrandingSettings() : null;
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    const brandingSettings = isPremium ? await database.getPremiumBrandingSettings(req.merchant.id) : null;
     
     res.json({
       success: true,
@@ -1133,7 +1133,7 @@ app.post('/api/premium/activate', authMiddleware.authenticateMerchant, async (re
     
     console.log('🏆 Activating premium branding with settings:', premiumSettings);
     
-    const result = await database.activatePremiumBranding(premiumSettings);
+    const result = await database.activatePremiumBranding(premiumSettings, req.merchant.id);
     
     res.json({
       success: true,
@@ -1151,7 +1151,7 @@ app.post('/api/premium/activate', authMiddleware.authenticateMerchant, async (re
 
 app.post('/api/premium/deactivate', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.deactivatePremiumBranding();
+    const result = await database.deactivatePremiumBranding(req.merchant.id);
     
     res.json({
       success: true,
@@ -1169,7 +1169,7 @@ app.post('/api/premium/deactivate', authMiddleware.authenticateMerchant, async (
 
 app.put('/api/premium/branding', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const isPremium = await database.isPremiumActive();
+    const isPremium = await database.isPremiumActive(req.merchant.id);
     if (!isPremium) {
       return res.status(403).json({
         success: false,
@@ -1203,7 +1203,7 @@ app.put('/api/premium/branding', authMiddleware.authenticateMerchant, async (req
 // Premium Logo Upload Endpoints
 app.post('/api/premium/upload/header-logo', authMiddleware.authenticateMerchant, upload.single('headerLogo'), async (req, res) => {
   try {
-    const isPremium = await database.isPremiumActive();
+    const isPremium = await database.isPremiumActive(req.merchant.id);
     if (!isPremium) {
       return res.status(403).json({
         success: false,
@@ -1244,7 +1244,7 @@ app.post('/api/premium/upload/header-logo', authMiddleware.authenticateMerchant,
 
 app.post('/api/premium/upload/footer-logo', authMiddleware.authenticateMerchant, upload.single('footerLogo'), async (req, res) => {
   try {
-    const isPremium = await database.isPremiumActive();
+    const isPremium = await database.isPremiumActive(req.merchant.id);
     if (!isPremium) {
       return res.status(403).json({
         success: false,
@@ -3600,8 +3600,8 @@ app.get('/api/invoices/:id', async (req, res) => {
       });
     }
 
-    // Get current business settings to ensure consistent display
-    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+    // Get current business settings for the invoice's merchant to ensure consistent display
+    const currentBusinessSettings = await getCurrentBusinessSettings(invoice.merchant_id);
     
     // Enhance invoice with business settings for consistent template rendering
     const enhancedInvoice = {
