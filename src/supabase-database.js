@@ -840,7 +840,17 @@ class SupabaseDatabase {
           logoPublicId: data.logo_public_id,
           logoFilename: data.logo_filename,
           createdAt: data.created_at,
-          updatedAt: data.updated_at
+          updatedAt: data.updated_at,
+          // Premium branding fields
+          premiumActive: data.premium_active,
+          customHeaderText: data.custom_header_text,
+          customHeaderLogoUrl: data.custom_header_logo_url,
+          customHeaderLogoPublicId: data.custom_header_logo_public_id,
+          customFooterLogoUrl: data.custom_footer_logo_url,
+          customFooterLogoPublicId: data.custom_footer_logo_public_id,
+          customHeaderBgColor: data.custom_header_bg_color,
+          customFooterBgColor: data.custom_footer_bg_color,
+          hideAspreeBranding: data.hide_aspree_branding
         };
       }
       
