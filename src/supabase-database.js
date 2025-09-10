@@ -1966,9 +1966,9 @@ class SupabaseDatabase {
   }
 
   // Premium Branding Helper Methods
-  async isPremiumActive() {
+  async isPremiumActive(merchantId = null) {
     try {
-      const businessSettings = await this.getBusinessSettings();
+      const businessSettings = await this.getBusinessSettings(merchantId);
       return businessSettings?.premiumActive === true;
     } catch (error) {
       console.error('Error checking premium status:', error);
@@ -1976,9 +1976,9 @@ class SupabaseDatabase {
     }
   }
 
-  async getPremiumBrandingSettings() {
+  async getPremiumBrandingSettings(merchantId = null) {
     try {
-      const businessSettings = await this.getBusinessSettings();
+      const businessSettings = await this.getBusinessSettings(merchantId);
       if (!businessSettings?.premiumActive) {
         return null;
       }
@@ -1997,26 +1997,26 @@ class SupabaseDatabase {
     }
   }
 
-  async activatePremiumBranding(premiumSettings = {}) {
+  async activatePremiumBranding(premiumSettings = {}, merchantId = null) {
     try {
       const updateData = {
         premiumActive: true,
         ...premiumSettings
       };
 
-      return await this.updateBusinessSettings(updateData);
+      return await this.updateBusinessSettings(updateData, merchantId);
     } catch (error) {
       console.error('Error activating premium branding:', error);
       throw error;
     }
   }
 
-  async deactivatePremiumBranding() {
+  async deactivatePremiumBranding(merchantId = null) {
     try {
       return await this.updateBusinessSettings({
         premiumActive: false,
         hideAspreeBranding: false
-      });
+      }, merchantId);
     } catch (error) {
       console.error('Error deactivating premium branding:', error);
       throw error;
