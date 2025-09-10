@@ -31,7 +31,8 @@ class SimpleEmailService {
       host: this.config.host,
       port: this.config.port,
       user: this.config.user,
-      passLength: this.config.pass ? this.config.pass.length : 0
+      passLength: this.config.pass ? this.config.pass.length : 0,
+      secure: this.config.secure
     });
     
     // Check if we have valid credentials
@@ -40,9 +41,12 @@ class SimpleEmailService {
       console.log('⚠️ Email credentials not configured - running in mock mode');
       console.log('⚠️ User:', this.config.user);
       console.log('⚠️ Pass length:', this.config.pass ? this.config.pass.length : 0);
+      console.log('⚠️ Pass starts with:', this.config.pass ? this.config.pass.substring(0, 4) + '...' : 'undefined');
       this.isConfigured = false;
       return;
     }
+
+    console.log('✅ Email credentials found - attempting SMTP connection...');
 
     try {
       this.transporter = nodemailer.createTransport({
@@ -56,12 +60,24 @@ class SimpleEmailService {
       });
 
       // Test connection
+      console.log('🔍 Testing SMTP connection to', this.config.host + ':' + this.config.port, '...');
       await this.transporter.verify();
-      console.log('✅ Email service connected:', this.config.user);
+      console.log('✅ Email service connected successfully:', this.config.user);
       this.isConfigured = true;
       
     } catch (error) {
-      console.error('❌ Email service failed:', error.message);
+      console.error('❌ Email service connection failed!');
+      console.error('❌ Error:', error.message);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error command:', error.command);
+      console.error('❌ Full error details:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        responseCode: error.responseCode
+      });
+      console.log('⚠️ Falling back to mock mode - emails will be logged to console instead');
       this.transporter = null;
       this.isConfigured = false;
     }
@@ -1209,8 +1225,17 @@ class SimpleEmailService {
       };
 
       console.log(`📧 Sending password reset email to ${merchantEmail}...`);
+      console.log(`📧 Mail options:`, {
+        from: mailOptions.from,
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        hasHtml: !!mailOptions.html
+      });
+      
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Password reset email sent successfully: ${result.messageId}`);
+      console.log(`✅ Password reset email sent successfully!`);
+      console.log(`✅ Message ID: ${result.messageId}`);
+      console.log(`✅ Response: ${result.response}`);
       
       return {
         success: true,
@@ -1218,7 +1243,17 @@ class SimpleEmailService {
         resetUrl: resetUrl // Remove in production
       };
     } catch (error) {
-      console.error('❌ Password reset email failed:', error);
+      console.error('❌ Failed to send password reset email!');
+      console.error('❌ Error:', error.message);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error command:', error.command);
+      console.error('❌ Full error details:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        responseCode: error.responseCode
+      });
       return {
         success: false,
         error: error.message
