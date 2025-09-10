@@ -313,15 +313,65 @@ class SupabaseDatabase {
     return digits;
   }
 
-  async getAllCustomers(limit = 50, offset = 0) {
-    const { data, error } = await this.supabase
-      .from('customers')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) throw error;
-    return data || [];
+  async getAllCustomers(limit = 50, offset = 0, searchTerm = null) {
+    try {
+      let query = this.supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      // Apply search filter if provided
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`);
+      }
+      
+      const { data: customers, error } = await query.range(offset, offset + limit - 1);
+      if (error) throw error;
+      
+      if (!customers || customers.length === 0) {
+        return [];
+      }
+      
+      // Get all invoices and orders to calculate customer statistics
+      const [invoicesResult, ordersResult] = await Promise.all([
+        this.supabase.from('invoices').select('customer_email, grand_total, created_at'),
+        this.supabase.from('orders').select('customer_email, total_amount, order_date, created_at')
+      ]);
+      
+      if (invoicesResult.error) console.warn('Error fetching invoices for customer stats:', invoicesResult.error);
+      if (ordersResult.error) console.warn('Error fetching orders for customer stats:', ordersResult.error);
+      
+      const allInvoices = invoicesResult.data || [];
+      const allOrders = ordersResult.data || [];
+      
+      // Calculate statistics for each customer
+      const customersWithStats = customers.map(customer => {
+        const customerInvoices = allInvoices.filter(i => i.customer_email === customer.email);
+        const customerOrders = allOrders.filter(o => o.customer_email === customer.email);
+        
+        const totalSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+        const totalOrders = customerOrders.length;
+        const totalInvoices = customerInvoices.length;
+        const lastOrderDate = customerOrders.length > 0 ? 
+          customerOrders.sort((a, b) => new Date(b.order_date || b.created_at) - new Date(a.order_date || a.created_at))[0].order_date || customerOrders[0].created_at : null;
+        
+        return {
+          ...customer,
+          total_spent: totalSpent,
+          total_orders: totalOrders,
+          total_invoices: totalInvoices,
+          last_order_date: lastOrderDate,
+          status: totalOrders > 0 ? 'active' : 'inactive',
+          avg_order_value: totalOrders > 0 ? totalSpent / totalOrders : 0
+        };
+      });
+      
+      return customersWithStats;
+    } catch (error) {
+      console.error('Error in getAllCustomers:', error);
+      throw error;
+    }
   }
 
   // Invoice operations
