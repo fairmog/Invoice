@@ -4629,13 +4629,14 @@ app.post('/api/orders/seed', async (req, res) => {
 });
 
 // Customer Management API Endpoints
-app.get('/api/customers', async (req, res) => {
+app.get('/api/customers', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { limit = 50, offset = 0, search } = req.query;
     const customers = await database.getAllCustomers(
       parseInt(limit),
       parseInt(offset),
-      search
+      search,
+      req.merchant.id
     );
     
     res.json({
@@ -5613,16 +5614,16 @@ app.get('/api/analytics/revenue', async (req, res) => {
 });
 
 // Customer analytics endpoint
-app.get('/api/analytics/customers', async (req, res) => {
+app.get('/api/analytics/customers', authMiddleware.authenticateMerchant, async (req, res) => {
   const startTime = Date.now();
   try {
     const { period = '30d' } = req.query;
     
-    const cacheKey = getCacheKey('analytics-customers', period);
+    const cacheKey = getCacheKey('analytics-customers', period, req.merchant.id);
     let result = getFromCache(cacheKey);
     
     if (!result) {
-      const customerAnalytics = await getCustomerAnalytics(period);
+      const customerAnalytics = await getCustomerAnalytics(period, req.merchant.id);
       result = {
         success: true,
         data: customerAnalytics
@@ -5830,10 +5831,10 @@ async function getRevenueAnalytics(period = '30d', groupBy = 'day') {
   }
 }
 
-async function getCustomerAnalytics(period = '30d') {
+async function getCustomerAnalytics(period = '30d', merchantId = null) {
   try {
-    const allCustomers = await database.getAllCustomers(1000, 0, null);
-    const allInvoices = await database.getAllInvoices(1000, 0, null, null);
+    const allCustomers = await database.getAllCustomers(1000, 0, null, merchantId);
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, merchantId);
     
     // Calculate customer lifetime values
     const customerValues = {};
