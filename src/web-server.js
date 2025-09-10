@@ -327,6 +327,15 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Auth-specific rate limiting (more lenient for login flows)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 200 auth requests per windowMs (more generous for dev/testing)
+  message: 'Too many authentication requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Stricter rate limiting for AI/PDF endpoints
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -336,7 +345,18 @@ const aiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use('/api/', apiLimiter);
+// Apply rate limiting to specific API groups (excluding auth endpoints)
+app.use('/api/business', apiLimiter);
+app.use('/api/products', apiLimiter);
+app.use('/api/customers', apiLimiter);
+app.use('/api/orders', apiLimiter);
+app.use('/api/invoices', apiLimiter);
+app.use('/api/premium', apiLimiter);
+app.use('/api/upload', apiLimiter);
+app.use('/api/remove', apiLimiter);
+
+// Apply auth-specific rate limiting only to auth endpoints
+app.use('/api/auth', authLimiter);
 app.use('/api/generate-invoice', aiLimiter);
 app.use('/api/generate-pdf', aiLimiter);
 app.use('/api/export/', aiLimiter);
