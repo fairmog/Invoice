@@ -1061,6 +1061,27 @@ app.post('/api/business/settings', async (req, res) => {
   }
 });
 
+app.put('/api/business/settings', async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('🏢 Updating business settings via PUT /api/business/settings:', settings);
+    
+    const updatedSettings = await database.updateBusinessSettings(settings);
+    
+    res.json({
+      success: true,
+      message: 'Business settings updated successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error updating business settings via PUT:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update business settings'
+    });
+  }
+});
+
 // Premium Branding API Endpoints
 app.get('/api/premium/status', async (req, res) => {
   try {
