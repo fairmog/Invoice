@@ -956,7 +956,7 @@ app.post('/api/business-profile', authMiddleware.authenticateMerchant, (req, res
 });
 
 // Business settings API endpoints
-app.get('/api/business-settings', authMiddleware.requireAuth(database), async (req, res) => {
+app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = await database.getBusinessSettings(req.merchant.id);
     
@@ -987,7 +987,7 @@ app.get('/api/business-settings', authMiddleware.requireAuth(database), async (r
   }
 });
 
-app.post('/api/business-settings', authMiddleware.requireAuth(database), async (req, res) => {
+app.post('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = req.body;
     console.log('🏢 Updating business settings for merchant:', req.merchant.id, settings);
@@ -1009,7 +1009,7 @@ app.post('/api/business-settings', authMiddleware.requireAuth(database), async (
 });
 
 // Route aliases to handle frontend calls to /api/business/settings (with slash)
-app.get('/api/business/settings', authMiddleware.requireAuth(database), async (req, res) => {
+app.get('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = await database.getBusinessSettings(req.merchant.id);
     
@@ -1040,7 +1040,7 @@ app.get('/api/business/settings', authMiddleware.requireAuth(database), async (r
   }
 });
 
-app.post('/api/business/settings', authMiddleware.requireAuth(database), async (req, res) => {
+app.post('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = req.body;
     console.log('🏢 Updating business settings via /api/business/settings for merchant:', req.merchant.id, settings);
@@ -1300,7 +1300,7 @@ app.get('/api/payment-methods', async (req, res) => {
 });
 
 // Business logo upload endpoint
-app.post('/api/upload-business-logo', authMiddleware.requireAuth(database), logoUpload.single('logo'), async (req, res) => {
+app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoUpload.single('logo'), async (req, res) => {
   try {
     console.log('📸 Logo upload request received for merchant:', req.merchant?.id);
     
@@ -1400,7 +1400,7 @@ app.post('/api/upload-business-logo', authMiddleware.requireAuth(database), logo
 });
 
 // Remove business logo endpoint
-app.delete('/api/remove-business-logo', authMiddleware.requireAuth(database), async (req, res) => {
+app.delete('/api/remove-business-logo', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     console.log('🗑️  Logo removal request received for merchant:', req.merchant?.id);
     
@@ -1467,7 +1467,7 @@ app.delete('/api/remove-business-logo', authMiddleware.requireAuth(database), as
 });
 
 // Account Settings API endpoints
-app.get('/api/account-settings', authMiddleware.requireAuth(database), async (req, res) => {
+app.get('/api/account-settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = await database.getAccountSettings(req.merchant.id);
     res.json(settings || {});
@@ -1480,7 +1480,7 @@ app.get('/api/account-settings', authMiddleware.requireAuth(database), async (re
   }
 });
 
-app.post('/api/account-settings', authMiddleware.requireAuth(database), async (req, res) => {
+app.post('/api/account-settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const settings = req.body;
     console.log('👤 Updating account settings for merchant:', req.merchant.id, settings);
@@ -2315,7 +2315,7 @@ app.post('/api/test-email', async (req, res) => {
 });
 
 // STAGE 1: Preview-only invoice generation (no database save)
-app.post('/api/preview-invoice', authMiddleware.requireAuth(database), async (req, res) => {
+app.post('/api/preview-invoice', authMiddleware.authenticateMerchant, async (req, res) => {
   const startTime = Date.now();
   try {
     const { message, businessProfile } = req.body;
