@@ -294,10 +294,10 @@ class AuthService {
       const resetToken = crypto.randomBytes(32).toString('hex');
       const resetExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
 
-      // Save reset token
+      // Save reset token (using snake_case for database fields)
       await this.database.updateMerchant(merchant.id, {
-        resetToken,
-        resetExpiry
+        reset_token: resetToken,
+        reset_expiry: resetExpiry
       });
 
       // Send password reset email
@@ -359,11 +359,11 @@ class AuthService {
       // Hash new password
       const hashedPassword = await bcrypt.hash(newPassword, this.saltRounds);
 
-      // Update password and clear reset token
+      // Update password and clear reset token (using snake_case for database fields)
       await this.database.updateMerchant(merchant.id, {
         password: hashedPassword,
-        resetToken: null,
-        resetExpiry: null,
+        reset_token: null,
+        reset_expiry: null,
         loginAttempts: 0, // Reset failed attempts
         lockedUntil: null,
         updatedAt: new Date().toISOString()
