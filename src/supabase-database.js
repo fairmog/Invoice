@@ -850,13 +850,20 @@ class SupabaseDatabase {
   }
 
   // Business Settings operations
-  async getBusinessSettings() {
+  async getBusinessSettings(merchantId = null) {
     try {
-      const { data, error } = await this.supabase
+      let query = this.supabase
         .from('business_settings')
-        .select('*')
-        .limit(1)
-        .single();
+        .select('*');
+      
+      // If merchantId provided, filter by it; otherwise get the first record (for backward compatibility)
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      } else {
+        query = query.limit(1);
+      }
+      
+      const { data, error } = await query.single();
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -911,7 +918,7 @@ class SupabaseDatabase {
     }
   }
 
-  async updateBusinessSettings(settings) {
+  async updateBusinessSettings(settings, merchantId = null) {
     try {
       console.log('🏢 Updating business settings with data:', settings);
       
@@ -992,12 +999,18 @@ class SupabaseDatabase {
 
       console.log('📋 Mapped settings for database:', mappedSettings);
 
-      // Check if business settings exist
-      const { data: existing, error: selectError } = await this.supabase
+      // Check if business settings exist for this merchant
+      let existingQuery = this.supabase
         .from('business_settings')
-        .select('*')
-        .limit(1)
-        .single();
+        .select('*');
+      
+      if (merchantId) {
+        existingQuery = existingQuery.eq('merchant_id', merchantId);
+      } else {
+        existingQuery = existingQuery.limit(1);
+      }
+      
+      const { data: existing, error: selectError } = await existingQuery.single();
 
       if (selectError && selectError.code !== 'PGRST116') {
         console.error('💥 Error checking existing business settings:', selectError.message);
@@ -1021,6 +1034,10 @@ class SupabaseDatabase {
         result = data;
       } else {
         console.log('✨ Creating new business settings record');
+        // Add merchant_id to new records if provided
+        if (merchantId) {
+          mappedSettings.merchant_id = merchantId;
+        }
         const { data, error } = await this.supabase
           .from('business_settings')
           .insert(mappedSettings)
