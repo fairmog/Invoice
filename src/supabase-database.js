@@ -1517,13 +1517,20 @@ class SupabaseDatabase {
   }
 
   // Payment Methods operations
-  async getPaymentMethods() {
+  async getPaymentMethods(merchantId = null) {
     try {
-      console.log('💳 Fetching payment methods from database...');
+      console.log('💳 Fetching payment methods from database for merchant:', merchantId);
       
-      const { data, error } = await this.supabase
+      let query = this.supabase
         .from('payment_methods')
         .select('*');
+
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('💥 Error fetching payment methods:', error.message);
@@ -1538,9 +1545,30 @@ class SupabaseDatabase {
             ...method.config_json
           };
         });
-        console.log('✅ Payment methods retrieved:', Object.keys(methods));
+        console.log('✅ Payment methods retrieved for merchant', merchantId, ':', Object.keys(methods));
       } else {
-        console.log('📋 No payment methods found in database');
+        console.log('📋 No payment methods found in database for merchant:', merchantId);
+        // Return default payment methods structure if none found
+        methods.bank_transfer = {
+          enabled: false,
+          bank_name: "",
+          account_number: "",
+          account_holder_name: "",
+          instructions: ""
+        };
+        methods.xendit = {
+          enabled: false,
+          environment: "sandbox",
+          secret_key: "",
+          public_key: "",
+          webhook_token: "",
+          payment_methods: {
+            bank_transfer: true,
+            ewallet: true,
+            retail_outlet: true,
+            credit_card: true
+          }
+        };
       }
 
       return methods;
@@ -1550,14 +1578,14 @@ class SupabaseDatabase {
     }
   }
 
-  async updatePaymentMethods(methods) {
+  async updatePaymentMethods(methods, merchantId = null) {
     try {
-      console.log('💳 Updating payment methods in database:', methods);
+      console.log('💳 Updating payment methods in database for merchant', merchantId, ':', methods);
       
       for (const [methodType, config] of Object.entries(methods)) {
         const { enabled, ...configData } = config;
         
-        console.log(`💳 Processing ${methodType}:`, { enabled, configData });
+        console.log(`💳 Processing ${methodType} for merchant ${merchantId}:`, { enabled, configData });
         
         // Try upsert first
         const { data, error } = await this.supabase
@@ -1565,9 +1593,10 @@ class SupabaseDatabase {
           .upsert({
             method_type: methodType,
             enabled: enabled,
-            config_json: configData
+            config_json: configData,
+            merchant_id: merchantId
           }, {
-            onConflict: 'method_type'
+            onConflict: 'method_type,merchant_id'
           })
           .select();
 
@@ -2226,27 +2255,42 @@ class SupabaseDatabase {
     }
   }
 
-  async getCustomerStats() {
+  async getCustomerStats(merchantId = null) {
     try {
-      // Get all customers
-      const { data: customers, error: customerError } = await this.supabase
+      // Get customers filtered by merchant
+      let customerQuery = this.supabase
         .from('customers')
         .select('*');
       
+      if (merchantId) {
+        customerQuery = customerQuery.eq('merchant_id', merchantId);
+      }
+
+      const { data: customers, error: customerError } = await customerQuery;
       if (customerError) throw customerError;
 
-      // Get all invoices for CLV calculation
-      const { data: invoices, error: invoiceError } = await this.supabase
+      // Get invoices filtered by merchant for CLV calculation
+      let invoiceQuery = this.supabase
         .from('invoices')
         .select('customer_email, grand_total, created_at');
       
+      if (merchantId) {
+        invoiceQuery = invoiceQuery.eq('merchant_id', merchantId);
+      }
+
+      const { data: invoices, error: invoiceError } = await invoiceQuery;
       if (invoiceError) throw invoiceError;
 
-      // Get all orders
-      const { data: orders, error: orderError } = await this.supabase
+      // Get orders filtered by merchant
+      let orderQuery = this.supabase
         .from('orders')
         .select('customer_email, created_at');
       
+      if (merchantId) {
+        orderQuery = orderQuery.eq('merchant_id', merchantId);
+      }
+
+      const { data: orders, error: orderError } = await orderQuery;
       if (orderError) throw orderError;
 
       const totalCustomers = customers.length;
@@ -2297,6 +2341,119 @@ class SupabaseDatabase {
         average_clv: 0,
         total_clv: 0
       };
+    }
+  }
+
+  async getCustomerById(customerId, merchantId = null) {
+    try {
+      let query = this.supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId);
+
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query.single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null; // Customer not found
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching customer by ID:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomer(customerId, customerData, merchantId = null) {
+    try {
+      let query = this.supabase
+        .from('customers')
+        .update({
+          ...customerData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', customerId);
+
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query.select();
+
+      if (error) throw error;
+
+      return { changes: data ? data.length : 0 };
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      throw error;
+    }
+  }
+
+  async deleteCustomer(customerId, merchantId = null) {
+    try {
+      let query = this.supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId);
+
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query.select();
+
+      if (error) throw error;
+
+      return { changes: data ? data.length : 0 };
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      throw error;
+    }
+  }
+
+  async exportCustomersToCSV(merchantId = null) {
+    try {
+      const customers = await this.getAllCustomers(1000, 0, null, merchantId);
+      
+      const headers = [
+        'ID', 'Name', 'Email', 'Phone', 'Address', 
+        'Invoice Count', 'Total Spent', 'First Invoice Date', 'Last Invoice Date',
+        'Created At', 'Updated At'
+      ];
+
+      const csvRows = [headers.join(',')];
+      
+      customers.forEach(customer => {
+        const row = [
+          customer.id,
+          `"${customer.name || ''}"`,
+          `"${customer.email || ''}"`,
+          `"${customer.phone || ''}"`,
+          `"${customer.address || ''}"`,
+          customer.invoice_count || 0,
+          customer.total_spent || 0,
+          customer.first_invoice_date ? `"${customer.first_invoice_date}"` : '""',
+          customer.last_invoice_date ? `"${customer.last_invoice_date}"` : '""',
+          customer.created_at ? `"${customer.created_at}"` : '""',
+          customer.updated_at ? `"${customer.updated_at}"` : '""'
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      return csvRows.join('\n');
+    } catch (error) {
+      console.error('Error exporting customers to CSV:', error);
+      throw error;
     }
   }
 
