@@ -1008,6 +1008,59 @@ app.post('/api/business-settings', async (req, res) => {
   }
 });
 
+// Route aliases to handle frontend calls to /api/business/settings (with slash)
+app.get('/api/business/settings', async (req, res) => {
+  try {
+    const settings = await database.getBusinessSettings();
+    
+    // If no settings in database, return config defaults
+    if (!settings || Object.keys(settings).length === 0) {
+      return res.json({
+        name: config.merchant.businessName,
+        email: config.merchant.email,
+        address: config.merchant.address,
+        phone: config.merchant.phone,
+        website: config.merchant.website,
+        taxId: config.merchant.taxId,
+        taxRate: config.merchant.taxRate || 0,
+        taxEnabled: config.merchant.taxRate > 0,
+        taxName: 'PPN',
+        taxDescription: '',
+        termsAndConditions: ''
+      });
+    }
+    
+    res.json(settings);
+  } catch (error) {
+    console.error('Error loading business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load business settings'
+    });
+  }
+});
+
+app.post('/api/business/settings', async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('🏢 Updating business settings via /api/business/settings:', settings);
+    
+    const updatedSettings = await database.updateBusinessSettings(settings);
+    
+    res.json({
+      success: true,
+      message: 'Business settings saved successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error saving business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save business settings'
+    });
+  }
+});
+
 // Premium Branding API Endpoints
 app.get('/api/premium/status', async (req, res) => {
   try {
