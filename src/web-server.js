@@ -182,9 +182,9 @@ const authService = new AuthService(database, emailService);
 const xenditService = new XenditService();
 
 // Function to get current business settings
-async function getCurrentBusinessSettings() {
+async function getCurrentBusinessSettings(merchantId = null) {
   try {
-    const dbSettings = await database.getBusinessSettings() || {};
+    const dbSettings = await database.getBusinessSettings(merchantId) || {};
     return {
       name: process.env.MERCHANT_NAME || dbSettings.name || config.merchant.businessName,
       email: process.env.MERCHANT_EMAIL || dbSettings.email || config.merchant.email,
@@ -956,9 +956,9 @@ app.post('/api/business-profile', authMiddleware.authenticateMerchant, (req, res
 });
 
 // Business settings API endpoints
-app.get('/api/business-settings', async (req, res) => {
+app.get('/api/business-settings', authMiddleware.requireAuth(database), async (req, res) => {
   try {
-    const settings = await database.getBusinessSettings();
+    const settings = await database.getBusinessSettings(req.merchant.id);
     
     // If no settings in database, return config defaults
     if (!settings || Object.keys(settings).length === 0) {
@@ -987,12 +987,12 @@ app.get('/api/business-settings', async (req, res) => {
   }
 });
 
-app.post('/api/business-settings', async (req, res) => {
+app.post('/api/business-settings', authMiddleware.requireAuth(database), async (req, res) => {
   try {
     const settings = req.body;
-    console.log('🏢 Updating business settings:', settings);
+    console.log('🏢 Updating business settings for merchant:', req.merchant.id, settings);
     
-    const updatedSettings = await database.updateBusinessSettings(settings);
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
     
     res.json({
       success: true,
@@ -1009,9 +1009,9 @@ app.post('/api/business-settings', async (req, res) => {
 });
 
 // Route aliases to handle frontend calls to /api/business/settings (with slash)
-app.get('/api/business/settings', async (req, res) => {
+app.get('/api/business/settings', authMiddleware.requireAuth(database), async (req, res) => {
   try {
-    const settings = await database.getBusinessSettings();
+    const settings = await database.getBusinessSettings(req.merchant.id);
     
     // If no settings in database, return config defaults
     if (!settings || Object.keys(settings).length === 0) {
@@ -1040,12 +1040,12 @@ app.get('/api/business/settings', async (req, res) => {
   }
 });
 
-app.post('/api/business/settings', async (req, res) => {
+app.post('/api/business/settings', authMiddleware.requireAuth(database), async (req, res) => {
   try {
     const settings = req.body;
-    console.log('🏢 Updating business settings via /api/business/settings:', settings);
+    console.log('🏢 Updating business settings via /api/business/settings for merchant:', req.merchant.id, settings);
     
-    const updatedSettings = await database.updateBusinessSettings(settings);
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
     
     res.json({
       success: true,
@@ -1300,7 +1300,7 @@ app.get('/api/payment-methods', async (req, res) => {
 });
 
 // Business logo upload endpoint
-app.post('/api/upload-business-logo', logoUpload.single('logo'), async (req, res) => {
+app.post('/api/upload-business-logo', authMiddleware.requireAuth(database), logoUpload.single('logo'), async (req, res) => {
   try {
     console.log('📸 Logo upload request received for merchant:', req.merchant?.id);
     
@@ -1319,7 +1319,7 @@ app.post('/api/upload-business-logo', logoUpload.single('logo'), async (req, res
     });
     
     // Upload to Cloudinary
-    const currentSettings = await database.getBusinessSettings() || {};
+    const currentSettings = await database.getBusinessSettings(req.merchant.id) || {};
     const businessName = currentSettings.name || 'business';
     console.log('🏢 Using business name for upload:', businessName);
     
@@ -1368,7 +1368,7 @@ app.post('/api/upload-business-logo', logoUpload.single('logo'), async (req, res
       updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
     });
     
-    const updateResult = await database.updateBusinessSettings(updatedSettings);
+    const updateResult = await database.updateBusinessSettings(updatedSettings, req.merchant.id);
     console.log('✅ Database update result:', { success: !!updateResult });
     
     res.json({
@@ -1400,11 +1400,11 @@ app.post('/api/upload-business-logo', logoUpload.single('logo'), async (req, res
 });
 
 // Remove business logo endpoint
-app.delete('/api/remove-business-logo', async (req, res) => {
+app.delete('/api/remove-business-logo', authMiddleware.requireAuth(database), async (req, res) => {
   try {
     console.log('🗑️  Logo removal request received for merchant:', req.merchant?.id);
     
-    const currentSettings = await database.getBusinessSettings() || {};
+    const currentSettings = await database.getBusinessSettings(req.merchant.id) || {};
     console.log('📋 Current business settings:', {
       hasLogoUrl: !!currentSettings.logo_url,
       hasLogoPublicId: !!currentSettings.logo_public_id,
@@ -1443,7 +1443,7 @@ app.delete('/api/remove-business-logo', async (req, res) => {
       updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
     });
     
-    const updateResult = await database.updateBusinessSettings(updatedSettings);
+    const updateResult = await database.updateBusinessSettings(updatedSettings, req.merchant.id);
     console.log('✅ Database update result:', { success: !!updateResult });
     
     res.json({
@@ -1467,9 +1467,9 @@ app.delete('/api/remove-business-logo', async (req, res) => {
 });
 
 // Account Settings API endpoints
-app.get('/api/account-settings', async (req, res) => {
+app.get('/api/account-settings', authMiddleware.requireAuth(database), async (req, res) => {
   try {
-    const settings = await database.getAccountSettings();
+    const settings = await database.getAccountSettings(req.merchant.id);
     res.json(settings || {});
   } catch (error) {
     console.error('Error loading account settings:', error);
@@ -1480,12 +1480,12 @@ app.get('/api/account-settings', async (req, res) => {
   }
 });
 
-app.post('/api/account-settings', async (req, res) => {
+app.post('/api/account-settings', authMiddleware.requireAuth(database), async (req, res) => {
   try {
     const settings = req.body;
-    console.log('👤 Updating account settings:', settings);
+    console.log('👤 Updating account settings for merchant:', req.merchant.id, settings);
     
-    const updatedSettings = await database.updateAccountSettings(settings);
+    const updatedSettings = await database.updateAccountSettings(settings, req.merchant.id);
     
     res.json({
       success: true,
@@ -2315,7 +2315,7 @@ app.post('/api/test-email', async (req, res) => {
 });
 
 // STAGE 1: Preview-only invoice generation (no database save)
-app.post('/api/preview-invoice', async (req, res) => {
+app.post('/api/preview-invoice', authMiddleware.requireAuth(database), async (req, res) => {
   const startTime = Date.now();
   try {
     const { message, businessProfile } = req.body;
@@ -2330,7 +2330,7 @@ app.post('/api/preview-invoice', async (req, res) => {
     console.log('🔍 Generating invoice preview:', message.substring(0, 100) + '...');
 
     // Get current business settings including logo
-    const currentBusinessSettings = await getCurrentBusinessSettings();
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
 
     // Performance optimization: Cache product catalog to avoid database calls
     const catalogCacheKey = getCacheKey('catalog', 'all');
@@ -2482,7 +2482,7 @@ app.post('/api/confirm-invoice', authMiddleware.authenticateMerchant, async (req
       console.log('🔧 Step 1: Getting current business settings...');
       let currentBusinessSettings;
       try {
-        currentBusinessSettings = await getCurrentBusinessSettings();
+        currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
         console.log('✅ Business settings retrieved:', {
           hasName: !!currentBusinessSettings.name,
           hasLogoUrl: !!currentBusinessSettings.logoUrl,
@@ -3086,7 +3086,7 @@ app.post('/api/invoices/send-email', async (req, res) => {
     // Send email without PDF attachment
     // Use the merchant data from the invoice itself to ensure consistency
     // Include logo from business profile if available
-    const currentBusinessSettings = await getCurrentBusinessSettings();
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
     const businessSettings = {
       name: invoice.merchant_name,
       email: invoice.merchant_email,
@@ -3148,7 +3148,7 @@ app.post('/api/final-payment/send-email', async (req, res) => {
     
     // Use the merchant data from the invoice itself to ensure consistency
     // Include logo from business profile if available
-    const currentBusinessSettings = await getCurrentBusinessSettings();
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
     const businessSettings = {
       name: invoice.merchant_name,
       email: invoice.merchant_email,
@@ -3581,7 +3581,7 @@ app.get('/api/invoices/:id', async (req, res) => {
     }
 
     // Get current business settings to ensure consistent display
-    const currentBusinessSettings = await getCurrentBusinessSettings();
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
     
     // Enhance invoice with business settings for consistent template rendering
     const enhancedInvoice = {
@@ -3996,7 +3996,7 @@ app.get('/api/customer/invoice/:token', async (req, res) => {
     });
     
     // Get current business settings to ensure consistent display (same as main invoice endpoint)
-    const currentBusinessSettings = await getCurrentBusinessSettings();
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
     
     // Enhance invoice with business settings for consistent template rendering
     const enhancedInvoice = {
@@ -5034,7 +5034,7 @@ app.post('/api/notifications/send-invoice', async (req, res) => {
     
     // Send invoice email without PDF attachment
     // Use the merchant data from the invoice itself to ensure consistency
-    const currentBusinessSettings = await getCurrentBusinessSettings();
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
     const businessSettings = {
       name: invoice.merchant_name,
       email: invoice.merchant_email,
