@@ -1192,45 +1192,23 @@
                     }
                 }
                 
-                // Always fetch business settings as single source of truth
-                console.log('🔧 Loading business settings as single source of truth...');
-                // Use Promise-based approach since this function is not async
-                fetch('/api/business-settings')
-                    .then(response => {
-                        if (response.ok) {
-                            return response.json();
-                        }
-                        throw new Error('Failed to fetch business settings');
-                    })
-                    .then(settings => {
-                        console.log('✅ Business settings loaded:', settings);
-                        
-                        // Update business logo from settings (single source of truth)
-                        if (settings.logoUrl) {
-                            businessLogo = settings.logoUrl;
-                            console.log('✅ Using logo from business settings:', businessLogo);
-                            updateLogoInTemplate(businessLogo);
-                        }
-                        
-                        // Update business profile from settings (override localStorage/metadata)
-                        const apiBusinessProfile = {
-                            name: settings.name || (businessProfile ? businessProfile.name : null),
-                            email: settings.email || (businessProfile ? businessProfile.email : null),
-                            phone: settings.phone || (businessProfile ? businessProfile.phone : null),
-                            address: settings.address || (businessProfile ? businessProfile.address : null),
-                            website: settings.website || (businessProfile ? businessProfile.website : null),
-                            termsAndConditions: settings.termsAndConditions || (businessProfile ? businessProfile.termsAndConditions : null),
-                            category: settings.category || (businessProfile ? businessProfile.category : 'general'),
-                            logoUrl: settings.logoUrl || businessLogo
-                        };
-                        
-                        // Update contact information and terms in footer
-                        updateFooterFromBusinessSettings(apiBusinessProfile);
-                        console.log('✅ Footer updated with business settings');
-                    })
-                    .catch(settingsError => {
-                        console.log('❌ Error loading business settings, using fallback data:', settingsError);
-                    });
+                // Use business profile from invoice data as single source of truth
+                console.log('🔧 Using business profile from invoice data as single source of truth');
+                
+                if (businessProfile) {
+                    // Update contact information and terms in footer using invoice business profile
+                    updateFooterFromBusinessSettings(businessProfile);
+                    console.log('✅ Footer updated with business profile from invoice:', businessProfile);
+                    
+                    // Update logo if available in business profile
+                    if (businessProfile.logoUrl || businessProfile.logo) {
+                        businessLogo = businessProfile.logoUrl || businessProfile.logo;
+                        console.log('✅ Using logo from business profile:', businessLogo);
+                        updateLogoInTemplate(businessLogo);
+                    }
+                } else {
+                    console.log('❌ No business profile found in invoice data, using default footer');
+                }
             } catch(e) {
                 // Fallback to general if no metadata
                 console.error('❌ Error parsing invoice metadata:', e);
