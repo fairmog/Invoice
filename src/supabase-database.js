@@ -1,8146 +1,2783 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
-    <title>Merchant Dashboard - Aspree Invoice Gen</title>
-    <style>
-        /* Professional Business Design System */
-        :root {
-            /* Primary Blue-Grey Palette */
-            --primary-purple: #2563EB;
-            --primary-dark: #1D4ED8;
-            --primary-light: #3B82F6;
+import { createClient } from '@supabase/supabase-js';
+import cryptoHelper from '../utils/crypto-helper.js';
+
+class SupabaseDatabase {
+  constructor() {
+    this.supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+  }
+
+  // Product CRUD operations
+  async createProduct(productData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for product creation');
+    }
+
+    const { data, error } = await this.supabase
+      .from('products')
+      .insert({
+        sku: productData.sku,
+        name: productData.name,
+        description: productData.description || '',
+        category: productData.category || '',
+        unit_price: productData.unit_price,
+        cost_price: productData.cost_price || 0,
+        stock_quantity: productData.stock_quantity || 0,
+        min_stock_level: productData.min_stock_level || 0,
+        is_active: productData.is_active !== undefined ? productData.is_active : true,
+        tax_rate: productData.tax_rate || 0,
+        dimensions: productData.dimensions || '',
+        weight: productData.weight || null,
+        image_url: productData.image_url || '',
+        merchant_id: merchantId
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        throw new Error('UNIQUE constraint failed: products.sku');
+      }
+      throw error;
+    }
+
+    return { lastInsertRowid: data.id };
+  }
+
+  async getProduct(id) {
+    const { data, error } = await this.supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+
+  async getProductBySku(sku) {
+    const { data, error } = await this.supabase
+      .from('products')
+      .select('*')
+      .eq('sku', sku)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+
+  async getAllProducts(limit = 50, offset = 0, category = null, active_only = true, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for product access');
+    }
+
+    let query = this.supabase
+      .from('products')
+      .select('*')
+      .eq('merchant_id', merchantId);
+
+    if (active_only) {
+      query = query.eq('is_active', true);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async searchProducts(searchTerm, category = null, priceMin = null, priceMax = null, active_only = true, limit = 50, offset = 0, merchantId = null) {
+    let query = this.supabase
+      .from('products')
+      .select('*');
+
+    // CRITICAL: Add merchant filtering first
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
+
+    if (active_only) {
+      query = query.eq('is_active', true);
+    }
+
+    if (searchTerm) {
+      query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (priceMin !== null) {
+      query = query.gte('unit_price', priceMin);
+    }
+
+    if (priceMax !== null) {
+      query = query.lte('unit_price', priceMax);
+    }
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    return {
+      products: data || [],
+      total: count || 0,
+      page: Math.floor(offset / limit) + 1,
+      totalPages: Math.ceil((count || 0) / limit)
+    };
+  }
+
+  async updateProduct(id, productData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for product updates');
+    }
+
+    const { data, error } = await this.supabase
+      .from('products')
+      .update({
+        name: productData.name,
+        description: productData.description || '',
+        category: productData.category || '',
+        unit_price: productData.unit_price,
+        cost_price: productData.cost_price || 0,
+        stock_quantity: productData.stock_quantity || 0,
+        min_stock_level: productData.min_stock_level || 0,
+        is_active: productData.is_active !== undefined ? productData.is_active : true,
+        tax_rate: productData.tax_rate || 0,
+        dimensions: productData.dimensions || '',
+        weight: productData.weight || null,
+        image_url: productData.image_url || ''
+      })
+      .eq('id', id)
+      .eq('merchant_id', merchantId)
+      .select();
+
+    if (error) throw error;
+    return { changes: data ? data.length : 0 };
+  }
+
+  async deleteProduct(id, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for product deletion');
+    }
+
+    const { data, error } = await this.supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+      .eq('merchant_id', merchantId)
+      .select();
+
+    if (error) throw error;
+    return { changes: data ? data.length : 0 };
+  }
+
+  // Customer operations
+  async saveCustomer(customerData, merchantId) {
+    try {
+      if (!merchantId) {
+        throw new Error('Merchant ID is required for customer creation');
+      }
+
+      console.log('👤 Saving customer:', {
+        name: customerData.name,
+        email: customerData.email,
+        hasPhone: !!customerData.phone,
+        merchantId
+      });
+
+      if (!customerData.email || !customerData.name) {
+        throw new Error('Customer email and name are required');
+      }
+
+      const { data: existing, error: selectError } = await this.supabase
+        .from('customers')
+        .select('*')
+        .eq('email', customerData.email)
+        .eq('merchant_id', merchantId)
+        .single();
+
+      if (selectError && selectError.code !== 'PGRST116') {
+        console.error('💥 Error checking existing customer:', selectError.message);
+        throw selectError;
+      }
+
+      if (existing) {
+        // Update existing customer
+        console.log('🔄 Updating existing customer with ID:', existing.id);
+        const { data, error } = await this.supabase
+          .from('customers')
+          .update({
+            name: customerData.name,
+            phone: customerData.phone || existing.phone,
+            address: customerData.address || existing.address,
+            last_invoice_date: new Date().toISOString(),
+            invoice_count: (existing.invoice_count || 0) + 1
+          })
+          .eq('email', customerData.email)
+          .eq('merchant_id', merchantId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('💥 Error updating customer:', error.message);
+          throw error;
+        }
+        console.log('✅ Customer updated successfully');
+        return { lastInsertRowid: data.id };
+      } else {
+        // Create new customer
+        console.log('✨ Creating new customer');
+        const { data, error } = await this.supabase
+          .from('customers')
+          .insert({
+            name: customerData.name || '',
+            email: customerData.email,
+            phone: customerData.phone || null,
+            address: customerData.address || null,
+            source_invoice_id: customerData.source_invoice_id || null,
+            source_invoice_number: customerData.source_invoice_number || null,
+            first_invoice_date: new Date().toISOString(),
+            last_invoice_date: new Date().toISOString(),
+          invoice_count: customerData.invoice_count || 0,
+          total_spent: customerData.total_spent || 0,
+          extraction_method: customerData.extraction_method || 'manual',
+          merchant_id: merchantId
+        })
+        .select()
+        .single();
+
+        if (error) {
+          console.error('💥 Error creating customer:', error.message);
+          throw error;
+        }
+        console.log('✅ Customer created successfully');
+        return { lastInsertRowid: data.id };
+      }
+    } catch (error) {
+      console.error('💥 saveCustomer failed:', error.message);
+      throw error;
+    }
+  }
+
+  async getCustomer(email) {
+    const { data, error } = await this.supabase
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+
+  async findOrCreateCustomer(customerData) {
+    const { name, email, phone } = customerData;
+    
+    // Try email match first
+    if (email) {
+      const { data: emailMatch } = await this.supabase
+        .from('customers')
+        .select('*')
+        .ilike('email', email)
+        .single();
+      
+      if (emailMatch) {
+        console.log(`✅ Customer matched by email: ${emailMatch.name}`);
+        return emailMatch;
+      }
+    }
+    
+    // Try phone match
+    if (phone) {
+      const normalizedPhone = this.normalizePhone(phone);
+      const { data: customers } = await this.supabase
+        .from('customers')
+        .select('*');
+      
+      const phoneMatch = customers?.find(c => 
+        c.phone && this.normalizePhone(c.phone) === normalizedPhone
+      );
+      
+      if (phoneMatch) {
+        console.log(`✅ Customer matched by phone: ${phoneMatch.name}`);
+        return phoneMatch;
+      }
+    }
+    
+    // Create new customer
+    console.log(`➕ Creating new customer: ${name || 'Unknown'}`);
+    const result = await this.saveCustomer(customerData);
+    const { data: newCustomer } = await this.supabase
+      .from('customers')
+      .select('*')
+      .eq('id', result.lastInsertRowid)
+      .single();
+    
+    return newCustomer;
+  }
+
+  normalizePhone(phone) {
+    if (!phone) return '';
+    const digits = phone.replace(/\D/g, '');
+    
+    if (digits.startsWith('08')) return '628' + digits.substring(2);
+    if (digits.startsWith('8') && digits.length >= 10) return '62' + digits;
+    if (digits.startsWith('628')) return digits;
+    if (digits.startsWith('62')) return digits;
+    
+    return digits;
+  }
+
+  async getAllCustomers(limit = 50, offset = 0, searchTerm = null, merchantId = null) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for customer access');
+    }
+
+    try {
+      let query = this.supabase
+        .from('customers')
+        .select('*')
+        .eq('merchant_id', merchantId)
+        .order('created_at', { ascending: false });
+      
+      // Apply search filter if provided
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`);
+      }
+      
+      const { data: customers, error } = await query.range(offset, offset + limit - 1);
+      if (error) throw error;
+      
+      if (!customers || customers.length === 0) {
+        return [];
+      }
+      
+      // Get invoices and orders for this merchant to calculate customer statistics
+      const invoicesQuery = merchantId 
+        ? this.supabase.from('invoices').select('customer_email, grand_total, created_at').eq('merchant_id', merchantId)
+        : this.supabase.from('invoices').select('customer_email, grand_total, created_at');
+      
+      const ordersQuery = merchantId
+        ? this.supabase.from('orders').select('customer_email, total_amount, order_date, created_at').eq('merchant_id', merchantId)
+        : this.supabase.from('orders').select('customer_email, total_amount, order_date, created_at');
+      
+      const [invoicesResult, ordersResult] = await Promise.all([invoicesQuery, ordersQuery]);
+      
+      if (invoicesResult.error) console.warn('Error fetching invoices for customer stats:', invoicesResult.error);
+      if (ordersResult.error) console.warn('Error fetching orders for customer stats:', ordersResult.error);
+      
+      const allInvoices = invoicesResult.data || [];
+      const allOrders = ordersResult.data || [];
+      
+      // Calculate statistics for each customer
+      const customersWithStats = customers.map(customer => {
+        const customerInvoices = allInvoices.filter(i => i.customer_email === customer.email);
+        const customerOrders = allOrders.filter(o => o.customer_email === customer.email);
+        
+        const totalSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+        const totalOrders = customerOrders.length;
+        const totalInvoices = customerInvoices.length;
+        const lastOrderDate = customerOrders.length > 0 ? 
+          customerOrders.sort((a, b) => new Date(b.order_date || b.created_at) - new Date(a.order_date || a.created_at))[0].order_date || customerOrders[0].created_at : null;
+        
+        return {
+          ...customer,
+          total_spent: totalSpent,
+          total_orders: totalOrders,
+          total_invoices: totalInvoices,
+          last_order_date: lastOrderDate,
+          status: totalOrders > 0 ? 'active' : 'inactive',
+          avg_order_value: totalOrders > 0 ? totalSpent / totalOrders : 0
+        };
+      });
+      
+      return customersWithStats;
+    } catch (error) {
+      console.error('Error in getAllCustomers:', error);
+      throw error;
+    }
+  }
+
+  async searchCustomers(searchTerm, merchantId = null, limit = 50, offset = 0) {
+    try {
+      // Use getAllCustomers which already has merchant filtering and search capability
+      const customers = await this.getAllCustomers(limit, offset, searchTerm, merchantId);
+      
+      // Return in the expected format for search API
+      return {
+        customers: customers,
+        total: customers.length,
+        page: Math.floor(offset / limit) + 1,
+        totalPages: Math.ceil(customers.length / limit)
+      };
+    } catch (error) {
+      console.error('Error in searchCustomers:', error);
+      throw error;
+    }
+  }
+
+  // Invoice operations
+  async saveInvoice(invoiceData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice creation');
+    }
+    try {
+      console.log('💾 Saving invoice to database:', {
+        hasInvoice: !!(invoiceData.invoice || invoiceData),
+        hasCustomer: !!(invoiceData.invoice?.customer || invoiceData.customer),
+        hasItems: !!(invoiceData.invoice?.items || invoiceData.items)
+      });
+      
+      const customerToken = this.generateCustomerToken();
+      const invoice = invoiceData.invoice || invoiceData;
+      const invoiceNumber = await this.generateInvoiceNumber();
+      
+      console.log('🔍 DEBUG: Generated invoice number:', invoiceNumber);
+      console.log('🔍 DEBUG: Generated customer token:', customerToken);
+      
+      // === ENHANCED DATA VALIDATION AND CALCULATION FIXES ===
+      console.log('🔧 Validating and fixing invoice data before save...');
+      console.log('🔍 DEBUG: Invoice structure check:', {
+        hasMerchant: !!invoice.merchant,
+        hasBusinessProfile: !!invoice.businessProfile,
+        merchantEmail: invoice.merchant?.email,
+        businessProfileEmail: invoice.businessProfile?.email,
+        customerEmail: invoice.customer?.email
+      });
+      
+      // Fix 1: Ensure due date is properly set
+      if (!invoice.header) invoice.header = {};
+      if (!invoice.header.dueDate || invoice.header.dueDate === '') {
+        const invoiceDate = new Date(invoice.header.invoiceDate || Date.now());
+        const dueDate = new Date(invoiceDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days later
+        invoice.header.dueDate = dueDate.toISOString().split('T')[0];
+        console.log('🗓️ Generated due date:', invoice.header.dueDate);
+      }
+      
+      // Fix 2: Recalculate subtotal from items to match validation expectations
+      if (invoice.items && Array.isArray(invoice.items)) {
+        let calculatedSubtotal = 0;
+        invoice.items.forEach((item, index) => {
+          const quantity = parseFloat(item.quantity || 0);
+          const unitPrice = parseFloat(item.unitPrice || item.unit_price || 0);
+          const lineTotal = quantity * unitPrice;
+          calculatedSubtotal += lineTotal;
+          
+          // Ensure item has consistent structure
+          item.lineTotal = lineTotal;
+          console.log(`📊 Item ${index + 1}: ${quantity} × ${unitPrice} = ${lineTotal}`);
+        });
+        
+        // Update calculations object
+        if (!invoice.calculations) invoice.calculations = {};
+        invoice.calculations.subtotal = calculatedSubtotal;
+        console.log('💰 Calculated subtotal from items:', calculatedSubtotal);
+      }
+      
+      // Fix 3: Ensure proper tax calculation
+      if (!invoice.calculations) invoice.calculations = {};
+      const subtotal = parseFloat(invoice.calculations.subtotal || 0);
+      const taxRate = parseFloat(invoice.calculations.taxRate || 0);
+      const calculatedTax = subtotal * (taxRate / 100);
+      invoice.calculations.totalTax = calculatedTax;
+      
+      // Fix 4: Recalculate grand total
+      const shippingCost = parseFloat(invoice.calculations.shippingCost || 0);
+      const discount = parseFloat(invoice.calculations.discount || 0);
+      const grandTotal = subtotal + calculatedTax + shippingCost - discount;
+      invoice.calculations.grandTotal = grandTotal;
+      
+      console.log('🧮 Final calculations:', {
+        subtotal,
+        tax: calculatedTax,
+        shipping: shippingCost,
+        discount,
+        grandTotal
+      });
+      
+      if (!invoice || !invoice.customer) {
+        throw new Error('Invoice data or customer information is missing');
+      }
+      
+      // Auto-create/update customer record
+      try {
+        await this.saveCustomer({
+          name: invoice.customer.name,
+          email: invoice.customer.email,
+          phone: invoice.customer.phone,
+          address: invoice.customer.address
+        }, merchantId);
+        console.log('✅ Customer record saved/updated');
+      } catch (customerError) {
+        console.error('⚠️ Warning: Failed to save customer record:', customerError.message);
+        // Continue with invoice save even if customer save fails
+      }
+      
+      const invoiceInsertData = {
+        invoice_number: invoiceNumber,
+        customer_name: invoice.customer?.name || '',
+        customer_email: invoice.customer?.email || '',
+        customer_phone: invoice.customer?.phone || '',
+        customer_address: invoice.customer?.address || '',
+        merchant_name: invoice.merchant?.businessName || invoice.businessProfile?.name || 'Unknown Merchant',
+        merchant_address: invoice.merchant?.address || invoice.businessProfile?.address || '',
+        merchant_phone: invoice.merchant?.phone || invoice.businessProfile?.phone || '',
+        merchant_email: invoice.merchant?.email || invoice.businessProfile?.email || '',
+        invoice_date: invoice.header?.invoiceDate || new Date().toISOString().split('T')[0],
+        due_date: invoice.header.dueDate, // Now guaranteed to have value from validation above
+        original_due_date: invoice.header.dueDate,
+        status: 'draft',
+        payment_stage: invoice.paymentSchedule ? 'down_payment' : 'full_payment',
+        payment_status: 'pending',
+        subtotal: invoice.calculations.subtotal, // Using validated/corrected values
+        tax_amount: invoice.calculations.totalTax,
+        shipping_cost: invoice.calculations.shippingCost || 0,
+        discount: invoice.calculations.discount || 0,
+        grand_total: invoice.calculations.grandTotal, // Using corrected grand total
+        currency: invoice.calculations?.currency || invoice.summary?.currency || 'IDR',
+        payment_terms: invoice.payment?.paymentTerms || 'Net 30',
+        notes: invoice.notes?.publicNotes || '',
+        items_json: invoice.items || [],
+        metadata_json: {
+          ...invoice.metadata,
+          businessProfile: invoiceData.businessProfile || invoice.businessProfile || null
+        },
+        payment_schedule_json: invoice.paymentSchedule || null,
+        notes_json: invoice.notes || {},
+        calculations_json: invoice.calculations || {},
+        customer_token: customerToken,
+        merchant_id: merchantId
+      };
+      
+      console.log('📋 Inserting invoice data:', {
+        invoice_number: invoiceNumber,
+        customer_name: invoiceInsertData.customer_name,
+        merchant_name: invoiceInsertData.merchant_name,
+        grand_total: invoiceInsertData.grand_total,
+        itemsCount: Array.isArray(invoiceInsertData.items_json) ? invoiceInsertData.items_json.length : 0
+      });
+      
+      console.log('📤 Attempting to insert invoice data...', {
+        invoice_number: invoiceInsertData.invoice_number,
+        customer_name: invoiceInsertData.customer_name,
+        merchant_name: invoiceInsertData.merchant_name,
+        merchant_email: invoiceInsertData.merchant_email,
+        grand_total: invoiceInsertData.grand_total
+      });
+
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .insert(invoiceInsertData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('💥 Invoice insert error:', error.message, error.details);
+        console.error('💥 Full error object:', JSON.stringify(error, null, 2));
+        console.error('💥 Failed insert data keys:', Object.keys(invoiceInsertData));
+        throw error;
+      }
+
+      console.log('✅ Invoice saved successfully:', {
+        id: data.id,
+        invoice_number: data.invoice_number,
+        grand_total: data.grand_total
+      });
+
+      const returnObject = {
+        ...data,
+        invoiceNumber: invoiceNumber,
+        customerToken
+      };
+      
+      console.log('🔍 DEBUG: Return object structure:', {
+        hasId: !!returnObject.id,
+        hasInvoiceNumber: !!returnObject.invoiceNumber,
+        invoiceNumberValue: returnObject.invoiceNumber,
+        hasCustomerToken: !!returnObject.customerToken,
+        customerTokenValue: returnObject.customerToken,
+        dbInvoiceNumber: data.invoice_number
+      });
+
+      return returnObject;
+    } catch (error) {
+      console.error('💥 saveInvoice failed:', error.message);
+      throw error;
+    }
+  }
+
+  async getAllInvoices(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice access');
+    }
+
+    let query = this.supabase
+      .from('invoices')
+      .select('*')
+      .eq('merchant_id', merchantId);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (customerEmail) {
+      query = query.eq('customer_email', customerEmail);
+    }
+
+    if (dateFrom) {
+      query = query.gte('invoice_date', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('invoice_date', dateTo);
+    }
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    
+    // Normalize invoice items for all retrieved invoices
+    const normalizedData = (data || []).map(invoice => {
+      if (invoice && invoice.items_json) {
+        invoice.items_json = this.normalizeInvoiceItems(invoice.items_json);
+      }
+      return invoice;
+    });
+    
+    return normalizedData;
+  }
+
+  async getInvoice(id, merchantId = null) {
+    let query = this.supabase
+      .from('invoices')
+      .select('*')
+      .eq('id', id);
+    
+    // Add merchant filtering if merchantId is provided
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
+    
+    const { data, error } = await query.single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Normalize invoice items if data exists
+    if (data && data.items_json) {
+      data.items_json = this.normalizeInvoiceItems(data.items_json);
+    }
+    
+    return data;
+  }
+
+  async getInvoiceByNumber(invoiceNumber) {
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .select('*')
+      .eq('invoice_number', invoiceNumber)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Normalize invoice items if data exists
+    if (data && data.items_json) {
+      data.items_json = this.normalizeInvoiceItems(data.items_json);
+    }
+    
+    return data;
+  }
+
+  async getInvoiceByCustomerToken(token) {
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .select('*')
+      .eq('customer_token', token)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Normalize invoice items if data exists
+    if (data && data.items_json) {
+      data.items_json = this.normalizeInvoiceItems(data.items_json);
+    }
+    
+    return data;
+  }
+
+  async getInvoiceByFinalPaymentToken(token) {
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .select('*')
+      .eq('final_payment_token', token)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Normalize invoice items if data exists
+    if (data && data.items_json) {
+      data.items_json = this.normalizeInvoiceItems(data.items_json);
+    }
+    
+    return data;
+  }
+
+  async updateInvoiceStatus(invoiceId, status, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice status updates');
+    }
+
+    const updateData = { 
+      status,
+      updated_at: new Date().toISOString()
+    };
+
+    if (status === 'sent') {
+      updateData.sent_at = new Date().toISOString();
+    } else if (status === 'paid') {
+      updateData.paid_at = new Date().toISOString();
+    }
+
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .update(updateData)
+      .eq('id', invoiceId)
+      .eq('merchant_id', merchantId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Auto-create order if paid
+    if (status === 'paid') {
+      try {
+        const orderResult = await this.createOrderFromInvoice(invoiceId, merchantId);
+        return {
+          ...data,
+          orderCreated: true,
+          orderId: orderResult.lastInsertRowid,
+          orderNumber: orderResult.orderNumber
+        };
+      } catch (error) {
+        console.error('Failed to auto-create order from invoice:', error);
+      }
+    }
+
+    return { changes: 1 };
+  }
+
+  async deleteInvoice(id, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice deletion');
+    }
+
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .delete()
+      .eq('id', id)
+      .eq('merchant_id', merchantId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { changes: 1, deletedInvoice: data };
+  }
+
+  async updateInvoice(invoiceId, updateData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice updates');
+    }
+    
+    console.log(`🔄 Updating invoice ${invoiceId} with data:`, updateData);
+    
+    try {
+      // Prepare update data - filter out undefined values and handle special fields
+      const cleanUpdateData = {};
+      
+      // Standard fields that can be updated directly
+      const allowedFields = [
+        'status', 'payment_stage', 'payment_status', 'final_payment_token', 
+        'final_payment_amount', 'due_date', 'original_due_date', 'dp_confirmed_date',
+        'payment_schedule_json', 'invoice_number', 'customer_name', 'customer_email',
+        'customer_phone', 'customer_address', 'business_profile_json', 'items_json',
+        'subtotal_amount', 'tax_amount', 'total_amount', 'notes', 'terms',
+        'sent_at', 'paid_at', 'updated_at'
+      ];
+      
+      // Copy only allowed fields that are not undefined
+      for (const field of allowedFields) {
+        if (updateData[field] !== undefined) {
+          cleanUpdateData[field] = updateData[field];
+        }
+      }
+      
+      // Always set updated_at if not already provided
+      if (!cleanUpdateData.updated_at) {
+        cleanUpdateData.updated_at = new Date().toISOString();
+      }
+      
+      console.log(`🔄 Clean update data for invoice ${invoiceId}:`, cleanUpdateData);
+      
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .update(cleanUpdateData)
+        .eq('id', invoiceId)
+        .eq('merchant_id', merchantId)
+        .select()
+        .single();
+
+      if (error) {
+        // Handle missing column errors gracefully
+        if (error.code === 'PGRST204' && error.message?.includes("Could not find")) {
+          console.log(`⚠️ Schema mismatch detected, attempting fallback update...`);
+          
+          // Remove columns that might not exist in the current schema
+          const potentialMissingColumns = ['dp_confirmed_date', 'final_payment_token', 'final_payment_amount'];
+          let fallbackData = { ...cleanUpdateData };
+          
+          for (const column of potentialMissingColumns) {
+            if (error.message.includes(column)) {
+              delete fallbackData[column];
+              console.log(`⚠️ Removed ${column} from update due to missing column`);
+            }
+          }
+          
+          const { data: retryData, error: retryError } = await this.supabase
+            .from('invoices')
+            .update(fallbackData)
+            .eq('id', invoiceId)
+            .eq('merchant_id', merchantId)
+            .select()
+            .single();
             
-            /* Secondary/Accent Colors */
-            --accent-purple: #1E40AF;
-            --light-accent: #60A5FA;
-            --deep-purple: #1E3A8A;
-            
-            /* Neutral Colors */
-            --background: #FAFAFA;
-            --card-background: #FFFFFF;
-            --text-primary: #2D3748;
-            --text-secondary: #718096;
-            --border-color: #E2E8F0;
-            
-            /* Status Colors */
-            --success: #48BB78;
-            --warning: #ED8936;
-            --error: #F56565;
-            --info: #4299E1;
-            --whatsapp: #25D366;
-            
-            /* Component Specific */
-            --shadow-soft: 0 4px 6px rgba(37, 99, 235, 0.05);
-            --shadow-medium: 0 10px 25px rgba(37, 99, 235, 0.1);
-            --shadow-strong: 0 20px 40px rgba(37, 99, 235, 0.15);
-            --gradient-primary: linear-gradient(135deg, var(--primary-purple) 0%, var(--accent-purple) 100%);
-            --gradient-card: linear-gradient(145deg, #FFFFFF 0%, #F7F9FF 100%);
-            --border-radius: 12px;
-            --border-radius-large: 16px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
-            background: var(--background);
-            color: var(--text-primary);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary-purple), var(--accent-purple));
-            border-bottom: none;
-            padding: 16px 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 20px;
-            font-weight: 700;
-            color: white;
-            text-decoration: none;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 18px;
-        }
-
-        .logo-icon img {
-            max-height: 36px;
-            max-width: 200px;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
-
-        .settings-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-            transition: var(--transition);
-            backdrop-filter: blur(4px);
-        }
-
-        .settings-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
-            color: white;
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-medium);
-        }
-
-        .settings-btn span:first-child {
-            font-size: 16px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 16px;
-            background: rgba(139, 95, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: var(--gradient-primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 12px;
-        }
-
-        .user-details {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .header-logout-btn {
-            padding: 4px 8px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 11px;
-            background: var(--error);
-            color: white;
-            border: 1px solid var(--error);
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            width: fit-content;
-            margin-top: 2px;
-        }
-
-        .header-logout-btn:hover {
-            background: #E53E3E;
-            border-color: #E53E3E;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
-        }
-
-        .header-logout-btn:active {
-            transform: translateY(0);
-        }
-
-        .header-logout-btn span {
-            font-size: 10px;
-        }
-
-        /* Plan Status and Upgrade Button */
-        .plan-status-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-right: 16px;
-        }
-
-        .plan-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .plan-badge.free {
-            background: linear-gradient(135deg, #E2E8F0, #CBD5E0);
-            color: #2D3748;
-            border: 1px solid #A0AEC0;
-        }
-
-        .plan-badge.premium {
-            background: linear-gradient(135deg, #9F7AEA, #805AD5);
-            color: white;
-            border: 1px solid #6B46C1;
-            box-shadow: 0 2px 4px rgba(159, 122, 234, 0.2);
-        }
-
-        .upgrade-btn {
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 11px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #48BB78, #38A169);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-
-        .upgrade-btn:hover {
-            background: linear-gradient(135deg, #38A169, #2F855A);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(72, 187, 120, 0.3);
-        }
-
-        .manage-btn {
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 11px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #4A5568, #2D3748);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-
-        .manage-btn:hover {
-            background: linear-gradient(135deg, #2D3748, #1A202C);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(74, 85, 104, 0.3);
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 40px 24px;
-        }
-
-        /* Dashboard Navigation */
-        .dashboard-nav {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 32px;
-            background: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius-large);
-            box-shadow: var(--shadow-soft);
-            border: 1px solid var(--border-color);
-        }
-
-        .nav-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-            text-decoration: none;
-            color: var(--text-primary);
-            background: var(--background);
-            border: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .nav-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-medium);
-            background: var(--primary-light);
-            color: white;
-            border-color: var(--primary-light);
-        }
-
-        .nav-btn.active {
-            background: var(--gradient-primary);
-            color: white;
-            border-color: var(--primary-purple);
-            box-shadow: var(--shadow-soft);
-        }
-
-
-        /* Page Header */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.02em;
-        }
-
-        .page-subtitle {
-            color: var(--text-secondary);
-            margin-top: 8px;
-        }
-
-        .section {
-            background: var(--gradient-card);
-            border-radius: var(--border-radius-large);
-            padding: 32px;
-            margin-bottom: 32px;
-            box-shadow: var(--shadow-medium);
-            border: 1px solid var(--border-color);
-        }
-
-        .section h2 {
-            color: var(--text-primary);
-            margin-bottom: 24px;
-            font-size: 24px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .section-icon {
-            width: 32px;
-            height: 32px;
-            background: var(--gradient-primary);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
-        }
-
-
-
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .filters {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .filter-select {
-            padding: 0.5rem 1rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            background: white;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        .btn-primary {
-            background: var(--gradient-primary);
-            color: white;
-            box-shadow: var(--shadow-soft);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-medium);
-        }
-
-        .btn-secondary {
-            background: var(--card-background);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--primary-light);
-            color: white;
-            border-color: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-soft);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #38a169;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(72, 187, 120, 0.3);
-        }
-
-        .btn-danger {
-            background: var(--error);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #e53e3e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(245, 101, 101, 0.3);
-        }
-
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background: #dd6b20;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(237, 137, 54, 0.3);
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        /* Legacy product grid styles - no longer used for products/customers */
-
-        .product-card {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+          if (retryError) {
+            console.error(`❌ Error updating invoice ${invoiceId} (retry):`, retryError);
+            throw retryError;
+          }
+          
+          console.log(`✅ Successfully updated invoice ${invoiceId} with schema fallback`);
+          return { changes: 1, updatedInvoice: retryData };
         }
         
-        .product-card .selection-checkbox {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            padding: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            border-color: #667eea;
-        }
-
-        .product-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .product-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-
-        .product-sku {
-            color: #666;
-            font-size: 0.9rem;
-            background: #f8f9fa;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            display: inline-block;
-        }
-
-        .product-price {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #27ae60;
-            margin: 0.5rem 0;
-        }
-
-        .product-stock {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin: 0.5rem 0;
-        }
-
-        .stock-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .stock-high {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .stock-low {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .stock-out {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .stock-medium {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .product-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-
-        /* Share Dropdown Styles */
-        .share-dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .share-menu {
-            display: none;
-            position: absolute;
-            background: white;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            border-radius: 6px;
-            z-index: 1000;
-            top: 100%;
-            left: 0;
-            border: 1px solid #ddd;
-        }
-
-        .share-menu.show {
-            display: block;
-        }
-
-        .share-option {
-            display: block;
-            width: 100%;
-            padding: 12px 16px;
-            text-align: left;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.2s;
-        }
-
-        .share-option:hover {
-            background-color: #f1f1f1;
-        }
-
-        .share-option:first-child {
-            border-radius: 6px 6px 0 0;
-        }
-
-        .share-option:last-child {
-            border-radius: 0 0 6px 6px;
-        }
-
-        /* Invoice, Order, Product & Customer Containers */
-        .invoices-container,
-        .orders-container,
-        .products-container,
-        .customers-container {
-            width: 100%;
-        }
-
-        /* Invoice List View Styles */
-        .invoice-date-group {
-            margin-bottom: 30px;
-        }
-
-        .date-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px 12px 0 0;
-            border-bottom: 2px solid #dee2e6;
-            margin-bottom: 0;
-        }
-
-        .date-group-header h3 {
-            margin: 0;
-            color: #495057;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .invoice-count {
-            color: #6c757d;
-            font-size: 0.9rem;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #dee2e6;
-        }
-
-        .invoices-list {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid #dee2e6;
-            border-top: none;
-            overflow: hidden;
-        }
-
-        .invoice-list-item {
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
-
-        .invoice-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .invoice-list-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .invoice-list-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .selection-checkbox {
-            display: flex;
-            align-items: center;
-            flex-shrink: 0;
-            margin-right: 15px;
-        }
-
-        .selection-checkbox input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            margin: 0;
-            cursor: pointer;
-            accent-color: #007bff;
-        }
-
-        .invoice-selection-buttons {
-            display: none;
-        }
-
-        .invoice-main-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .invoice-number {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .invoice-number strong {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-
-        .payment-stage-badge {
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            background: #e3f2fd;
-            color: #1976d2;
-            border: 1px solid #bbdefb;
-        }
-
-        .payment-stage-badge.payment-stage-dp {
-            background: #fff3e0;
-            color: #f57c00;
-            border-color: #ffcc02;
-        }
-
-        .payment-stage-badge.payment-stage-final {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border-color: #4caf50;
-        }
-
-        .invoice-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .invoice-customer {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .customer-name {
-            font-weight: 600;
-            color: #2d3748;
-            font-size: 0.95rem;
-        }
-
-        .customer-email {
-            color: #718096;
-            font-size: 0.85rem;
-        }
-
-        .invoice-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: right;
-        }
-
-        .invoice-meta span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .invoice-amount {
-            font-weight: 700 !important;
-            color: #2d3748 !important;
-            font-size: 1rem !important;
-        }
-
-        .invoice-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            align-items: stretch;
-            flex-shrink: 0;
-        }
-
-        .invoice-actions .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: auto;
-            width: 100%;
-            justify-content: center;
-        }
-
-        /* Mobile responsive for list view */
-        @media (max-width: 768px) {
-            .invoice-list-content {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 15px;
-                padding: 15px;
-            }
-
-            .invoice-details {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .invoice-meta {
-                text-align: left;
-            }
-
-            .invoice-actions {
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .invoice-actions .btn-sm {
-                flex: 1;
-                min-width: 100px;
-                text-align: center;
-            }
-
-            .date-group-header {
-                padding: 12px 15px;
-            }
-
-            .date-group-header h3 {
-                font-size: 1rem;
-            }
-
-            .share-dropdown {
-                width: 100%;
-            }
-        }
-
-        /* Order List View Styles */
-        .order-date-group {
-            margin-bottom: 30px;
-        }
-
-        .order-count {
-            color: #6c757d;
-            font-size: 0.9rem;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #dee2e6;
-        }
-
-        .orders-list {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid #dee2e6;
-            border-top: none;
-            overflow: hidden;
-        }
-
-        .order-list-item {
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
-
-        .order-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .order-list-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .order-list-content {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .order-selection {
-            flex-shrink: 0;
-        }
-
-        .order-main-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .order-number {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .order-number strong {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-
-        .tracking-badge {
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            background: #e3f2fd;
-            color: #1976d2;
-            border: 1px solid #bbdefb;
-        }
-
-        .order-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .order-customer {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .order-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: right;
-        }
-
-        .order-meta span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .order-amount {
-            font-weight: 700 !important;
-            color: #2d3748 !important;
-            font-size: 1rem !important;
-        }
-
-        .order-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            align-items: stretch;
-            flex-shrink: 0;
-        }
-
-        .order-actions .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: auto;
-            width: 100%;
-            justify-content: center;
-        }
-
-        /* Mobile responsive for order list view */
-        @media (max-width: 768px) {
-            .order-list-content {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 15px;
-                padding: 15px;
-            }
-
-            .order-selection {
-                order: 3;
-                text-align: center;
-            }
-
-            .order-main-info {
-                order: 1;
-            }
-
-            .order-actions {
-                order: 2;
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .order-details {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .order-meta {
-                text-align: left;
-            }
-
-            .order-actions .btn-sm {
-                flex: 1;
-                min-width: 100px;
-                text-align: center;
-            }
-        }
-
-        /* Product List View Styles */
-        .product-category-group {
-            margin-bottom: 30px;
-        }
-
-        .category-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
-            border-radius: 12px 12px 0 0;
-            border-bottom: 2px solid #b3d9ff;
-            margin-bottom: 0;
-        }
-
-        .category-group-header h3 {
-            margin: 0;
-            color: #1e40af;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .product-count {
-            color: #6c757d;
-            font-size: 0.9rem;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #b3d9ff;
-        }
-
-        .products-list {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid #b3d9ff;
-            border-top: none;
-            overflow: hidden;
-        }
-
-        .product-list-item {
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
-
-        .product-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .product-list-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .product-list-content {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .product-image-container {
-            flex-shrink: 0;
-            width: 80px;
-            height: 80px;
-        }
-
-        .product-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-
-        .product-image-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-            font-size: 2rem;
-            color: #6c757d;
-        }
-
-        .product-main-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .product-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .product-name {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .product-name strong {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-
-        .product-sku {
-            font-size: 0.75rem;
-            color: #718096;
-            background: #f7fafc;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .product-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .product-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .product-price {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #16a34a;
-        }
-
-        .product-description {
-            font-size: 0.85rem;
-            color: #718096;
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .product-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: right;
-        }
-
-        .product-meta span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .product-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .product-actions .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: auto;
-        }
-
-        /* Customer List View Styles */
-        .customer-activity-group {
-            margin-bottom: 30px;
-        }
-
-        .activity-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: linear-gradient(135deg, #fef3e2 0%, #fde68a 100%);
-            border-radius: 12px 12px 0 0;
-            border-bottom: 2px solid #f59e0b;
-            margin-bottom: 0;
-        }
-
-        .activity-group-header h3 {
-            margin: 0;
-            color: #92400e;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .customer-count {
-            color: #6c757d;
-            font-size: 0.9rem;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #f59e0b;
-        }
-
-        .customers-list {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid #f59e0b;
-            border-top: none;
-            overflow: hidden;
-        }
-
-        .customer-list-item {
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
-
-        .customer-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .customer-list-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .customer-list-content {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .customer-avatar {
-            flex-shrink: 0;
-            width: 60px;
-            height: 60px;
-        }
-
-        .customer-avatar-circle {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .customer-main-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .customer-header {
-            margin-bottom: 12px;
-        }
-
-        .customer-name {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .customer-name strong {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-
-
-        .customer-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .customer-contact {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .customer-contact span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .customer-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: right;
-        }
-
-        .customer-stats span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .customer-stats .total-spent {
-            font-weight: 700;
-            color: #16a34a;
-            font-size: 0.9rem;
-        }
-
-        .customer-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .customer-actions .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: auto;
-        }
-
-        /* Mobile responsive for product and customer list views */
-        @media (max-width: 768px) {
-            .product-list-content,
-            .customer-list-content {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 15px;
-                padding: 15px;
-            }
-
-            .product-image-container {
-                align-self: center;
-                width: 60px;
-                height: 60px;
-            }
-
-            .customer-avatar {
-                align-self: center;
-                width: 50px;
-                height: 50px;
-            }
-
-            .product-details,
-            .customer-details {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .product-meta,
-            .customer-stats {
-                text-align: left;
-            }
-
-            .product-actions,
-            .customer-actions {
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .product-actions .btn-sm,
-            .customer-actions .btn-sm {
-                flex: 1;
-                min-width: 100px;
-                text-align: center;
-            }
-
-            .category-group-header,
-            .activity-group-header {
-                padding: 12px 15px;
-            }
-
-            .category-group-header h3,
-            .activity-group-header h3 {
-                font-size: 1rem;
-            }
-        }
-
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 2rem;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            color: #2c3e50;
-        }
-
-        .close,
-        .modal-close {
-            font-size: 2rem;
-            cursor: pointer;
-            color: #666;
-            background: none;
-            border: none;
-            padding: 0;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .link-box {
-            display: flex;
-            gap: 8px;
-            margin: 16px 0;
-            align-items: center;
-        }
-
-        .link-input {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-family: monospace;
-            background: var(--background);
-        }
-
-        .share-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-            justify-content: center;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #2c3e50;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: #666;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-
-        .status-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .status-draft {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-sent {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .status-paid {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        /* Payment Stage Badges */
-        .payment-stage-badge {
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-top: 0.3rem;
-            display: inline-block;
-        }
-
-        .stage-down-payment {
-            background: #e3f2fd;
-            color: #1565c0;
-            border: 1px solid #bbdefb;
-        }
-
-        .stage-remaining {
-            background: #fff3e0;
-            color: #ef6c00;
-            border: 1px solid #ffcc02;
-        }
-
-        .stage-completed {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border: 1px solid #81c784;
-        }
-
-        .stage-full {
-            background: #f3e5f5;
-            color: #7b1fa2;
-            border: 1px solid #ce93d8;
-        }
-
-        .invoice-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .invoice-modal-content {
-            background-color: white;
-            margin: 2% auto;
-            padding: 2rem;
-            border-radius: 12px;
-            width: 95%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 0;
-            }
-
-            .header {
-                padding: 1.5rem 1rem;
-                text-align: center;
-            }
-
-            .header-content {
-                padding: 0 16px;
-            }
-
-            /* Mobile logo sizing */
-            .logo-icon img {
-                max-height: 28px;
-                max-width: 150px;
-            }
-
-            .user-info {
-                padding: 6px 12px;
-                gap: 8px;
-            }
-
-            .header-logout-btn {
-                font-size: 10px;
-                padding: 3px 6px;
-                margin-top: 1px;
-            }
-
-            .header-logout-btn span {
-                font-size: 9px;
-            }
-
-            /* Mobile plan status */
-            .plan-status-container {
-                gap: 6px;
-                margin-right: 8px;
-            }
-
-            .plan-badge {
-                padding: 3px 6px;
-                font-size: 10px;
-            }
-
-            .upgrade-btn, .manage-btn {
-                padding: 3px 8px;
-                font-size: 10px;
-                border-radius: 12px;
-            }
-
-            .settings-btn span:last-child {
-                display: none;
-            }
-
-            .settings-btn {
-                padding: 8px;
-                min-width: 40px;
-                justify-content: center;
-            }
-
-            .header h1 {
-                font-size: 1.8rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .header p {
-                font-size: 1rem;
-            }
-
-            .container {
-                padding: 1rem;
-            }
-
-            .dashboard-nav {
-                flex-wrap: wrap;
-                gap: 0.5rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .nav-btn {
-                flex: 1;
-                min-width: calc(50% - 0.25rem);
-                padding: 0.75rem 1rem;
-                font-size: 0.85rem;
-                text-align: center;
-            }
-
-            .section {
-                padding: 1.5rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .section h2 {
-                font-size: 1.3rem;
-                margin-bottom: 1rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .stat-card {
-                padding: 1rem;
-                text-align: center;
-            }
-
-            .stat-number {
-                font-size: 1.5rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .stat-label {
-                font-size: 0.8rem;
-            }
-
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .filters {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.75rem;
-            }
-
-            .filter-select {
-                padding: 0.75rem;
-                font-size: 16px; /* Prevents zoom on iOS */
-                width: 100%;
-            }
-
-            .btn {
-                padding: 0.75rem 1rem;
-                font-size: 1rem;
-                width: 100%;
-                margin-bottom: 0.5rem;
-                min-height: 44px;
-                touch-action: manipulation;
-            }
-
-            /* Legacy mobile product grid - no longer used */
-
-            .product-card {
-                padding: 1rem;
-            }
-
-            .product-name {
-                font-size: 1.1rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .product-sku {
-                font-size: 0.8rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .product-price {
-                font-size: 1.2rem;
-                margin: 0.5rem 0;
-            }
-
-            .product-actions {
-                flex-direction: column;
-                gap: 0.5rem;
-                margin-top: 1rem;
-            }
-
-            .btn-sm {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
-                width: 100%;
-            }
-
-            .form-row {
-                flex-direction: column;
-            }
-
-            .form-control {
-                padding: 0.75rem;
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
-
-            .modal-content {
-                width: 95%;
-                margin: 2% auto;
-                padding: 1.5rem;
-                max-height: 90vh;
-            }
-
-            .invoice-modal-content {
-                width: 98%;
-                margin: 1% auto;
-                padding: 1rem;
-                max-height: 95vh;
-            }
-            
-            /* Mobile Invoice Modal Zoom Controls */
-            .mobile-invoice-zoom-controls {
-                position: fixed !important;
-                top: 50% !important;
-                right: 8px !important;
-                transform: translateY(-50%) !important;
-                z-index: 1002 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 8px !important;
-                background: rgba(255, 255, 255, 0.95) !important;
-                padding: 12px 8px !important;
-                border-radius: 12px !important;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-                border: 1px solid rgba(0, 0, 0, 0.1) !important;
-            }
-            
-            .invoice-zoom-btn {
-                width: 36px !important;
-                height: 36px !important;
-                border: none !important;
-                border-radius: 8px !important;
-                background: var(--primary-purple) !important;
-                color: white !important;
-                font-size: 16px !important;
-                font-weight: bold !important;
-                cursor: pointer !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                transition: all 0.2s ease !important;
-                user-select: none !important;
-                -webkit-tap-highlight-color: transparent !important;
-            }
-            
-            .invoice-zoom-btn:hover, .invoice-zoom-btn:active {
-                background: var(--primary-dark) !important;
-                transform: scale(0.95) !important;
-            }
-            
-            /* Invoice Modal Content Scaling */
-            .invoice-modal-content-wrapper {
-                transform: scale(var(--invoice-mobile-scale-factor, 0.8)) !important;
-                transform-origin: top center !important;
-                transition: transform 0.3s ease !important;
-                width: 100% !important;
-                overflow: visible !important;
-            }
-            
-            /* Zoom Indicator */
-            .invoice-zoom-indicator {
-                position: fixed !important;
-                top: 20px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
-                z-index: 1003 !important;
-                background: rgba(0, 0, 0, 0.8) !important;
-                color: white !important;
-                padding: 4px 12px !important;
-                border-radius: 16px !important;
-                font-size: 12px !important;
-                font-weight: 500 !important;
-                pointer-events: none !important;
-                opacity: 0 !important;
-                transition: opacity 0.3s ease !important;
-            }
-            
-            .invoice-zoom-indicator.show {
-                opacity: 1 !important;
-            }
-
-            .modal-header {
-                margin-bottom: 1rem;
-            }
-
-            .modal-title {
-                font-size: 1.2rem;
-            }
-
-            .close {
-                font-size: 1.5rem;
-            }
-
-            /* Improve table display on mobile */
-            table {
-                font-size: 0.85rem;
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
-            }
-
-            table th,
-            table td {
-                padding: 8px 4px;
-                min-width: 80px;
-            }
-
-            .status-badge {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.7rem;
-            }
-
-            .stock-badge {
-                padding: 0.2rem 0.4rem;
-                font-size: 0.7rem;
-            }
-
-            /* Customer grids - legacy grid layout */
-            .customers-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header h1 {
-                font-size: 1.5rem;
-            }
-
-            .header p {
-                font-size: 0.9rem;
-            }
-
-            .container {
-                padding: 0.75rem;
-            }
-
-            /* Extra small mobile logo sizing */
-            .logo-icon img {
-                max-height: 24px;
-                max-width: 120px;
-            }
-
-            .nav-btn {
-                min-width: 100%;
-                margin-bottom: 0.5rem;
-                font-size: 0.8rem;
-            }
-
-            .section {
-                padding: 1rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-            }
-
-            .stat-card {
-                padding: 0.75rem;
-            }
-
-            .stat-number {
-                font-size: 1.3rem;
-            }
-
-            .product-card {
-                padding: 0.75rem;
-            }
-
-            .product-name {
-                font-size: 1rem;
-            }
-
-            .product-price {
-                font-size: 1.1rem;
-            }
-
-            .modal-content,
-            .invoice-modal-content {
-                padding: 1rem;
-            }
-
-            .btn-sm {
-                font-size: 0.8rem;
-                padding: 0.5rem;
-            }
-        }
-
-        /* Order Selection Mode Styles */
-        .order-selection {
-            display: none;
-        }
+        console.error(`❌ Error updating invoice ${invoiceId}:`, error);
+        throw error;
+      }
+
+      console.log(`✅ Successfully updated invoice ${invoiceId}`);
+      return { changes: 1, updatedInvoice: data };
+      
+    } catch (error) {
+      console.error(`❌ Failed to update invoice ${invoiceId}:`, error);
+      throw error;
+    }
+  }
+
+  async getInvoiceStats(dateFrom = null, dateTo = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice stats');
+    }
+
+    let query = this.supabase
+      .from('invoices')
+      .select('status, grand_total, created_at')
+      .eq('merchant_id', merchantId);
+
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('created_at', dateTo);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const invoices = data || [];
+    const stats = {
+      total_invoices: invoices.length,
+      draft_invoices: invoices.filter(i => i.status === 'draft').length,
+      sent_invoices: invoices.filter(i => i.status === 'sent').length,
+      paid_invoices: invoices.filter(i => i.status === 'paid').length,
+      cancelled_invoices: invoices.filter(i => i.status === 'cancelled').length,
+      total_revenue: invoices.filter(i => i.status === 'paid')
+        .reduce((sum, invoice) => sum + parseFloat(invoice.grand_total || 0), 0),
+      outstanding_amount: invoices.filter(i => i.status === 'sent')
+        .reduce((sum, invoice) => sum + parseFloat(invoice.grand_total || 0), 0),
+      draft_amount: invoices.filter(i => i.status === 'draft')
+        .reduce((sum, invoice) => sum + parseFloat(invoice.grand_total || 0), 0)
+    };
+
+    return stats;
+  }
+
+  async bulkDeleteInvoices(invoiceIds) {
+    if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+      return { changes: 0 };
+    }
+
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .delete()
+      .in('id', invoiceIds)
+      .select();
+
+    if (error) throw error;
+    return { changes: data ? data.length : 0 };
+  }
+
+  // Business Settings operations
+  async getBusinessSettings(merchantId = null) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for business settings access');
+    }
+
+    try {
+      let query = this.supabase
+        .from('business_settings')
+        .select('*')
+        .eq('merchant_id', merchantId);
+      
+      const { data, error } = await query.single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('📋 No business settings found, returning empty object');
+          return {};
+        }
+        console.error('💥 Error fetching business settings:', error.message);
+        throw error;
+      }
+      
+      console.log('✅ Business settings retrieved from database:', {
+        hasName: !!data?.name,
+        hasEmail: !!data?.email,
+        hasLogoUrl: !!data?.logo_url,
+        hasLogoPublicId: !!data?.logo_public_id
+      });
+      
+      // Add field compatibility mapping for web-server.js
+      if (data) {
+        return {
+          ...data,
+          // Map snake_case to camelCase for compatibility
+          taxId: data.tax_id,
+          taxEnabled: data.tax_enabled,
+          taxRate: data.tax_rate,
+          taxName: data.tax_name,
+          taxDescription: data.tax_description,
+          hideBusinessName: data.hide_business_name,
+          businessCode: data.business_code,
+          termsAndConditions: data.terms_conditions,
+          logoUrl: data.logo_url,
+          logoPublicId: data.logo_public_id,
+          logoFilename: data.logo_filename,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          // Premium branding fields
+          premiumActive: data.premium_active,
+          customHeaderText: data.custom_header_text,
+          customHeaderLogoUrl: data.custom_header_logo_url,
+          customHeaderLogoPublicId: data.custom_header_logo_public_id,
+          customFooterLogoUrl: data.custom_footer_logo_url,
+          customFooterLogoPublicId: data.custom_footer_logo_public_id,
+          customHeaderBgColor: data.custom_header_bg_color,
+          customFooterBgColor: data.custom_footer_bg_color,
+          hideAspreeBranding: data.hide_aspree_branding
+        };
+      }
+      
+      return {};
+    } catch (error) {
+      console.error('💥 getBusinessSettings failed:', error.message);
+      throw error;
+    }
+  }
+
+  async updateBusinessSettings(settings, merchantId = null) {
+    try {
+      console.log('🏢 Updating business settings with data:', settings);
+      
+      // Map camelCase input fields to snake_case database fields
+      const mappedSettings = {};
+      
+      if (settings.name !== undefined) mappedSettings.name = settings.name;
+      if (settings.email !== undefined) mappedSettings.email = settings.email;
+      if (settings.phone !== undefined) mappedSettings.phone = settings.phone;
+      if (settings.address !== undefined) mappedSettings.address = settings.address;
+      if (settings.website !== undefined) mappedSettings.website = settings.website;
+      
+      // Handle both field name formats
+      if (settings.taxId !== undefined || settings.tax_id !== undefined) {
+        mappedSettings.tax_id = settings.taxId || settings.tax_id;
+      }
+      if (settings.taxEnabled !== undefined || settings.tax_enabled !== undefined) {
+        mappedSettings.tax_enabled = settings.taxEnabled !== undefined ? settings.taxEnabled : settings.tax_enabled;
+      }
+      if (settings.taxRate !== undefined || settings.tax_rate !== undefined) {
+        mappedSettings.tax_rate = settings.taxRate !== undefined ? settings.taxRate : settings.tax_rate;
+      }
+      if (settings.taxName !== undefined || settings.tax_name !== undefined) {
+        mappedSettings.tax_name = settings.taxName || settings.tax_name;
+      }
+      if (settings.taxDescription !== undefined || settings.tax_description !== undefined) {
+        mappedSettings.tax_description = settings.taxDescription || settings.tax_description;
+      }
+      if (settings.hideBusinessName !== undefined || settings.hide_business_name !== undefined) {
+        mappedSettings.hide_business_name = settings.hideBusinessName !== undefined ? settings.hideBusinessName : settings.hide_business_name;
+      }
+      if (settings.businessCode !== undefined || settings.business_code !== undefined) {
+        mappedSettings.business_code = settings.businessCode || settings.business_code;
+      }
+      // Map terms and conditions field
+      if (settings.termsAndConditions !== undefined || settings.terms_conditions !== undefined) {
+        mappedSettings.terms_conditions = settings.termsAndConditions || settings.terms_conditions || null;
+        console.log('📝 Terms and conditions mapped:', mappedSettings.terms_conditions);
+      }
+      if (settings.logoUrl !== undefined || settings.logo_url !== undefined) {
+        mappedSettings.logo_url = settings.logoUrl || settings.logo_url || null;
+      }
+      if (settings.logoPublicId !== undefined || settings.logo_public_id !== undefined) {
+        mappedSettings.logo_public_id = settings.logoPublicId || settings.logo_public_id || null;
+      }
+      if (settings.logoFilename !== undefined || settings.logo_filename !== undefined) {
+        mappedSettings.logo_filename = settings.logoFilename || settings.logo_filename || null;
+      }
+      
+      // Premium branding fields
+      if (settings.premiumActive !== undefined || settings.premium_active !== undefined) {
+        mappedSettings.premium_active = settings.premiumActive !== undefined ? settings.premiumActive : settings.premium_active;
+      }
+      if (settings.customHeaderText !== undefined || settings.custom_header_text !== undefined) {
+        mappedSettings.custom_header_text = settings.customHeaderText || settings.custom_header_text || null;
+      }
+      if (settings.customHeaderLogoUrl !== undefined || settings.custom_header_logo_url !== undefined) {
+        mappedSettings.custom_header_logo_url = settings.customHeaderLogoUrl || settings.custom_header_logo_url || null;
+      }
+      if (settings.customHeaderLogoPublicId !== undefined || settings.custom_header_logo_public_id !== undefined) {
+        mappedSettings.custom_header_logo_public_id = settings.customHeaderLogoPublicId || settings.custom_header_logo_public_id || null;
+      }
+      if (settings.customFooterLogoUrl !== undefined || settings.custom_footer_logo_url !== undefined) {
+        mappedSettings.custom_footer_logo_url = settings.customFooterLogoUrl || settings.custom_footer_logo_url || null;
+      }
+      if (settings.customFooterLogoPublicId !== undefined || settings.custom_footer_logo_public_id !== undefined) {
+        mappedSettings.custom_footer_logo_public_id = settings.customFooterLogoPublicId || settings.custom_footer_logo_public_id || null;
+      }
+      if (settings.customHeaderBgColor !== undefined || settings.custom_header_bg_color !== undefined) {
+        mappedSettings.custom_header_bg_color = settings.customHeaderBgColor || settings.custom_header_bg_color || '#311d6b';
+      }
+      if (settings.customFooterBgColor !== undefined || settings.custom_footer_bg_color !== undefined) {
+        mappedSettings.custom_footer_bg_color = settings.customFooterBgColor || settings.custom_footer_bg_color || '#311d6b';
+      }
+      if (settings.hideAspreeBranding !== undefined || settings.hide_aspree_branding !== undefined) {
+        mappedSettings.hide_aspree_branding = settings.hideAspreeBranding !== undefined ? settings.hideAspreeBranding : settings.hide_aspree_branding;
+      }
+
+      console.log('📋 Mapped settings for database:', mappedSettings);
+
+      // Check if business settings exist for this merchant
+      let existingQuery = this.supabase
+        .from('business_settings')
+        .select('*');
+      
+      if (merchantId) {
+        existingQuery = existingQuery.eq('merchant_id', merchantId);
+      } else {
+        existingQuery = existingQuery.limit(1);
+      }
+      
+      const { data: existing, error: selectError } = await existingQuery.single();
+
+      if (selectError && selectError.code !== 'PGRST116') {
+        console.error('💥 Error checking existing business settings:', selectError.message);
+        throw selectError;
+      }
+
+      let result;
+      if (existing) {
+        console.log('🔄 Updating existing business settings with ID:', existing.id);
+        const { data, error } = await this.supabase
+          .from('business_settings')
+          .update(mappedSettings)
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('💥 Error updating business settings:', error.message);
+          throw error;
+        }
+        result = data;
+      } else {
+        console.log('✨ Creating new business settings record');
+        // Add merchant_id to new records if provided
+        if (merchantId) {
+          mappedSettings.merchant_id = merchantId;
+        }
+        const { data, error } = await this.supabase
+          .from('business_settings')
+          .insert(mappedSettings)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('💥 Error creating business settings:', error.message);
+          throw error;
+        }
+        result = data;
+      }
+      
+      console.log('✅ Business settings saved successfully:', {
+        id: result.id,
+        hasName: !!result.name,
+        hasEmail: !!result.email,
+        hasLogoUrl: !!result.logo_url
+      });
+      
+      // Return with field mapping for compatibility
+      return this.mapBusinessSettingsFields(result);
+    } catch (error) {
+      console.error('💥 updateBusinessSettings failed:', error.message);
+      throw error;
+    }
+  }
+
+  // Helper method for consistent field mapping
+  mapBusinessSettingsFields(data) {
+    if (!data) return data;
+    
+    return {
+      ...data,
+      // Map snake_case to camelCase for compatibility
+      taxId: data.tax_id,
+      taxEnabled: data.tax_enabled,
+      taxRate: data.tax_rate,
+      taxName: data.tax_name,
+      taxDescription: data.tax_description,
+      hideBusinessName: data.hide_business_name,
+      businessCode: data.business_code,
+      termsAndConditions: data.terms_conditions || null,
+      logoUrl: data.logo_url,
+      logoPublicId: data.logo_public_id,
+      logoFilename: data.logo_filename,
+      // Premium branding fields
+      premiumActive: data.premium_active,
+      customHeaderText: data.custom_header_text,
+      customHeaderLogoUrl: data.custom_header_logo_url,
+      customHeaderLogoPublicId: data.custom_header_logo_public_id,
+      customFooterLogoUrl: data.custom_footer_logo_url,
+      customFooterLogoPublicId: data.custom_footer_logo_public_id,
+      customHeaderBgColor: data.custom_header_bg_color,
+      customFooterBgColor: data.custom_footer_bg_color,
+      hideAspreeBranding: data.hide_aspree_branding,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  }
+
+  // Order operations
+  async createOrder(orderData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order creation');
+    }
+
+    const orderNumber = await this.generateOrderNumber();
+    
+    // Auto-create/update customer record
+    await this.saveCustomer({
+      name: orderData.customer_name,
+      email: orderData.customer_email,
+      phone: orderData.customer_phone,
+      address: orderData.shipping_address || orderData.billing_address
+    }, merchantId);
+    
+    const { data, error } = await this.supabase
+      .from('orders')
+      .insert({
+        order_number: orderNumber,
+        customer_id: orderData.customer_id || null,
+        customer_name: orderData.customer_name,
+        customer_email: orderData.customer_email,
+        customer_phone: orderData.customer_phone || '',
+        status: orderData.status || 'pending',
+        order_date: orderData.order_date || new Date().toISOString(),
+        shipping_address: orderData.shipping_address || '',
+        billing_address: orderData.billing_address || '',
+        payment_method: orderData.payment_method || '',
+        payment_status: orderData.payment_status || 'pending',
+        subtotal: orderData.subtotal,
+        tax_amount: orderData.tax_amount || 0,
+        shipping_cost: orderData.shipping_cost || 0,
+        discount: orderData.discount || 0,
+        total_amount: orderData.total_amount,
+        notes: orderData.notes || '',
+        tracking_number: orderData.tracking_number || '',
+        shipped_date: orderData.shipped_date || null,
+        delivered_date: orderData.delivered_date || null,
+        source_invoice_id: orderData.source_invoice_id || null,
+        source_invoice_number: orderData.source_invoice_number || null,
+        merchant_id: merchantId
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Save order items if provided
+    if (orderData.items && Array.isArray(orderData.items)) {
+      const orderItems = orderData.items.map(item => ({
+        order_id: data.id,
+        product_id: item.product_id,
+        product_name: item.product_name || item.name,
+        sku: item.sku || '',
+        quantity: item.quantity,
+        unit_price: item.unit_price || item.price,
+        line_total: item.line_total || (item.quantity * (item.unit_price || item.price))
+      }));
+
+      const { error: itemsError } = await this.supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+    }
+
+    return { lastInsertRowid: data.id, orderNumber: orderNumber };
+  }
+
+  async createOrderFromInvoice(invoiceId, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order creation');
+    }
+    
+    const invoice = await this.getInvoice(invoiceId, merchantId);
+    if (!invoice) {
+      throw new Error('Invoice not found or access denied');
+    }
+
+    // Check if order already exists for this merchant
+    const { data: existingOrder } = await this.supabase
+      .from('orders')
+      .select('*')
+      .eq('source_invoice_id', invoiceId)
+      .eq('merchant_id', merchantId)
+      .single();
+    
+    if (existingOrder) {
+      console.log(`Order ${existingOrder.order_number} already exists for invoice ${invoice.invoice_number}`);
+      return existingOrder;
+    }
+
+    const invoiceItems = Array.isArray(invoice.items_json) ? invoice.items_json : [];
+    
+    const orderData = {
+      customer_name: invoice.customer_name,
+      customer_email: invoice.customer_email,
+      customer_phone: invoice.customer_phone,
+      shipping_address: invoice.customer_address,
+      billing_address: invoice.customer_address,
+      status: 'pending',
+      payment_status: 'paid',
+      order_date: new Date().toISOString(),
+      subtotal: invoice.subtotal,
+      tax_amount: invoice.tax_amount,
+      shipping_cost: invoice.shipping_cost || 0,
+      discount: invoice.discount || 0,
+      total_amount: invoice.grand_total,
+      notes: `Auto-created from paid invoice ${invoice.invoice_number}`,
+      source_invoice_id: invoice.id,
+      source_invoice_number: invoice.invoice_number,
+      items: invoiceItems.map(item => ({
+        product_name: item.productName || item.name,
+        sku: item.sku || '',
+        quantity: item.quantity,
+        unit_price: item.unitPrice || item.price,
+        line_total: item.lineTotal || (item.quantity * (item.unitPrice || item.price))
+      }))
+    };
+
+    const result = await this.createOrder(orderData, merchantId);
+    
+    // Update invoice metadata
+    const metadata = invoice.metadata_json || {};
+    metadata.auto_created_order_id = result.lastInsertRowid;
+    metadata.auto_created_order_number = result.orderNumber;
+    
+    await this.supabase
+      .from('invoices')
+      .update({ metadata_json: metadata })
+      .eq('id', invoiceId)
+      .eq('merchant_id', merchantId);
+
+    console.log(`Order ${result.orderNumber} auto-created from invoice ${invoice.invoice_number}`);
+    return result;
+  }
+
+  // Utility methods
+  generateCustomerToken() {
+    return 'inv_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
+  }
+
+  async generateRandomHash(length = 4) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    const crypto = await import('crypto');
+    
+    for (let i = 0; i < length; i++) {
+      const randomIndex = crypto.randomInt(0, characters.length);
+      result += characters[randomIndex];
+    }
+    
+    return result;
+  }
+
+  async generateUniqueHash(prefix, date, length = 4) {
+    const maxAttempts = 100;
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      const hash = await this.generateRandomHash(length);
+      const fullNumber = `${prefix}-${date}-${hash}`;
+      
+      // Check if this hash already exists for invoices or orders
+      const { data: existingInvoice } = await this.supabase
+        .from('invoices')
+        .select('id')
+        .eq('invoice_number', fullNumber)
+        .single();
         
-        .selection-mode .order-selection {
-            display: block;
-        }
+      const { data: existingOrder } = await this.supabase
+        .from('orders')
+        .select('id')
+        .eq('order_number', fullNumber)
+        .single();
+      
+      if (!existingInvoice && !existingOrder) {
+        return hash;
+      }
+      
+      attempts++;
+    }
+    
+    return Date.now().toString(36).substr(-4).toUpperCase();
+  }
+
+  async generateInvoiceNumber() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    
+    const dateString = `${year}${month}${day}`;
+    const prefix = `INV`;
+    
+    const hash = await this.generateUniqueHash(prefix, dateString);
+    
+    return `${prefix}-${dateString}-${hash}`;
+  }
+
+  async generateOrderNumber() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    
+    const dateString = `${year}${month}${day}`;
+    const prefix = `ORD`;
+    
+    const hash = await this.generateUniqueHash(prefix, dateString);
+    
+    return `${prefix}-${dateString}-${hash}`;
+  }
+
+  async getAllOrders(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order access');
+    }
+
+    let query = this.supabase
+      .from('orders')
+      .select('*')
+      .eq('merchant_id', merchantId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (customerEmail) {
+      query = query.ilike('customer_email', `%${customerEmail}%`);
+    }
+
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('created_at', dateTo);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getOrder(id) {
+    const { data, error } = await this.supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    
+    // Get order items for this order
+    const { data: items, error: itemsError } = await this.supabase
+      .from('order_items')
+      .select('*')
+      .eq('order_id', id);
+    
+    if (itemsError) throw itemsError;
+    
+    return {
+      ...data,
+      items: items || []
+    };
+  }
+
+  async getOrderStats(dateFrom = null, dateTo = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order stats');
+    }
+
+    let query = this.supabase
+      .from('orders')
+      .select('status, total_amount, created_at')
+      .eq('merchant_id', merchantId);
+
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('created_at', dateTo);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const orders = data || [];
+    const stats = {
+      total_orders: orders.length,
+      pending_orders: orders.filter(o => o.status === 'pending').length,
+      processing_orders: orders.filter(o => o.status === 'processing').length,
+      shipped_orders: orders.filter(o => o.status === 'shipped').length,
+      delivered_orders: orders.filter(o => o.status === 'delivered').length,
+      cancelled_orders: orders.filter(o => o.status === 'cancelled').length,
+      total_revenue: orders.filter(o => o.status === 'delivered')
+        .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0),
+      pending_value: orders.filter(o => o.status === 'pending')
+        .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0),
+      total_order_value: orders
+        .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
+    };
+
+    return stats;
+  }
+
+  async deleteOrder(id, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order deletion');
+    }
+
+    // First delete order items
+    await this.supabase
+      .from('order_items')
+      .delete()
+      .eq('order_id', id);
+
+    // Then delete the order (with merchant validation)
+    const { data, error } = await this.supabase
+      .from('orders')
+      .delete()
+      .eq('id', id)
+      .eq('merchant_id', merchantId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { changes: 1, deletedOrder: data };
+  }
+
+  async updateOrderStatus(id, status, trackingNumber = null, notes = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order status updates');
+    }
+
+    const updateData = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+
+    if (trackingNumber) {
+      updateData.tracking_number = trackingNumber;
+    }
+
+    if (notes) {
+      updateData.notes = notes;
+    }
+
+    if (status === 'shipped') {
+      updateData.shipped_date = new Date().toISOString();
+    } else if (status === 'delivered') {
+      updateData.delivered_date = new Date().toISOString();
+    }
+
+    const { data, error } = await this.supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', id)
+      .eq('merchant_id', merchantId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async bulkUpdateOrderStatus(orderIds, status, trackingNumber = null) {
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return { changes: 0 };
+    }
+
+    const updateData = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+
+    if (trackingNumber) {
+      updateData.tracking_number = trackingNumber;
+    }
+
+    if (status === 'shipped') {
+      updateData.shipped_date = new Date().toISOString();
+    } else if (status === 'delivered') {
+      updateData.delivered_date = new Date().toISOString();
+    }
+
+    const { data, error } = await this.supabase
+      .from('orders')
+      .update(updateData)
+      .in('id', orderIds)
+      .select();
+
+    if (error) throw error;
+    return { changes: data ? data.length : 0 };
+  }
+
+  async bulkDeleteOrders(orderIds) {
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return { changes: 0 };
+    }
+
+    // First delete order items for all orders
+    await this.supabase
+      .from('order_items')
+      .delete()
+      .in('order_id', orderIds);
+
+    // Then delete the orders
+    const { data, error } = await this.supabase
+      .from('orders')
+      .delete()
+      .in('id', orderIds)
+      .select();
+
+    if (error) throw error;
+    return { changes: data ? data.length : 0 };
+  }
+
+  // Payment Methods operations
+  async getPaymentMethods(merchantId = null) {
+    try {
+      console.log('💳 Fetching payment methods from database for merchant:', merchantId);
+      
+      let query = this.supabase
+        .from('payment_methods')
+        .select('*');
+
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('💥 Error fetching payment methods:', error.message);
+        throw error;
+      }
+
+      const methods = {};
+      if (data && data.length > 0) {
+        data.forEach(method => {
+          methods[method.method_type] = {
+            enabled: method.enabled,
+            ...method.config_json
+          };
+        });
+        console.log('✅ Payment methods retrieved for merchant', merchantId, ':', Object.keys(methods));
+      } else {
+        console.log('📋 No payment methods found in database for merchant:', merchantId);
+        // Return default payment methods structure if none found
+        methods.bank_transfer = {
+          enabled: false,
+          bank_name: "",
+          account_number: "",
+          account_holder_name: "",
+          instructions: ""
+        };
+        methods.xendit = {
+          enabled: false,
+          environment: "sandbox",
+          secret_key: "",
+          public_key: "",
+          webhook_token: "",
+          payment_methods: {
+            bank_transfer: true,
+            ewallet: true,
+            retail_outlet: true,
+            credit_card: true
+          }
+        };
+      }
+
+      return methods;
+    } catch (error) {
+      console.error('💥 getPaymentMethods failed:', error.message);
+      throw error;
+    }
+  }
+
+  async updatePaymentMethods(methods, merchantId = null) {
+    try {
+      console.log('💳 Updating payment methods in database for merchant', merchantId, ':', methods);
+      
+      for (const [methodType, config] of Object.entries(methods)) {
+        const { enabled, ...configData } = config;
         
-        .selection-mode .order-list-item {
-            background-color: var(--background);
-            border-left: 3px solid var(--primary-purple);
-        }
-
-        .selection-mode .order-list-item:hover {
-            background-color: rgba(139, 69, 255, 0.1);
-        }
-
-        /* Service Ticket Modal Styles */
-        #serviceTicketModal .modal-content {
-            max-width: 900px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
+        console.log(`💳 Processing ${methodType} for merchant ${merchantId}:`, { enabled, configData });
         
-        .service-ticket-modal {
-            padding: 20px;
-            font-family: 'Arial', 'Helvetica', sans-serif;
-        }
+        // Try upsert first
+        const { data, error } = await this.supabase
+          .from('payment_methods')
+          .upsert({
+            method_type: methodType,
+            enabled: enabled,
+            config_json: configData,
+            merchant_id: merchantId
+          }, {
+            onConflict: 'method_type,merchant_id'
+          })
+          .select();
 
-        .service-ticket {
-            background: white;
-            border: 1px solid #ddd;
-            padding: 0;
-            margin-bottom: 20px;
-            max-width: 600px;
-            margin: 0 auto 20px auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
+        if (error) {
+          // Check if it's the unique constraint error
+          if (error.code === '42P10' || error.message.includes('no unique or exclusion constraint')) {
+            console.log(`⚠️  UNIQUE constraint missing for ${methodType}, trying manual upsert...`);
+            
+            // Fallback: manual upsert logic
+            const { data: existing, error: selectError } = await this.supabase
+              .from('payment_methods')
+              .select('id')
+              .eq('method_type', methodType)
+              .single();
 
-        .ticket-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 1px solid #ddd;
-            padding: 24px 24px 16px 24px;
-            flex-wrap: wrap;
-        }
-
-        .ticket-title {
-            font-size: 24px;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-
-        .ticket-subtitle {
-            font-size: 16px;
-            margin-top: 5px;
-            color: #666;
-        }
-
-        .ticket-body {
-            font-size: 14px;
-        }
-
-        .info-section {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 15px;
-        }
-
-        .info-section:last-child {
-            border-bottom: none;
-        }
-
-        .info-section h3 {
-            margin-bottom: 10px;
-            text-decoration: underline;
-            font-size: 16px;
-        }
-
-        .info-item {
-            display: flex;
-            margin-bottom: 5px;
-        }
-
-        .info-label {
-            font-weight: bold;
-            width: 120px;
-            flex-shrink: 0;
-        }
-
-        .info-value {
-            flex: 1;
-        }
-
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        .items-table th, 
-        .items-table td {
-            border: 1px solid #000;
-            padding: 8px;
-            text-align: left;
-        }
-
-        .items-table th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-
-        .notes {
-            background-color: #f9f9f9;
-            padding: 10px;
-            border-left: 3px solid #ccc;
-            font-style: italic;
-        }
-
-        .print-button {
-            background-color: var(--primary-purple);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .print-button:hover {
-            background-color: var(--primary-purple-dark, #7c3aed);
-        }
-
-        /* New Service Ticket Styles - Clean Design */
-        .service-ticket .ticket-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            text-align: left;
-            flex-wrap: wrap;
-            padding: 24px 24px 16px 24px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .service-ticket .company-name {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-            margin: 0;
-        }
-
-        .service-ticket .order-info {
-            text-align: right;
-            font-size: 12px;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        .service-ticket .order-number {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-            font-size: 13px;
-        }
-
-        .ship-to-section {
-            padding: 20px 24px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .address-info {
-            font-size: 12px;
-            line-height: 1.6;
-            color: #555;
-        }
-
-        .customer-name {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .items-section {
-            padding: 20px 24px;
-        }
-
-        .items-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .items-header .section-title {
-            margin-bottom: 0;
-        }
-
-        .quantity-header {
-            font-size: 12px;
-            font-weight: 600;
-            color: #333;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .items-list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .item-row:last-child {
-            border-bottom: none;
-        }
-
-        .item-name {
-            font-size: 14px;
-            color: #333;
-            flex-grow: 1;
-            padding-right: 20px;
-        }
-
-        .item-quantity {
-            font-size: 14px;
-            color: #000;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        .ticket-footer {
-            padding: 20px 24px;
-            text-align: center;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-        }
-
-        .thank-you {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 16px;
-            font-weight: 500;
-        }
-
-        .company-info {
-            font-size: 12px;
-            color: #666;
-            line-height: 1.4;
-        }
-
-        .company-info strong {
-            color: #000;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        @media print {
-            .modal, .modal-content, .modal-header {
-                display: none !important;
+            if (selectError && selectError.code !== 'PGRST116') {
+              console.error(`💥 Failed to check existing ${methodType}:`, selectError.message);
+              throw selectError;
             }
-            
-            body {
-                font-family: Arial, sans-serif !important;
-                font-size: 10px !important;
-            }
-            
-            .service-ticket-modal {
-                padding: 0;
-                margin: 0;
-                font-size: 10px;
-            }
-            
-            .service-ticket {
-                border: 1px solid #333;
-                max-width: none;
-                width: 100%;
-                margin: 0;
-                box-shadow: none;
-                background: white;
-            }
-            
-            .ticket-header {
-                padding: 12px 16px 8px 16px;
-                border-bottom: 1px solid #333;
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-            }
-            
-            .ship-to-section {
-                padding: 12px 16px;
-                border-bottom: 1px solid #333;
-            }
-            
-            .items-section {
-                padding: 12px 16px;
-            }
-            
-            .items-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-                padding-bottom: 4px;
-                border-bottom: 1px solid #333;
-            }
-            
-            .ticket-footer {
-                padding: 16px;
-                background: #f8f8f8;
-                border-top: none;
-                text-align: center;
-                margin-top: 20px;
-            }
-            
-            .company-name {
-                font-size: 16px;
-                font-weight: bold;
-                margin: 0;
-            }
-            
-            .order-info {
-                font-size: 10px;
-                text-align: right;
-                line-height: 1.3;
-            }
-            
-            .order-number {
-                font-weight: normal;
-                font-size: 10px;
-                margin-bottom: 2px;
-            }
-            
-            .order-date {
-                font-size: 10px;
-                color: #666;
-            }
-            
-            .section-title {
-                font-size: 11px;
-                font-weight: bold;
-                margin-bottom: 8px;
-                text-transform: uppercase;
-            }
-            
-            .quantity-header {
-                font-size: 11px;
-                font-weight: bold;
-                text-transform: uppercase;
-            }
-            
-            .address-info {
-                font-size: 10px;
-                line-height: 1.3;
-            }
-            
-            .customer-name {
-                font-weight: bold;
-                font-size: 10px;
-                margin-bottom: 2px;
-            }
-            
-            .item-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 3px 0;
-                line-height: 1.3;
-            }
-            
-            .item-name {
-                font-size: 10px;
-                color: #000;
-                flex-grow: 1;
-                padding-right: 20px;
-            }
-            
-            .item-quantity {
-                font-size: 10px;
-                color: #000;
-                text-align: right;
-                min-width: 30px;
-            }
-            
-            .thank-you {
-                font-size: 12px;
-                margin-bottom: 12px;
-            }
-            
-            .company-info {
-                font-size: 10px;
-                line-height: 1.3;
-            }
-            
-            .company-info strong {
-                font-weight: bold;
-                font-size: 11px;
-                margin-bottom: 4px;
-            }
-            
-            .print-button {
-                display: none !important;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <a href="/generator" class="logo">
-                <div class="logo-icon">
-                    <img src="/assets/aspree-header-logo.png" alt="AI Invoice" onerror="this.style.display='none'; this.parentNode.innerHTML='🤖';">
-                </div>
-            </a>
-            <div class="header-actions">
-                <!-- Plan Status -->
-                <div class="plan-status-container" id="planStatusContainer">
-                    <div class="plan-badge free" id="planBadge">
-                        <span>🆓</span>
-                        <span id="planText">FREE</span>
-                    </div>
-                    <button class="upgrade-btn" id="upgradeBtn" onclick="showUpgradeModal()" style="display: none;">
-                        <span>⬆️</span>
-                        <span>Upgrade</span>
-                    </button>
-                    <button class="manage-btn" id="manageBtn" onclick="showManageSubscription()" style="display: none;">
-                        <span>⚙️</span>
-                        <span>Manage</span>
-                    </button>
-                </div>
-                <a href="/business-settings" class="settings-btn" title="Business Settings">
-                    <span>⚙️</span>
-                    <span>Settings</span>
-                </a>
-                <div class="user-info">
-                    <div class="user-avatar">AG</div>
-                    <div class="user-details">
-                        <div style="font-weight: 600; font-size: 14px;">Agus Merchant</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">Business Owner</div>
-                        <button class="header-logout-btn" onclick="handleLogout()">
-                            <span>🚪</span> Logout
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
 
-    <div class="container">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div>
-                <h1 class="page-title">Aspree Invoice Gen - Merchant Dashboard</h1>
-                <p class="page-subtitle">Manage your business operations and insights</p>
-            </div>
-        </div>
+            if (existing) {
+              // Update existing record
+              const { data: updateData, error: updateError } = await this.supabase
+                .from('payment_methods')
+                .update({
+                  enabled: enabled,
+                  config_json: configData
+                })
+                .eq('method_type', methodType)
+                .select();
 
-        <!-- Dashboard Navigation -->
-        <div class="dashboard-nav">
-            <button class="nav-btn active" onclick="showSection('products')">
-                <span>📦</span> Products
-            </button>
-            <button class="nav-btn" onclick="showSection('orders')">
-                <span>🛒</span> Orders
-            </button>
-            <button class="nav-btn" onclick="showSection('invoices')">
-                <span>📄</span> Invoices
-            </button>
-            <button class="nav-btn" onclick="showSection('customers')">
-                <span>👥</span> Customers
-            </button>
-        </div>
-
-        <div id="products-section" class="section">
-            <h2>
-                <div class="section-icon">📦</div>
-                Product Catalog
-            </h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-products">0</div>
-                    <div class="stat-label">Total Products</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="active-products">0</div>
-                    <div class="stat-label">Active Products</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="low-stock-products">0</div>
-                    <div class="stat-label">Low Stock</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-categories">0</div>
-                    <div class="stat-label">Categories</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="filters">
-                    <select class="filter-select" id="category-filter">
-                        <option value="">All Categories</option>
-                    </select>
-                    <select class="filter-select" id="status-filter">
-                        <option value="true">Active Only</option>
-                        <option value="false">All Products</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-warning" onclick="seedProducts()">Seed Sample Products</button>
-                    <button class="btn btn-primary" onclick="openAddProductModal()">+ Add Product</button>
-                </div>
-            </div>
-
-            <div id="products-loading" class="loading">Loading products...</div>
-            <div id="products-error" class="error" style="display: none;"></div>
-            <div id="products-grid" class="products-container"></div>
-        </div>
-
-        <div id="orders-section" class="section" style="display: none;">
-            <h2>
-                <div class="section-icon">🛒</div>
-                Order Management
-            </h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-orders">0</div>
-                    <div class="stat-label">Total Orders</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="pending-orders">0</div>
-                    <div class="stat-label">Pending</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="delivered-orders">0</div>
-                    <div class="stat-label">Delivered</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="shipped-orders">0</div>
-                    <div class="stat-label">Shipped</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-order-value">Rp 0</div>
-                    <div class="stat-label">Total Value</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="filters">
-                    <select class="filter-select" id="order-status-filter">
-                        <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                    </select>
-                    <input type="date" class="filter-select" id="order-date-from" placeholder="From Date">
-                    <input type="date" class="filter-select" id="order-date-to" placeholder="To Date">
-                    <button class="btn btn-primary" onclick="applyDateFilters()" id="apply-date-filters-btn" style="margin-left: 0.5rem; padding: 0.75rem 1rem;">🔄 Apply</button>
-                    <button class="btn btn-secondary" onclick="clearDateFilters()" id="clear-date-filters-btn" style="margin-left: 0.25rem; padding: 0.75rem 1rem;">🗑️ Clear</button>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-primary" onclick="toggleOrderSelectionMode()" id="select-orders-btn">📋 Select Orders</button>
-                    <button class="btn btn-info" onclick="printSelectedOrders()" id="print-orders-btn" style="display: none;">🖨️ Print Selected</button>
-                    <button class="btn btn-warning" onclick="changeSelectedOrdersStatus()" id="change-status-btn" style="display: none;">📝 Change Status</button>
-                    <button class="btn btn-success" onclick="openAddOrderModal()">+ Add Order</button>
-                </div>
-            </div>
-
-            <div id="orders-loading" class="loading">Loading orders...</div>
-            <div id="orders-error" class="error" style="display: none;"></div>
-            <div id="orders-grid" class="orders-container"></div>
-        </div>
-
-        <div id="customers-section" class="section" style="display: none;">
-            <h2>
-                <div class="section-icon">👥</div>
-                Customer Management
-            </h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-customers">0</div>
-                    <div class="stat-label">Total Customers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="active-customers">0</div>
-                    <div class="stat-label">Active Customers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="repeat-customers">0</div>
-                    <div class="stat-label">Repeat Customers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="new-customers">0</div>
-                    <div class="stat-label">New This Month</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="average-clv">Rp 0</div>
-                    <div class="stat-label">Avg CLV</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="filters">
-                    <input type="text" class="filter-select" id="customer-search" placeholder="Search customers..." style="min-width: 300px;">
-                    <select class="filter-select" id="customer-sort" onchange="filterCustomers()">
-                        <option value="name">Sort by Name</option>
-                        <option value="orders">Sort by Total Orders</option>
-                        <option value="spent">Sort by Total Spent</option>
-                        <option value="recent">Sort by Last Activity</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-success" onclick="exportCustomers()">📊 Export CSV</button>
-                    <button class="btn btn-primary" onclick="refreshCustomers()">🔄 Refresh</button>
-                </div>
-            </div>
-
-            <div id="customers-loading" class="loading">Loading customers...</div>
-            <div id="customers-error" class="error" style="display: none;"></div>
-            <div id="customers-grid" class="customers-container"></div>
-        </div>
-
-        <div id="inventory-section" class="section" style="display: none;">
-            <h2>Inventory Management</h2>
-            <div id="low-stock-alerts"></div>
-        </div>
-
-        <div id="categories-section" class="section" style="display: none;">
-            <h2>
-                <div class="section-icon">🏷️</div>
-                Product Categories
-            </h2>
-            <div id="categories-list"></div>
-        </div>
-
-        <div id="invoices-section" class="section" style="display: none;">
-            <h2>
-                <div class="section-icon">📄</div>
-                Invoice Management
-            </h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-invoices">0</div>
-                    <div class="stat-label">Total Invoices</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="draft-invoices">0</div>
-                    <div class="stat-label">Draft</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="sent-invoices">0</div>
-                    <div class="stat-label">Sent</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="paid-invoices">0</div>
-                    <div class="stat-label">Paid</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-revenue">Rp 0</div>
-                    <div class="stat-label">Total Revenue</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="filters">
-                    <input type="text" class="filter-select" id="invoice-search" placeholder="Search invoices..." style="min-width: 300px;">
-                    <select class="filter-select" id="invoice-status-filter">
-                        <option value="">All Status</option>
-                        <option value="draft">Draft</option>
-                        <option value="sent">Sent</option>
-                        <option value="paid">Paid</option>
-                    </select>
-                    <input type="date" class="filter-select" id="invoice-date-from" placeholder="From Date">
-                    <input type="date" class="filter-select" id="invoice-date-to" placeholder="To Date">
-                    <button class="btn btn-primary" onclick="applyInvoiceDateFilters()" id="apply-invoice-date-filters-btn" style="margin-left: 0.5rem; padding: 0.75rem 1rem;">🔄 Apply</button>
-                    <button class="btn btn-secondary" onclick="clearInvoiceDateFilters()" id="clear-invoice-date-filters-btn" style="margin-left: 0.25rem; padding: 0.75rem 1rem;">🗑️ Clear</button>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-primary" onclick="toggleInvoiceSelectionMode()" id="select-invoices-btn">📋 Select Invoices</button>
-                    <button class="btn btn-danger invoice-selection-buttons" onclick="deleteSelectedInvoices()" id="delete-invoices-btn" style="display: none;">🗑️ Delete Selected</button>
-                </div>
-            </div>
-
-            <div id="invoices-loading" class="loading">Loading invoices...</div>
-            <div id="invoices-error" class="error" style="display: none;"></div>
-            <div id="invoices-grid" class="invoices-container"></div>
-        </div>
-
-
-
-    </div>
-
-    <!-- Add/Edit Product Modal -->
-    <div id="productModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modal-title">Add New Product</h3>
-                <span class="close" onclick="closeProductModal()">&times;</span>
-            </div>
-            <form id="productForm">
-                <div class="form-group">
-                    <label class="form-label">Product Name *</label>
-                    <input type="text" class="form-control" id="product-name" required>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">SKU *</label>
-                        <input type="text" class="form-control" id="product-sku" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Category</label>
-                        <input type="text" class="form-control" id="product-category">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <textarea class="form-control" id="product-description" rows="3"></textarea>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Unit Price (IDR) *</label>
-                        <input type="number" class="form-control" id="product-price" required min="0" step="100">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Cost Price (IDR)</label>
-                        <input type="number" class="form-control" id="product-cost" min="0" step="100">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Stock Quantity</label>
-                        <input type="number" class="form-control" id="product-stock" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Min Stock Level</label>
-                        <input type="number" class="form-control" id="product-min-stock" min="0">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Tax Rate (%)</label>
-                        <input type="number" class="form-control" id="product-tax" min="0" max="100" step="0.1">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Weight (kg)</label>
-                        <input type="number" class="form-control" id="product-weight" min="0" step="0.1">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Dimensions (L x W x H cm)</label>
-                    <input type="text" class="form-control" id="product-dimensions" placeholder="e.g., 10 x 5 x 3">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Image URL</label>
-                    <input type="url" class="form-control" id="product-image">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">
-                        <input type="checkbox" id="product-active" checked> Active
-                    </label>
-                </div>
-
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary">Save Product</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Order Status Update Modal -->
-    <div id="statusModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Update Order Status</h3>
-                <span class="close" onclick="closeStatusModal()">&times;</span>
-            </div>
-            <form id="statusForm">
-                <div class="form-group">
-                    <label class="form-label">Current Order</label>
-                    <div id="current-order-info" style="padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 15px;">
-                        <strong id="current-order-number">Loading...</strong><br>
-                        <span id="current-customer-name">Loading customer...</span>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">New Status</label>
-                    <select class="form-control" id="new-status" required>
-                        <option value="">Select status...</option>
-                        <option value="pending">⏳ Pending</option>
-                        <option value="shipped">🚚 Shipped</option>
-                        <option value="delivered">📦 Delivered</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="tracking-group" style="display: none;">
-                    <label class="form-label">Tracking Number (Optional)</label>
-                    <input type="text" class="form-control" id="tracking-number" placeholder="Enter tracking number">
-                </div>
-
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary">Update Status</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeStatusModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Bulk Status Change Modal -->
-    <div id="bulkStatusModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Update Multiple Orders Status</h3>
-                <span class="close" onclick="closeBulkStatusModal()">&times;</span>
-            </div>
-            <form id="bulkStatusForm">
-                <div class="form-group">
-                    <label class="form-label">Selected Orders</label>
-                    <div id="selected-orders-info" style="padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 15px; max-height: 100px; overflow-y: auto;">
-                        <span id="selected-orders-count">0 orders selected</span>
-                        <div id="selected-orders-list" style="margin-top: 5px; font-size: 0.9rem;"></div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">New Status</label>
-                    <select class="form-control" id="bulk-new-status" required>
-                        <option value="">Select status...</option>
-                        <option value="pending">⏳ Pending</option>
-                        <option value="processing">🔄 Processing</option>
-                        <option value="shipped">🚚 Shipped</option>
-                        <option value="delivered">📦 Delivered</option>
-                        <option value="cancelled">❌ Cancelled</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="bulk-tracking-group" style="display: none;">
-                    <label class="form-label">Tracking Number (Optional)</label>
-                    <input type="text" class="form-control" id="bulk-tracking-number" placeholder="Enter tracking number for all orders">
-                    <small style="color: #666; font-size: 0.8rem;">This tracking number will be applied to all selected orders</small>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Notes (Optional)</label>
-                    <textarea class="form-control" id="bulk-status-notes" rows="2" placeholder="Add notes for this status change"></textarea>
-                </div>
-
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary">
-                        <span id="bulk-update-btn-text">Update All Orders</span>
-                        <span id="bulk-update-loading" style="display: none;">🔄 Updating...</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="closeBulkStatusModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Invoice Detail Modal -->
-    <div id="invoiceModal" class="invoice-modal">
-        <div class="invoice-modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Invoice Details</h3>
-                <span class="close" onclick="closeInvoiceModal()">&times;</span>
-            </div>
-            <div class="invoice-modal-content-wrapper" id="invoiceModalContentWrapper">
-                <div id="invoiceModalContent"></div>
-            </div>
-        </div>
-        
-        <!-- Mobile Zoom Controls (only visible on mobile) -->
-        <div class="mobile-invoice-zoom-controls" id="mobile-invoice-zoom-controls" style="display: none;">
-            <button class="invoice-zoom-btn" id="invoice-zoom-in-btn" onclick="adjustInvoiceZoom(0.1)" title="Zoom In">+</button>
-            <button class="invoice-zoom-btn" id="invoice-fit-screen-btn" onclick="fitInvoiceToScreen()" title="Fit to Screen">⌂</button>
-            <button class="invoice-zoom-btn" id="invoice-zoom-out-btn" onclick="adjustInvoiceZoom(-0.1)" title="Zoom Out">−</button>
-        </div>
-        
-        <!-- Zoom Indicator -->
-        <div class="invoice-zoom-indicator" id="invoice-zoom-indicator">100%</div>
-    </div>
-
-    <!-- Customer Detail Modal -->
-    <div id="customerModal" class="invoice-modal">
-        <div class="invoice-modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Customer Details</h3>
-                <span class="close" onclick="closeCustomerModal()">&times;</span>
-            </div>
-            <div id="customerModalContent"></div>
-        </div>
-    </div>
-
-    <!-- Service Ticket Modal -->
-    <div id="serviceTicketModal" class="modal">
-        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
-            <div class="modal-header">
-                <h3 class="modal-title">Order Details</h3>
-                <span class="close" onclick="closeServiceTicketModal()">&times;</span>
-            </div>
-            <div id="serviceTicketModalContent"></div>
-        </div>
-    </div>
-
-    <!-- Premium Upgrade Modal -->
-    <div id="premiumModal" class="modal">
-        <div class="modal-content" style="max-width: 700px;">
-            <div class="modal-header">
-                <h3 class="modal-title">
-                    <span style="background: linear-gradient(135deg, #9F7AEA, #805AD5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-flex; align-items: center; gap: 8px;">
-                        <span>👑</span> Upgrade to Premium
-                    </span>
-                </h3>
-                <button class="modal-close" onclick="closePremiumModal()" style="font-size: 20px;">&times;</button>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <!-- Before/After Preview -->
-                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                    <h4 style="text-align: center; margin: 0 0 16px; color: #2D3748;">🎨 White-Label Your Invoices</h4>
-                    
-                    <!-- Before Preview -->
-                    <div style="margin-bottom: 20px;">
-                        <h5 style="color: #E53E3E; margin: 0 0 8px;">❌ Current (Free Plan):</h5>
-                        <div style="border: 2px solid #E2E8F0; border-radius: 8px; overflow: hidden; background: white;">
-                            <!-- Mock header -->
-                            <div style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 8px 12px; text-align: center; font-size: 12px;">
-                                <img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 16px; width: auto; margin-right: 8px; vertical-align: middle;">
-                                <span style="opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Powered by Aspree Invoice Generator</span>
-                            </div>
-                            <div style="padding: 12px; font-size: 12px; text-align: center; color: #666;">
-                                Your invoice content here...
-                            </div>
-                            <!-- Mock footer -->
-                            <div style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
-                                <div>Terms & Contact Info</div>
-                                <img src="/assets/aspri-logo.png" alt="Aspree" style="height: 24px; width: auto; opacity: 0.9;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- After Preview -->
-                    <div>
-                        <h5 style="color: #38A169; margin: 0 0 8px;">✅ Premium Plan:</h5>
-                        <div style="border: 2px solid #9F7AEA; border-radius: 8px; overflow: hidden; background: white; box-shadow: 0 4px 8px rgba(159, 122, 234, 0.1);">
-                            <!-- Mock custom header -->
-                            <div style="background: linear-gradient(135deg, #1A365D, #2C5282); color: white; padding: 8px 12px; text-align: center; font-size: 12px;">
-                                <span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Your Custom Business Text</span>
-                            </div>
-                            <div style="padding: 12px; font-size: 12px; text-align: center; color: #666;">
-                                Your invoice content here...
-                            </div>
-                            <!-- Mock custom footer -->
-                            <div style="background: linear-gradient(135deg, #1A365D, #2C5282); color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
-                                <div>Terms & Contact Info</div>
-                                <div style="background: white; color: #1A365D; padding: 2px 8px; border-radius: 4px; font-weight: 600;">YOUR LOGO</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Feature List -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                    <div style="background: white; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
-                        <h4 style="color: #9F7AEA; margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
-                            <span>🎨</span> Custom Branding
-                        </h4>
-                        <ul style="margin: 0; padding-left: 16px; color: #4A5568; font-size: 14px;">
-                            <li>Remove "Powered by Aspree" branding</li>
-                            <li>Add your own header text</li>
-                            <li>Upload your own logos</li>
-                        </ul>
-                    </div>
-                    
-                    <div style="background: white; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
-                        <h4 style="color: #9F7AEA; margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
-                            <span>🎨</span> Custom Colors
-                        </h4>
-                        <ul style="margin: 0; padding-left: 16px; color: #4A5568; font-size: 14px;">
-                            <li>Customize header background</li>
-                            <li>Customize footer background</li>
-                            <li>Match your brand colors</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Pricing -->
-                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #EDF2F7, #E2E8F0); border-radius: 12px;">
-                    <h3 style="margin: 0 0 8px; color: #2D3748;">💎 Premium Plan</h3>
-                    <div style="font-size: 32px; font-weight: 700; color: #9F7AEA; margin: 0 0 8px;">$9.99<span style="font-size: 16px; font-weight: normal; color: #666;">/month</span></div>
-                    <p style="margin: 0; color: #4A5568;">Professional invoices that represent your brand</p>
-                </div>
-
-                <!-- Action Buttons -->
-                <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
-                    <button onclick="closePremiumModal()" style="padding: 12px 24px; border: 2px solid #E2E8F0; background: white; border-radius: 8px; cursor: pointer; color: #4A5568; font-weight: 600;">
-                        Maybe Later
-                    </button>
-                    <button onclick="upgradeToPremium()" style="padding: 12px 24px; border: none; background: linear-gradient(135deg, #9F7AEA, #805AD5); color: white; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                        <span>👑</span> Upgrade Now
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let products = [];
-        let categories = [];
-        let orders = [];
-        let invoices = [];
-        let customers = [];
-        let currentProduct = null;
-
-        // Authentication Helper Functions
-        function getMerchantToken() {
-            return localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
-        }
-
-        function getAuthHeaders() {
-            const token = getMerchantToken();
-            return {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            };
-        }
-
-        function getAuthHeadersForFormData() {
-            const token = getMerchantToken();
-            return {
-                'Authorization': `Bearer ${token}`
-                // Don't include Content-Type for FormData - browser sets it automatically
-            };
-        }
-
-        function handleAuthError(response) {
-            if (response.status === 401) {
-                console.log('Authentication failed, redirecting to login');
-                localStorage.removeItem('merchantToken');
-                sessionStorage.removeItem('merchantToken');
-                window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname);
-                return true;
-            }
-            return false;
-        }
-
-        // Plan Status Management
-        async function loadPlanStatus() {
-            try {
-                const response = await fetch('/api/business/settings', {
-                    headers: getAuthHeaders()
-                });
-                
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success && data.settings) {
-                    updatePlanStatusUI(data.settings.premiumActive === true);
-                } else {
-                    // Default to free plan
-                    updatePlanStatusUI(false);
-                }
-            } catch (error) {
-                console.error('Error loading plan status:', error);
-                updatePlanStatusUI(false);
-            }
-        }
-
-        function updatePlanStatusUI(isPremium) {
-            const planBadge = document.getElementById('planBadge');
-            const planText = document.getElementById('planText');
-            const upgradeBtn = document.getElementById('upgradeBtn');
-            const manageBtn = document.getElementById('manageBtn');
-
-            if (isPremium) {
-                planBadge.className = 'plan-badge premium';
-                planBadge.querySelector('span:first-child').textContent = '👑';
-                planText.textContent = 'PREMIUM';
-                upgradeBtn.style.display = 'none';
-                manageBtn.style.display = 'flex';
+              if (updateError) {
+                console.error(`💥 Failed to update existing ${methodType}:`, updateError.message);
+                throw updateError;
+              }
+              console.log(`✅ Updated existing payment method ${methodType}:`, updateData);
             } else {
-                planBadge.className = 'plan-badge free';
-                planBadge.querySelector('span:first-child').textContent = '🆓';
-                planText.textContent = 'FREE';
-                upgradeBtn.style.display = 'flex';
-                manageBtn.style.display = 'none';
+              // Insert new record
+              const { data: insertData, error: insertError } = await this.supabase
+                .from('payment_methods')
+                .insert({
+                  method_type: methodType,
+                  enabled: enabled,
+                  config_json: configData
+                })
+                .select();
+
+              if (insertError) {
+                console.error(`💥 Failed to insert new ${methodType}:`, insertError.message);
+                throw insertError;
+              }
+              console.log(`✅ Inserted new payment method ${methodType}:`, insertData);
             }
+          } else {
+            console.error(`💥 Failed to update payment method ${methodType}:`, error.message);
+            throw error;
+          }
+        } else {
+          console.log(`✅ Updated payment method ${methodType}:`, data);
+        }
+      }
+
+      const result = await this.getPaymentMethods();
+      console.log('✅ Payment methods update completed:', result);
+      return result;
+    } catch (error) {
+      console.error('💥 updatePaymentMethods failed:', error.message);
+      console.error('🔧 Possible fixes:');
+      console.error('  1. Run the database migration script: scripts/fix-database-schema-issues.sql');
+      console.error('  2. Or add UNIQUE constraint: ALTER TABLE payment_methods ADD CONSTRAINT payment_methods_method_type_unique UNIQUE (method_type);');
+      throw error;
+    }
+  }
+
+  // Access logging
+  async logAccess(accessData) {
+    const { data, error } = await this.supabase
+      .from('access_logs')
+      .insert({
+        ip_address: accessData.ip,
+        user_agent: accessData.userAgent,
+        access_type: accessData.type,
+        customer_email: accessData.email,
+        invoice_id: accessData.invoiceId,
+        success: accessData.success
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { lastInsertRowid: data.id };
+  }
+
+  // ==========================================
+  // MERCHANT USER MANAGEMENT METHODS
+  // ==========================================
+
+  /**
+   * Create a new merchant user
+   */
+  async createMerchant(merchantData) {
+    // Handle both camelCase and snake_case field names for compatibility
+    const insertData = {
+      email: merchantData.email.toLowerCase(),
+      password_hash: merchantData.passwordHash || merchantData.password_hash || merchantData.password,
+      business_name: merchantData.businessName || merchantData.business_name || '',
+      full_name: merchantData.fullName || merchantData.full_name || '',
+      phone: merchantData.phone || '',
+      address: merchantData.address || '',
+      website: merchantData.website || '',
+      status: merchantData.status || 'active',
+      email_verified: merchantData.emailVerified || merchantData.email_verified || false,
+      email_verification_token: merchantData.emailVerificationToken || merchantData.email_verification_token || null,
+      subscription_plan: merchantData.subscriptionPlan || merchantData.subscription_plan || 'free'
+    };
+
+    // Validate required fields
+    if (!insertData.password_hash) {
+      throw new Error('Password hash is required for merchant creation');
+    }
+
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`👤 New merchant created: ${data.email} (${data.business_name})`);
+    return data;
+  }
+
+  /**
+   * Get merchant by email
+   */
+  async getMerchant(email) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Add field compatibility mapping for AuthService
+    if (data) {
+      return {
+        ...data,
+        password: data.password_hash,  // Add compatibility field for AuthService
+        businessName: data.business_name,
+        fullName: data.full_name,
+        emailVerified: data.email_verified,
+        emailVerificationToken: data.email_verification_token,
+        resetToken: data.reset_token,
+        resetTokenExpires: data.reset_token_expires,
+        lastLogin: data.last_login,
+        loginAttempts: data.login_attempts,
+        lockedUntil: data.locked_until,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionExpires: data.subscription_expires,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+    
+    return data;
+  }
+
+  /**
+   * Get merchant by ID
+   */
+  async getMerchantById(id) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Add field compatibility mapping for AuthService
+    if (data) {
+      return {
+        ...data,
+        password: data.password_hash,  // Add compatibility field for AuthService
+        businessName: data.business_name,
+        fullName: data.full_name,
+        emailVerified: data.email_verified,
+        emailVerificationToken: data.email_verification_token,
+        resetToken: data.reset_token,
+        resetTokenExpires: data.reset_token_expires,
+        lastLogin: data.last_login,
+        loginAttempts: data.login_attempts,
+        lockedUntil: data.locked_until,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionExpires: data.subscription_expires,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+    
+    return data;
+  }
+
+  /**
+   * Get merchant by email verification token
+   */
+  async getMerchantByEmailVerificationToken(verificationToken) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .eq('email_verification_token', verificationToken)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Add field compatibility mapping
+    if (data) {
+      return {
+        ...data,
+        id: data.id,
+        password: data.password_hash,
+        businessName: data.business_name,
+        fullName: data.full_name,
+        emailVerified: data.email_verified,
+        emailVerificationToken: data.email_verification_token,
+        resetToken: data.reset_token,
+        resetTokenExpires: data.reset_token_expires,
+        lastLogin: data.last_login,
+        loginAttempts: data.login_attempts,
+        lockedUntil: data.locked_until,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionExpires: data.subscription_expires,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Get merchant by reset token
+   */
+  async getMerchantByResetToken(resetToken) {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .eq('reset_token', resetToken)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Add field compatibility mapping for AuthService
+    if (data) {
+      return {
+        ...data,
+        password: data.password_hash,  // Add compatibility field for AuthService
+        businessName: data.business_name,
+        fullName: data.full_name,
+        emailVerified: data.email_verified,
+        emailVerificationToken: data.email_verification_token,
+        resetToken: data.reset_token,
+        resetTokenExpires: data.reset_token_expires,
+        lastLogin: data.last_login,
+        loginAttempts: data.login_attempts,
+        lockedUntil: data.locked_until,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionExpires: data.subscription_expires,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+    
+    return data;
+  }
+
+  /**
+   * Update merchant data
+   */
+  async updateMerchant(id, updateData) {
+    const updateFields = {};
+    
+    // Handle both camelCase and snake_case field names for compatibility
+    if (updateData.email) updateFields.email = updateData.email.toLowerCase();
+    
+    // Password hash - handle both formats
+    const passwordHash = updateData.passwordHash || updateData.password_hash || updateData.password;
+    if (passwordHash) updateFields.password_hash = passwordHash;
+    
+    // Business name - handle both formats
+    const businessName = updateData.businessName || updateData.business_name;
+    if (businessName !== undefined) updateFields.business_name = businessName;
+    
+    // Full name - handle both formats
+    const fullName = updateData.fullName || updateData.full_name;
+    if (fullName !== undefined) updateFields.full_name = fullName;
+    
+    if (updateData.phone !== undefined) updateFields.phone = updateData.phone;
+    if (updateData.address !== undefined) updateFields.address = updateData.address;
+    if (updateData.website !== undefined) updateFields.website = updateData.website;
+    if (updateData.status) updateFields.status = updateData.status;
+    
+    // Email verification - handle both formats
+    const emailVerified = updateData.emailVerified || updateData.email_verified;
+    if (emailVerified !== undefined) updateFields.email_verified = emailVerified;
+    
+    // Email verification token - handle both formats
+    const emailVerificationToken = updateData.emailVerificationToken || updateData.email_verification_token;
+    if (emailVerificationToken !== undefined) updateFields.email_verification_token = emailVerificationToken;
+    
+    // Reset token - handle both formats
+    const resetToken = updateData.resetToken || updateData.reset_token;
+    if (resetToken !== undefined) updateFields.reset_token = resetToken;
+    
+    // Reset token expires - handle both formats
+    const resetTokenExpires = updateData.resetTokenExpires || updateData.reset_token_expires;
+    if (resetTokenExpires) updateFields.reset_token_expires = resetTokenExpires;
+    
+    // Last login - handle both formats
+    const lastLogin = updateData.lastLogin || updateData.last_login;
+    if (lastLogin) updateFields.last_login = lastLogin;
+    
+    // Login attempts - handle both formats
+    const loginAttempts = updateData.loginAttempts || updateData.login_attempts;
+    if (loginAttempts !== undefined) updateFields.login_attempts = loginAttempts;
+    
+    // Locked until - handle both formats
+    const lockedUntil = updateData.lockedUntil || updateData.locked_until;
+    if (lockedUntil) updateFields.locked_until = lockedUntil;
+    
+    // Subscription plan - handle both formats
+    const subscriptionPlan = updateData.subscriptionPlan || updateData.subscription_plan;
+    if (subscriptionPlan) updateFields.subscription_plan = subscriptionPlan;
+    
+    // Subscription expires - handle both formats
+    const subscriptionExpires = updateData.subscriptionExpires || updateData.subscription_expires;
+    if (subscriptionExpires) updateFields.subscription_expires = subscriptionExpires;
+    
+    // Deleted at - handle both formats
+    const deletedAt = updateData.deletedAt || updateData.deleted_at;
+    if (deletedAt) updateFields.deleted_at = deletedAt;
+
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .update(updateFields)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`👤 Merchant updated: ${data.email}`);
+    return data;
+  }
+
+  /**
+   * Delete merchant (soft delete by setting status to inactive)
+   */
+  async deleteMerchant(id) {
+    return this.updateMerchant(id, { 
+      status: 'inactive',
+      deletedAt: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Get all merchants (admin function)
+   */
+  async getAllMerchants() {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*')
+      .neq('status', 'inactive')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  /**
+   * Get merchant statistics
+   */
+  async getMerchantStats() {
+    const { data, error } = await this.supabase
+      .from('merchants')
+      .select('*');
+
+    if (error) throw error;
+
+    const merchants = data || [];
+    const totalMerchants = merchants.length;
+    const activeMerchants = merchants.filter(m => m.status === 'active').length;
+    const verifiedMerchants = merchants.filter(m => m.email_verified).length;
+    
+    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentLogins = merchants.filter(m => {
+      if (!m.last_login) return false;
+      return new Date(m.last_login) > lastWeek;
+    }).length;
+
+    return {
+      totalMerchants,
+      activeMerchants,
+      verifiedMerchants,
+      recentLogins,
+      inactiveMerchants: totalMerchants - activeMerchants
+    };
+  }
+
+  // Account Settings operations (alias for business settings for compatibility)
+  async getAccountSettings(merchantId = null) {
+    // Account settings are the same as business settings in this system
+    return await this.getBusinessSettings(merchantId);
+  }
+
+  async updateAccountSettings(settings, merchantId = null) {
+    // Account settings are the same as business settings in this system
+    return await this.updateBusinessSettings(settings, merchantId);
+  }
+
+  // Premium Branding Helper Methods
+  async isPremiumActive(merchantId = null) {
+    try {
+      const businessSettings = await this.getBusinessSettings(merchantId);
+      return businessSettings?.premiumActive === true;
+    } catch (error) {
+      console.error('Error checking premium status:', error);
+      return false;
+    }
+  }
+
+  async getPremiumBrandingSettings(merchantId = null) {
+    try {
+      const businessSettings = await this.getBusinessSettings(merchantId);
+      if (!businessSettings?.premiumActive) {
+        return null;
+      }
+
+      return {
+        customHeaderText: businessSettings.customHeaderText,
+        customHeaderLogoUrl: businessSettings.customHeaderLogoUrl,
+        customFooterLogoUrl: businessSettings.customFooterLogoUrl,
+        customHeaderBgColor: businessSettings.customHeaderBgColor || '#311d6b',
+        customFooterBgColor: businessSettings.customFooterBgColor || '#311d6b',
+        hideAspreeBranding: businessSettings.hideAspreeBranding === true
+      };
+    } catch (error) {
+      console.error('Error fetching premium branding settings:', error);
+      return null;
+    }
+  }
+
+  async activatePremiumBranding(premiumSettings = {}, merchantId = null) {
+    try {
+      const updateData = {
+        premiumActive: true,
+        ...premiumSettings
+      };
+
+      return await this.updateBusinessSettings(updateData, merchantId);
+    } catch (error) {
+      console.error('Error activating premium branding:', error);
+      throw error;
+    }
+  }
+
+  async deactivatePremiumBranding(merchantId = null) {
+    try {
+      return await this.updateBusinessSettings({
+        premiumActive: false,
+        hideAspreeBranding: false
+      }, merchantId);
+    } catch (error) {
+      console.error('Error deactivating premium branding:', error);
+      throw error;
+    }
+  }
+
+  // Usage Statistics operations
+  async getUsageStatistics() {
+    // Return basic statistics from various tables
+    try {
+      const [invoices, customers, products, orders] = await Promise.all([
+        this.supabase.from('invoices').select('id, status, grand_total, created_at'),
+        this.supabase.from('customers').select('id, created_at'),
+        this.supabase.from('products').select('id, is_active'),
+        this.supabase.from('orders').select('id, status, total_amount, created_at')
+      ]);
+
+      const totalInvoices = invoices.data?.length || 0;
+      const totalCustomers = customers.data?.length || 0;
+      const totalProducts = products.data?.length || 0;
+      const totalOrders = orders.data?.length || 0;
+
+      // Calculate revenue
+      const totalRevenue = invoices.data?.reduce((sum, invoice) => {
+        return sum + (invoice.status === 'paid' ? parseFloat(invoice.grand_total || 0) : 0);
+      }, 0) || 0;
+
+      // Calculate this month's statistics
+      const thisMonth = new Date();
+      thisMonth.setDate(1);
+      thisMonth.setHours(0, 0, 0, 0);
+
+      const thisMonthInvoices = invoices.data?.filter(inv => 
+        new Date(inv.created_at) >= thisMonth
+      ).length || 0;
+
+      const thisMonthRevenue = invoices.data?.filter(inv => 
+        new Date(inv.created_at) >= thisMonth && inv.status === 'paid'
+      ).reduce((sum, inv) => sum + parseFloat(inv.grand_total || 0), 0) || 0;
+
+      return {
+        totalInvoices,
+        totalCustomers,
+        totalProducts,
+        totalOrders,
+        totalRevenue,
+        thisMonthInvoices,
+        thisMonthRevenue,
+        averageInvoiceValue: totalInvoices > 0 ? totalRevenue / totalInvoices : 0
+      };
+
+    } catch (error) {
+      console.error('Error getting usage statistics:', error);
+      return {
+        totalInvoices: 0,
+        totalCustomers: 0,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        thisMonthInvoices: 0,
+        thisMonthRevenue: 0,
+        averageInvoiceValue: 0
+      };
+    }
+  }
+
+  // INVOICE ITEMS NORMALIZATION UTILITY
+  // Fix for issue where productName, unitPrice, lineTotal display as ":" instead of actual values
+  normalizeInvoiceItems(items_json) {
+    try {
+      let items = [];
+      
+      // Handle different data formats
+      if (typeof items_json === 'string') {
+        items = JSON.parse(items_json);
+      } else if (Array.isArray(items_json)) {
+        items = items_json;
+      } else if (items_json && typeof items_json === 'object') {
+        items = [items_json];
+      } else {
+        console.warn('⚠️ Invalid items_json format:', typeof items_json);
+        return [];
+      }
+
+      // Normalize each item to ensure consistent field structure
+      const normalizedItems = items.map((item, index) => {
+        if (!item || typeof item !== 'object') {
+          console.warn(`⚠️ Invalid item at index ${index}:`, item);
+          return {
+            productName: `Product ${index + 1}`,
+            quantity: 1,
+            unitPrice: 0,
+            lineTotal: 0,
+            description: '',
+            sku: ''
+          };
         }
 
-        function showUpgradeModal() {
-            document.getElementById('premiumModal').style.display = 'block';
+        const normalizedItem = {
+          // Handle productName with multiple fallback formats
+          productName: item.productName || item.product_name || item.name || item.productname || `Product ${index + 1}`,
+          
+          // Handle quantity
+          quantity: parseInt(item.quantity || item.qty || 1),
+          
+          // Handle unitPrice with multiple fallback formats
+          unitPrice: parseFloat(item.unitPrice || item.unit_price || item.price || item.unitprice || 0),
+          
+          // Handle lineTotal with multiple fallback formats
+          lineTotal: parseFloat(item.lineTotal || item.line_total || item.total || item.linetotal || 0),
+          
+          // Optional fields
+          description: item.description || item.desc || '',
+          sku: item.sku || '',
+          category: item.category || ''
+        };
+
+        // Calculate line total if missing
+        if (!normalizedItem.lineTotal || normalizedItem.lineTotal === 0) {
+          normalizedItem.lineTotal = normalizedItem.quantity * normalizedItem.unitPrice;
         }
 
-        function closePremiumModal() {
-            document.getElementById('premiumModal').style.display = 'none';
+        // Validate normalized values
+        if (!normalizedItem.productName || normalizedItem.productName.trim() === '' || normalizedItem.productName === ':') {
+          console.warn(`⚠️ Fixed empty/invalid productName for item ${index}:`, item.productName || 'undefined');
+          normalizedItem.productName = `Product ${index + 1}`;
         }
 
-        function upgradeToPremium() {
-            // For now, redirect to business settings where we'll add premium controls
-            // In the future, this could integrate with a payment processor
-            window.location.href = '/business-settings#premium';
+        if (normalizedItem.unitPrice < 0 || isNaN(normalizedItem.unitPrice)) {
+          console.warn(`⚠️ Fixed invalid unitPrice for item ${index}:`, item.unitPrice || 'undefined');
+          normalizedItem.unitPrice = 0;
         }
 
-        function showManageSubscription() {
-            // For now, redirect to business settings
-            window.location.href = '/business-settings#premium';
+        if (normalizedItem.quantity <= 0 || isNaN(normalizedItem.quantity)) {
+          console.warn(`⚠️ Fixed invalid quantity for item ${index}:`, item.quantity || 'undefined');
+          normalizedItem.quantity = 1;
         }
 
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            const premiumModal = document.getElementById('premiumModal');
-            if (event.target === premiumModal) {
-                closePremiumModal();
-            }
-        }
-
-        // Load user info from account settings
-        async function loadUserInfo() {
-            try {
-                const response = await fetch('/api/account-settings');
-                const settings = await response.json();
-                
-                if (settings && (settings.businessOwnerName || settings.fullName || settings.name)) {
-                    const userName = settings.businessOwnerName || settings.fullName || settings.name;
-                    const userInfoDiv = document.querySelector('.user-info div div');
-                    if (userInfoDiv) {
-                        userInfoDiv.textContent = userName;
-                    }
-                    
-                    // Update user avatar with initials
-                    const avatar = document.querySelector('.user-avatar');
-                    if (avatar && userName) {
-                        const initials = userName.split(' ')
-                            .filter(word => word.length > 0)
-                            .map(word => word.charAt(0).toUpperCase())
-                            .slice(0, 2)
-                            .join('');
-                        avatar.textContent = initials;
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading user info:', error);
-            }
-        }
-
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            loadProducts();
-            loadCategories();
-            setupEventListeners();
-            refreshInvoiceNumber();
-            loadUserInfo();
-            loadPlanStatus();
-            
-            // Handle URL hash navigation
-            const hash = window.location.hash.substring(1);
-            if (hash && ['products', 'orders', 'invoices', 'customers', 'inventory', 'categories'].includes(hash)) {
-                showSection(hash);
-            } else {
-                showSection('products'); // Default to products section
-            }
+        console.log(`✅ Normalized DB item ${index}:`, {
+          productName: normalizedItem.productName,
+          quantity: normalizedItem.quantity,
+          unitPrice: normalizedItem.unitPrice,
+          lineTotal: normalizedItem.lineTotal
         });
 
-        function setupEventListeners() {
-            // Navigation buttons - replace onclick handlers
-            const navButtons = document.querySelectorAll('.nav-btn[onclick]');
-            navButtons.forEach(button => {
-                const onclickAttr = button.getAttribute('onclick');
-                if (onclickAttr) {
-                    // Extract function call from onclick attribute
-                    const match = onclickAttr.match(/showSection\('([^']+)'\)/);
-                    if (match) {
-                        const section = match[1];
-                        button.addEventListener('click', () => showSection(section));
-                        button.removeAttribute('onclick');
-                    }
-                }
-            });
-            
-            // Other buttons with onclick handlers
-            const otherButtons = document.querySelectorAll('button[onclick]');
-            otherButtons.forEach(button => {
-                const onclickAttr = button.getAttribute('onclick');
-                if (onclickAttr) {
-                    button.addEventListener('click', function() {
-                        // Use eval for complex onclick handlers (temporary solution)
-                        try {
-                            eval(onclickAttr);
-                        } catch (error) {
-                            console.error('Error executing onclick handler:', error);
-                        }
-                    });
-                    button.removeAttribute('onclick');
-                }
-            });
-            
-            document.getElementById('category-filter').addEventListener('change', filterProducts);
-            document.getElementById('status-filter').addEventListener('change', filterProducts);
-            document.getElementById('productForm').addEventListener('submit', saveProduct);
-            
-            // Order event listeners
-            document.getElementById('order-status-filter').addEventListener('change', filterOrders);
-            // Note: Date inputs no longer have automatic change listeners - use Apply button instead
-            
-            // Invoice event listeners
-            document.getElementById('invoice-search').addEventListener('input', filterInvoices);
-            document.getElementById('invoice-status-filter').addEventListener('change', filterInvoices);
-            
-            // Customer event listeners
-            document.getElementById('customer-search').addEventListener('input', filterCustomers);
-            
-            // Status modal event listeners
-            document.getElementById('statusForm').addEventListener('submit', handleStatusUpdate);
-            document.getElementById('new-status').addEventListener('change', function() {
-                toggleTrackingField(this.value);
-            });
+        return normalizedItem;
+      });
+
+      return normalizedItems;
+      
+    } catch (error) {
+      console.error('❌ Error normalizing invoice items:', error);
+      return [];
+    }
+  }
+
+  async getProductCategories(merchantId = null) {
+    try {
+      let query = this.supabase
+        .from('products')
+        .select('category')
+        .eq('is_active', true)
+        .not('category', 'is', null);
+      
+      // Add merchant filtering if merchantId is provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+      
+      const { data: products, error } = await query;
+
+      if (error) throw error;
+
+      // Count categories
+      const categoryCount = {};
+      products.forEach(product => {
+        const category = product.category;
+        if (category) {
+          categoryCount[category] = (categoryCount[category] || 0) + 1;
         }
+      });
+
+      return Object.entries(categoryCount)
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => a.category.localeCompare(b.category));
+    } catch (error) {
+      console.error('Error fetching product categories:', error);
+      return [];
+    }
+  }
+
+  async getCustomerStats(merchantId = null) {
+    try {
+      // Get customers filtered by merchant
+      let customerQuery = this.supabase
+        .from('customers')
+        .select('*');
+      
+      if (merchantId) {
+        customerQuery = customerQuery.eq('merchant_id', merchantId);
+      }
+
+      const { data: customers, error: customerError } = await customerQuery;
+      if (customerError) throw customerError;
+
+      // Get invoices filtered by merchant for CLV calculation
+      let invoiceQuery = this.supabase
+        .from('invoices')
+        .select('customer_email, grand_total, created_at');
+      
+      if (merchantId) {
+        invoiceQuery = invoiceQuery.eq('merchant_id', merchantId);
+      }
+
+      const { data: invoices, error: invoiceError } = await invoiceQuery;
+      if (invoiceError) throw invoiceError;
+
+      // Get orders filtered by merchant
+      let orderQuery = this.supabase
+        .from('orders')
+        .select('customer_email, created_at');
+      
+      if (merchantId) {
+        orderQuery = orderQuery.eq('merchant_id', merchantId);
+      }
+
+      const { data: orders, error: orderError } = await orderQuery;
+      if (orderError) throw orderError;
+
+      const totalCustomers = customers.length;
+      
+      // Calculate active customers (with orders or invoices)
+      const activeCustomers = customers.filter(c => {
+        const hasOrders = orders.some(o => o.customer_email === c.email);
+        const hasInvoices = invoices.some(i => i.customer_email === c.email);
+        return hasOrders || hasInvoices;
+      }).length;
+
+      // Calculate repeat customers (more than 1 order)
+      const repeatCustomers = customers.filter(c => {
+        const orderCount = orders.filter(o => o.customer_email === c.email).length;
+        return orderCount > 1;
+      }).length;
+
+      // Calculate new customers this month
+      const now = new Date();
+      const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const newCustomersThisMonth = customers.filter(c => {
+        const createdDate = new Date(c.created_at);
+        return createdDate >= firstDayThisMonth;
+      }).length;
+
+      // Calculate total customer lifetime value
+      const totalCLV = customers.reduce((sum, customer) => {
+        const customerInvoices = invoices.filter(i => i.customer_email === customer.email);
+        const customerTotal = customerInvoices.reduce((invSum, inv) => invSum + (inv.grand_total || 0), 0);
+        return sum + customerTotal;
+      }, 0);
+
+      return {
+        total_customers: totalCustomers,
+        active_customers: activeCustomers,
+        repeat_customers: repeatCustomers,
+        new_customers_this_month: newCustomersThisMonth,
+        average_clv: totalCustomers > 0 ? totalCLV / totalCustomers : 0,
+        total_clv: totalCLV
+      };
+    } catch (error) {
+      console.error('Error fetching customer stats:', error);
+      return {
+        total_customers: 0,
+        active_customers: 0,
+        repeat_customers: 0,
+        new_customers_this_month: 0,
+        average_clv: 0,
+        total_clv: 0
+      };
+    }
+  }
+
+  async getCustomerById(customerId, merchantId = null) {
+    try {
+      let query = this.supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId);
+
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query.single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null; // Customer not found
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching customer by ID:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomer(customerId, customerData, merchantId = null) {
+    try {
+      let query = this.supabase
+        .from('customers')
+        .update({
+          ...customerData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', customerId);
+
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query.select();
+
+      if (error) throw error;
+
+      return { changes: data ? data.length : 0 };
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      throw error;
+    }
+  }
+
+  async deleteCustomer(customerId, merchantId = null) {
+    try {
+      let query = this.supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId);
+
+      // Filter by merchant if provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query.select();
+
+      if (error) throw error;
+
+      return { changes: data ? data.length : 0 };
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      throw error;
+    }
+  }
+
+  async exportCustomersToCSV(merchantId = null) {
+    try {
+      const customers = await this.getAllCustomers(1000, 0, null, merchantId);
+      
+      const headers = [
+        'ID', 'Name', 'Email', 'Phone', 'Address', 
+        'Invoice Count', 'Total Spent', 'First Invoice Date', 'Last Invoice Date',
+        'Created At', 'Updated At'
+      ];
+
+      const csvRows = [headers.join(',')];
+      
+      customers.forEach(customer => {
+        const row = [
+          customer.id,
+          `"${customer.name || ''}"`,
+          `"${customer.email || ''}"`,
+          `"${customer.phone || ''}"`,
+          `"${customer.address || ''}"`,
+          customer.invoice_count || 0,
+          customer.total_spent || 0,
+          customer.first_invoice_date ? `"${customer.first_invoice_date}"` : '""',
+          customer.last_invoice_date ? `"${customer.last_invoice_date}"` : '""',
+          customer.created_at ? `"${customer.created_at}"` : '""',
+          customer.updated_at ? `"${customer.updated_at}"` : '""'
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      return csvRows.join('\n');
+    } catch (error) {
+      console.error('Error exporting customers to CSV:', error);
+      throw error;
+    }
+  }
+
+  // Payment confirmation methods
+  async addPaymentConfirmation(invoiceId, confirmationData) {
+    try {
+      console.log(`💳 Adding payment confirmation for invoice ${invoiceId}:`, {
+        hasFilePath: !!confirmationData.filePath,
+        hasNotes: !!confirmationData.notes,
+        fileSize: confirmationData.size
+      });
+
+      // Update the invoice with payment confirmation data
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .update({
+          payment_confirmation_file: confirmationData.filePath,
+          payment_confirmation_notes: confirmationData.notes || '',
+          payment_confirmation_date: new Date().toISOString(),
+          confirmation_status: 'pending',
+          payment_status: 'confirmation_pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', parseInt(invoiceId))
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('❌ Invoice not found for payment confirmation:', invoiceId);
+          return null;
+        }
+        throw error;
+      }
+
+      console.log(`✅ Payment confirmation added for invoice ${data.invoice_number}`);
+      return data;
+    } catch (error) {
+      console.error('Error adding payment confirmation:', error);
+      throw error;
+    }
+  }
+
+  // Update payment confirmation status (for merchant approval/rejection)
+  async updatePaymentConfirmationStatus(invoiceId, status, merchantNotes = '') {
+    try {
+      console.log(`🔄 Updating payment confirmation status for invoice ${invoiceId}:`, {
+        status,
+        hasMerchantNotes: !!merchantNotes
+      });
+
+      // First get the current invoice to check payment stage
+      const invoice = await this.getInvoice(invoiceId);
+      if (!invoice) {
+        console.log('❌ Invoice not found for confirmation status update:', invoiceId);
+        return null;
+      }
+
+      const updateData = {
+        confirmation_status: status,
+        merchant_confirmation_notes: merchantNotes,
+        confirmation_reviewed_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Update payment status based on confirmation status and payment stage
+      if (status === 'approved') {
+        const paymentStage = invoice.payment_stage || 'full_payment';
         
-        async function handleStatusUpdate(e) {
-            e.preventDefault();
-            
-            if (!currentOrderId) {
-                alert('No order selected');
-                return;
-            }
-            
-            const newStatus = document.getElementById('new-status').value;
-            const trackingNumber = document.getElementById('tracking-number').value;
-            
-            if (!newStatus) {
-                alert('Please select a status');
-                return;
-            }
-            
-            await updateOrderStatus(currentOrderId, newStatus, trackingNumber);
-            closeStatusModal();
-        }
-
-        async function loadProducts() {
-            try {
-                const response = await fetch('/api/products');
-                const data = await response.json();
-                
-                if (data.success) {
-                    products = data.products;
-                    displayProducts(products);
-                    updateStats();
-                } else {
-                    showError('Failed to load products: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error loading products: ' + error.message);
-            } finally {
-                document.getElementById('products-loading').style.display = 'none';
-            }
-        }
-
-        async function loadCategories() {
-            try {
-                const response = await fetch('/api/products/categories');
-                const data = await response.json();
-                
-                if (data.success) {
-                    categories = data.categories;
-                    updateCategoryFilter();
-                }
-            } catch (error) {
-                console.error('Error loading categories:', error);
-            }
-        }
-
-        function updateCategoryFilter() {
-            const select = document.getElementById('category-filter');
-            select.innerHTML = '<option value="">All Categories</option>';
-            
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.category;
-                option.textContent = `${cat.category} (${cat.count})`;
-                select.appendChild(option);
-            });
-        }
-
-        function displayProducts(productsToShow) {
-            const container = document.getElementById('products-grid');
-            container.innerHTML = '';
-
-            if (productsToShow.length === 0) {
-                container.innerHTML = '<div class="loading">No products found</div>';
-                return;
-            }
-
-            // Group products by category
-            const groupedProducts = groupProductsByCategory(productsToShow);
-            
-            // Display each category group
-            Object.keys(groupedProducts).forEach(categoryKey => {
-                const categoryGroup = createProductCategoryGroup(categoryKey, groupedProducts[categoryKey]);
-                container.appendChild(categoryGroup);
-            });
-        }
-
-        function groupProductsByCategory(products) {
-            const groups = {};
-            
-            products.forEach(product => {
-                const category = product.category || 'Uncategorized';
-                
-                if (!groups[category]) {
-                    groups[category] = {
-                        displayName: category,
-                        products: []
-                    };
-                }
-                groups[category].products.push(product);
-            });
-            
-            // Sort each group's products by name
-            Object.keys(groups).forEach(key => {
-                groups[key].products.sort((a, b) => (a.product_name || '').localeCompare(b.product_name || ''));
-            });
-            
-            return groups;
-        }
-
-        function createProductCategoryGroup(categoryKey, group) {
-            const categoryGroup = document.createElement('div');
-            categoryGroup.className = 'product-category-group';
-            
-            const categoryHeader = document.createElement('div');
-            categoryHeader.className = 'category-group-header';
-            categoryHeader.innerHTML = `
-                <h3>${group.displayName}</h3>
-                <span class="product-count">${group.products.length} product${group.products.length !== 1 ? 's' : ''}</span>
-            `;
-            
-            const productsList = document.createElement('div');
-            productsList.className = 'products-list';
-            
-            group.products.forEach(product => {
-                const listItem = createProductListItem(product);
-                productsList.appendChild(listItem);
-            });
-            
-            categoryGroup.appendChild(categoryHeader);
-            categoryGroup.appendChild(productsList);
-            
-            return categoryGroup;
-        }
-
-        function createProductListItem(product) {
-            const listItem = document.createElement('div');
-            listItem.className = 'product-list-item';
-            
-            const stockStatus = getStockStatus(product.stock_quantity, product.min_stock_level);
-            const priceFormatted = formatCurrency(product.unit_price);
-            
-            // Product image or placeholder
-            const productImage = product.image_url 
-                ? `<img src="${product.image_url}" alt="${product.product_name}" class="product-image">` 
-                : '<div class="product-image-placeholder">📦</div>';
-            
-            listItem.innerHTML = `
-                <div class="product-list-content">
-                    <div class="product-image-container">
-                        ${productImage}
-                    </div>
-                    
-                    <div class="product-main-info">
-                        <div class="product-header">
-                            <div class="product-name">
-                                <strong>${product.product_name || 'Unnamed Product'}</strong>
-                                ${product.sku ? `<span class="product-sku">SKU: ${product.sku}</span>` : ''}
-                            </div>
-                            <div class="product-status">
-                                <span class="stock-badge ${stockStatus.class}">${stockStatus.text}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="product-details">
-                            <div class="product-info">
-                                <span class="product-price">${priceFormatted}</span>
-                                <span class="product-description">${product.description || 'No description'}</span>
-                            </div>
-                            
-                            <div class="product-meta">
-                                <span class="stock-info">📦 Stock: ${product.stock_quantity || 0}</span>
-                                ${product.min_stock_level > 0 ? `<span class="min-stock">⚠️ Min: ${product.min_stock_level}</span>` : ''}
-                                <span class="product-active">${product.active ? '✅ Active' : '❌ Inactive'}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="product-actions">
-                        ${getProductActionButtons(product)}
-                    </div>
-                </div>
-            `;
-            
-            return listItem;
-        }
-
-        function getProductActionButtons(product) {
-            let actions = [];
-
-            // Edit button - always available
-            actions.push(`<button class="btn btn-sm btn-primary" onclick="editProduct(${product.id})" title="Edit product details">✏️ Edit</button>`);
-
-            // Stock button - always available
-            actions.push(`<button class="btn btn-sm btn-warning" onclick="updateStock(${product.id})" title="Update stock quantity">📦 Stock</button>`);
-
-            // Delete button - always available
-            actions.push(`<button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})" title="Delete this product">🗑️ Delete</button>`);
-
-            return actions.join('');
-        }
-
-        function createProductCard(product) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const stockStatus = getStockStatus(product.stock_quantity, product.min_stock_level);
-            const priceFormatted = formatCurrency(product.unit_price);
-            
-            card.innerHTML = `
-                <div class="product-header">
-                    <div>
-                        <div class="product-name">${product.name}</div>
-                        <div class="product-sku">SKU: ${product.sku}</div>
-                    </div>
-                    <div class="stock-badge ${stockStatus.class}">${stockStatus.text}</div>
-                </div>
-                <div class="product-price">${priceFormatted}</div>
-                <div class="product-stock">
-                    <span>Stock: ${product.stock_quantity}</span>
-                    ${product.min_stock_level > 0 ? `<span>(Min: ${product.min_stock_level})</span>` : ''}
-                </div>
-                <div>Category: ${product.category || 'Uncategorized'}</div>
-                <div class="product-actions">
-                    <button class="btn btn-sm btn-primary" onclick="editProduct(${product.id})">Edit</button>
-                    <button class="btn btn-sm btn-warning" onclick="updateStock(${product.id})">Stock</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})">Delete</button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        function getStockStatus(stock, minStock) {
-            if (stock <= 0) {
-                return { class: 'stock-out', text: 'Out of Stock' };
-            } else if (stock <= minStock) {
-                return { class: 'stock-low', text: 'Low Stock' };
-            } else {
-                return { class: 'stock-high', text: 'In Stock' };
-            }
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            }).format(amount);
-        }
-
-        function updateStats() {
-            const totalProducts = products.length;
-            const activeProducts = products.filter(p => p.is_active).length;
-            const lowStockProducts = products.filter(p => p.stock_quantity <= p.min_stock_level).length;
-            const totalCategories = [...new Set(products.map(p => p.category).filter(c => c))].length;
-
-            document.getElementById('total-products').textContent = totalProducts;
-            document.getElementById('active-products').textContent = activeProducts;
-            document.getElementById('low-stock-products').textContent = lowStockProducts;
-            document.getElementById('total-categories').textContent = totalCategories;
-        }
-
-        function filterProducts() {
-            const categoryFilter = document.getElementById('category-filter').value;
-            const statusFilter = document.getElementById('status-filter').value;
-            
-            let filtered = products;
-            
-            if (categoryFilter) {
-                filtered = filtered.filter(p => p.category === categoryFilter);
-            }
-            
-            if (statusFilter === 'true') {
-                filtered = filtered.filter(p => p.is_active);
-            }
-            
-            displayProducts(filtered);
-        }
-
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.section').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Show selected section
-            document.getElementById(sectionName + '-section').style.display = 'block';
-            
-            // Load section-specific data
-            if (sectionName === 'products') {
-                loadProducts();
-            } else if (sectionName === 'orders') {
-                loadOrders();
-                loadOrderStats();
-            } else if (sectionName === 'invoices') {
-                loadInvoices();
-                loadInvoiceStats();
-            } else if (sectionName === 'customers') {
-                loadCustomers();
-                loadCustomerStats();
-            }
-            
-            // Update nav buttons
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.textContent.toLowerCase().includes(sectionName.toLowerCase())) {
-                    btn.classList.add('active');
-                }
-            });
-        }
-
-        // Order Management Functions
-        async function loadOrders() {
-            try {
-                const statusFilter = document.getElementById('order-status-filter').value;
-                const dateFrom = document.getElementById('order-date-from').value;
-                const dateTo = document.getElementById('order-date-to').value;
-                
-                let url = '/api/orders?limit=100';
-                if (statusFilter) url += `&status=${statusFilter}`;
-                if (dateFrom) url += `&dateFrom=${dateFrom}`;
-                if (dateTo) url += `&dateTo=${dateTo}`;
-                
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-                
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    orders = data.orders;
-                    displayOrders(orders);
-                    // Also try to load stats (with fallback to manual calculation)
-                    loadOrderStats();
-                } else {
-                    showOrderError('Failed to load orders: ' + data.error);
-                }
-            } catch (error) {
-                showOrderError('Error loading orders: ' + error.message);
-            } finally {
-                document.getElementById('orders-loading').style.display = 'none';
-            }
-        }
-
-        async function loadOrderStats() {
-            try {
-                // Get current date filter values
-                const dateFrom = document.getElementById('order-date-from').value;
-                const dateTo = document.getElementById('order-date-to').value;
-                
-                // Build URL with date filters
-                let url = '/api/orders/stats';
-                const params = new URLSearchParams();
-                if (dateFrom) params.append('dateFrom', dateFrom);
-                if (dateTo) params.append('dateTo', dateTo);
-                if (params.toString()) url += '?' + params.toString();
-                
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    console.warn('Orders stats endpoint not available:', response.status);
-                    // Calculate stats from orders data as fallback
-                    calculateOrderStatsFromData();
-                    return;
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const stats = data.stats;
-                    
-                    // Update elements if they exist
-                    const updateElement = (id, value) => {
-                        const element = document.getElementById(id);
-                        if (element) {
-                            element.textContent = value;
-                        }
-                    };
-                    
-                    updateElement('total-orders', stats.total_orders || 0);
-                    updateElement('pending-orders', stats.pending_orders || 0);
-                    updateElement('shipped-orders', stats.shipped_orders || 0);
-                    updateElement('delivered-orders', stats.delivered_orders || 0);
-                    updateElement('total-order-value', formatCurrency(stats.total_order_value || 0));
-                } else {
-                    // Fallback to manual calculation
-                    calculateOrderStatsFromData();
-                }
-            } catch (error) {
-                console.error('Error loading order stats:', error);
-                // Fallback to manual calculation
-                calculateOrderStatsFromData();
-            }
-        }
-
-        function calculateOrderStatsFromData() {
-            if (!orders || orders.length === 0) {
-                console.log('📊 No orders data available for stats calculation');
-                return;
-            }
-
-            console.log('📊 Calculating order stats from', orders.length, 'orders');
-
-            // Improved total value calculation with multiple field fallbacks and validation
-            let totalValue = 0;
-            let processedOrders = 0;
-            let skippedOrders = 0;
-            
-            const totalOrderValue = orders.reduce((sum, order, index) => {
-                // Try multiple field names and parsing approaches
-                let orderAmount = 0;
-                
-                // Primary field attempts with validation
-                if (order.total_amount !== undefined && order.total_amount !== null) {
-                    orderAmount = parseFloat(order.total_amount) || 0;
-                } else if (order.grand_total !== undefined && order.grand_total !== null) {
-                    orderAmount = parseFloat(order.grand_total) || 0;
-                } else if (order.subtotal !== undefined && order.subtotal !== null) {
-                    orderAmount = parseFloat(order.subtotal) || 0;
-                } else if (order.amount !== undefined && order.amount !== null) {
-                    orderAmount = parseFloat(order.amount) || 0;
-                }
-                
-                // Validate the amount is reasonable
-                if (orderAmount > 0 && orderAmount < 1000000000) { // Less than 1B IDR seems reasonable
-                    processedOrders++;
-                    return sum + orderAmount;
-                } else {
-                    skippedOrders++;
-                    console.warn(`📊 Order ${index + 1} (ID: ${order.id}) has invalid amount:`, {
-                        total_amount: order.total_amount,
-                        grand_total: order.grand_total,
-                        subtotal: order.subtotal,
-                        amount: order.amount,
-                        calculated: orderAmount
-                    });
-                    return sum;
-                }
-            }, 0);
-
-            console.log(`📊 Order value calculation complete:`, {
-                totalOrders: orders.length,
-                processedOrders,
-                skippedOrders,
-                totalValue: totalOrderValue,
-                formatted: formatCurrency(totalOrderValue)
-            });
-
-            const stats = {
-                total_orders: orders.length,
-                pending_orders: orders.filter(o => o.status === 'pending').length,
-                shipped_orders: orders.filter(o => o.status === 'shipped').length,
-                delivered_orders: orders.filter(o => o.status === 'delivered').length,
-                total_order_value: totalOrderValue
-            };
-
-            // Update elements if they exist
-            const updateElement = (id, value) => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.textContent = value;
-                    console.log(`📊 Updated ${id} with value:`, value);
-                } else {
-                    console.warn(`📊 Element ${id} not found`);
-                }
-            };
-
-            updateElement('total-orders', stats.total_orders);
-            updateElement('pending-orders', stats.pending_orders);
-            updateElement('shipped-orders', stats.shipped_orders);
-            updateElement('delivered-orders', stats.delivered_orders);
-            updateElement('total-order-value', formatCurrency(stats.total_order_value));
-        }
-
-        function displayOrders(ordersToShow) {
-            const container = document.getElementById('orders-grid');
-            container.innerHTML = '';
-
-            if (ordersToShow.length === 0) {
-                container.innerHTML = '<div class="loading">No orders found</div>';
-                return;
-            }
-
-            // Group orders by date
-            const groupedOrders = groupOrdersByDate(ordersToShow);
-            
-            // Display each date group
-            Object.keys(groupedOrders).forEach(dateKey => {
-                const dateGroup = createOrderDateGroup(dateKey, groupedOrders[dateKey]);
-                container.appendChild(dateGroup);
-            });
-        }
-
-        function groupOrdersByDate(orders) {
-            const groups = {};
-            
-            orders.forEach(order => {
-                const orderDate = new Date(order.order_date);
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                
-                let dateKey;
-                let sortKey;
-                
-                // Determine the date group key
-                if (isSameDay(orderDate, today)) {
-                    dateKey = 'Today';
-                    sortKey = '1-today';
-                } else if (isSameDay(orderDate, yesterday)) {
-                    dateKey = 'Yesterday';
-                    sortKey = '2-yesterday';
-                } else if (isThisWeek(orderDate)) {
-                    dateKey = formatDateGroup(orderDate, 'this-week');
-                    sortKey = '3-' + formatDate(order.order_date);
-                } else if (isThisMonth(orderDate)) {
-                    dateKey = formatDateGroup(orderDate, 'this-month');
-                    sortKey = '4-' + formatDate(order.order_date);
-                } else {
-                    dateKey = formatDateGroup(orderDate, 'older');
-                    sortKey = '5-' + formatDate(order.order_date);
-                }
-                
-                if (!groups[sortKey]) {
-                    groups[sortKey] = {
-                        displayName: dateKey,
-                        orders: []
-                    };
-                }
-                groups[sortKey].orders.push(order);
-            });
-            
-            // Sort each group's orders by date (newest first)
-            Object.keys(groups).forEach(key => {
-                groups[key].orders.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
-            });
-            
-            return groups;
-        }
-
-        function createOrderDateGroup(sortKey, group) {
-            const dateGroup = document.createElement('div');
-            dateGroup.className = 'order-date-group';
-            
-            const dateHeader = document.createElement('div');
-            dateHeader.className = 'date-group-header';
-            dateHeader.innerHTML = `
-                <h3>${group.displayName}</h3>
-                <span class="order-count">${group.orders.length} order${group.orders.length !== 1 ? 's' : ''}</span>
-            `;
-            
-            const ordersList = document.createElement('div');
-            ordersList.className = 'orders-list';
-            
-            group.orders.forEach(order => {
-                const listItem = createOrderListItem(order);
-                ordersList.appendChild(listItem);
-            });
-            
-            dateGroup.appendChild(dateHeader);
-            dateGroup.appendChild(ordersList);
-            
-            return dateGroup;
-        }
-
-        function createOrderListItem(order) {
-            const listItem = document.createElement('div');
-            listItem.className = 'order-list-item';
-            
-            const statusClass = getOrderStatusClass(order.status);
-            const statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-            const totalFormatted = formatCurrency(order.total_amount);
-            
-            // Get status icon
-            const statusIcon = getOrderStatusIcon(order.status);
-            
-            listItem.innerHTML = `
-                <div class="order-list-content">
-                    <div class="order-selection" style="display: none;">
-                        <input type="checkbox" onchange="toggleOrderSelection(${order.id}, this.checked)" style="margin-right: 15px;">
-                    </div>
-                    
-                    <div class="order-main-info">
-                        <div class="order-header">
-                            <div class="order-number">
-                                <strong>#${order.order_number}</strong>
-                                ${order.tracking_number ? `<span class="tracking-badge">📦 ${order.tracking_number}</span>` : ''}
-                            </div>
-                            <div class="order-status">
-                                <span class="status-badge ${statusClass}">${statusIcon} ${statusText}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="order-details">
-                            <div class="order-customer">
-                                <span class="customer-name">👤 ${order.customer_name}</span>
-                                <span class="customer-email">${order.customer_email}</span>
-                            </div>
-                            
-                            <div class="order-meta">
-                                <span class="order-date">📅 ${formatDate(order.order_date)}</span>
-                                <span class="order-items">📦 ${order.total_items || 'N/A'} items</span>
-                                <span class="order-amount">${totalFormatted}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="order-actions">
-                        ${getOrderActionButtons(order)}
-                    </div>
-                </div>
-            `;
-            
-            return listItem;
-        }
-
-        function getOrderStatusIcon(status) {
-            const icons = {
-                'pending': '⏳',
-                'shipped': '🚚',
-                'delivered': '📦'
-            };
-            return icons[status] || '⏳';
-        }
-
-        function getOrderActionButtons(order) {
-            let actions = [];
-
-            // View Ticket button - always available
-            actions.push(`<button class="btn btn-sm btn-info" onclick="printServiceTicket(${order.id})" title="View service ticket">🎫 View Ticket</button>`);
-
-            // Status button - always available
-            actions.push(`<button class="btn btn-sm btn-warning" onclick="updateOrderStatusModal(${order.id})" title="Update order status">📝 Status</button>`);
-
-            // Convert to Invoice button - only for delivered orders
-            if (order.status === 'delivered') {
-                actions.push(`<button class="btn btn-sm btn-success" onclick="convertToInvoice(${order.id})" title="Convert to invoice">📄 → Invoice</button>`);
-            }
-
-            // Delete button - always available
-            actions.push(`<button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id})" title="Delete this order">🗑️ Delete</button>`);
-
-            return actions.join('');
-        }
-
-        function createOrderCard(order) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const statusClass = getOrderStatusClass(order.status);
-            const statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-            const totalFormatted = formatCurrency(order.total_amount);
-            
-            card.innerHTML = `
-                <div class="product-header">
-                    <div>
-                        <div class="product-name">${order.order_number}</div>
-                        <div class="product-sku">Customer: ${order.customer_name}</div>
-                    </div>
-                    <div class="stock-badge ${statusClass}">${statusText}</div>
-                </div>
-                <div class="product-price">${totalFormatted}</div>
-                <div class="product-stock">
-                    <span>Date: ${formatDate(order.order_date)}</span>
-                </div>
-                <div>Email: ${order.customer_email}</div>
-                ${order.tracking_number ? `<div>Tracking: ${order.tracking_number}</div>` : ''}
-                <div class="product-actions">
-                    <input type="checkbox" onchange="toggleOrderSelection(${order.id}, this.checked)" style="margin-right: 0.5rem;">
-                    <button class="btn btn-sm btn-info" onclick="printServiceTicket(${order.id})">🎫 View Ticket</button>
-                    <button class="btn btn-sm btn-warning" onclick="updateOrderStatusModal(${order.id})">Status</button>
-                    ${order.status === 'delivered' ? `<button class="btn btn-sm btn-success" onclick="convertToInvoice(${order.id})">→ Invoice</button>` : ''}
-                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id})">Delete</button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        function getOrderStatusClass(status) {
-            const statusClasses = {
-                'pending': 'stock-low',
-                'shipped': 'stock-medium', 
-                'delivered': 'stock-high'
-            };
-            return statusClasses[status] || 'stock-low';
-        }
-
-        function filterOrders() {
-            loadOrders();
-        }
-
-        function applyDateFilters() {
-            const dateFrom = document.getElementById('order-date-from').value;
-            const dateTo = document.getElementById('order-date-to').value;
-            
-            // Validate date range
-            if (dateFrom && dateTo) {
-                const fromDate = new Date(dateFrom);
-                const toDate = new Date(dateTo);
-                
-                if (fromDate > toDate) {
-                    alert('Start date cannot be after end date. Please correct the date range.');
-                    return;
-                }
-            }
-            
-            // Visual feedback - show loading state
-            const applyBtn = document.getElementById('apply-date-filters-btn');
-            const originalText = applyBtn.innerHTML;
-            applyBtn.innerHTML = '🔄 Applying...';
-            applyBtn.disabled = true;
-            
-            // Apply the filters
-            filterOrders();
-            
-            // Reset button after a delay
-            setTimeout(() => {
-                applyBtn.innerHTML = originalText;
-                applyBtn.disabled = false;
-            }, 1000);
-            
-            // Show applied filter info
-            showDateFilterStatus();
-        }
-
-        function clearDateFilters() {
-            document.getElementById('order-date-from').value = '';
-            document.getElementById('order-date-to').value = '';
-            
-            // Automatically apply the cleared filters
-            applyDateFilters();
-        }
-
-        function showDateFilterStatus() {
-            const dateFrom = document.getElementById('order-date-from').value;
-            const dateTo = document.getElementById('order-date-to').value;
-            
-            // Remove existing status if any
-            const existingStatus = document.getElementById('date-filter-status');
-            if (existingStatus) {
-                existingStatus.remove();
-            }
-            
-            if (dateFrom || dateTo) {
-                let statusText = '📅 Active filters: ';
-                if (dateFrom && dateTo) {
-                    statusText += `${dateFrom} to ${dateTo}`;
-                } else if (dateFrom) {
-                    statusText += `From ${dateFrom}`;
-                } else {
-                    statusText += `Until ${dateTo}`;
-                }
-                
-                const statusDiv = document.createElement('div');
-                statusDiv.id = 'date-filter-status';
-                statusDiv.style.cssText = `
-                    background: #e3f2fd; 
-                    color: #1976d2; 
-                    padding: 0.5rem 1rem; 
-                    margin: 0.5rem 0; 
-                    border-radius: 4px; 
-                    font-size: 0.9rem;
-                    border-left: 4px solid #1976d2;
-                `;
-                statusDiv.innerHTML = statusText;
-                
-                const filtersDiv = document.querySelector('#orders-section .filters');
-                filtersDiv.parentNode.insertBefore(statusDiv, filtersDiv.nextSibling);
-            }
-        }
-
-
-        async function viewOrder(orderId) {
-            try {
-                const response = await fetch(`/api/orders/${orderId}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    showOrderModal(data.order);
-                } else {
-                    alert('Failed to load order details: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error loading order details: ' + error.message);
-            }
-        }
-
-        let currentOrderId = null;
-
-        async function updateOrderStatusModal(orderId) {
-            currentOrderId = orderId;
-            
-            // Load order details to display in modal
-            try {
-                const response = await fetch(`/api/orders/${orderId}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    const order = data.order;
-                    document.getElementById('current-order-number').textContent = order.order_number || `#${order.id}`;
-                    document.getElementById('current-customer-name').textContent = order.customer_name || 'Unknown Customer';
-                    document.getElementById('new-status').value = order.status || 'pending';
-                    document.getElementById('tracking-number').value = order.tracking_number || '';
-                    
-                    // Show/hide tracking number field based on current status
-                    toggleTrackingField(order.status);
-                } else {
-                    throw new Error(data.error || 'Failed to load order');
-                }
-            } catch (error) {
-                console.error('Error loading order details:', error);
-                document.getElementById('current-order-number').textContent = `Order #${orderId}`;
-                document.getElementById('current-customer-name').textContent = 'Error loading customer';
-            }
-            
-            document.getElementById('statusModal').style.display = 'block';
-        }
-
-        function closeStatusModal() {
-            document.getElementById('statusModal').style.display = 'none';
-            currentOrderId = null;
-        }
-
-        function toggleTrackingField(status) {
-            const trackingGroup = document.getElementById('tracking-group');
-            trackingGroup.style.display = status === 'shipped' ? 'block' : 'none';
-        }
-
-        async function updateOrderStatus(orderId, status, trackingNumber = '') {
-            try {
-                const payload = { status };
-                if (trackingNumber) payload.tracking_number = trackingNumber;
-                
-                const response = await fetch(`/api/orders/${orderId}/status`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Order status updated successfully!');
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to update order status: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error updating order status: ' + error.message);
-            }
-        }
-
-        async function convertToInvoice(orderId) {
-            if (!confirm('Convert this order to an invoice?')) return;
-            
-            try {
-                const response = await fetch(`/api/orders/${orderId}/convert-to-invoice`, {
-                    method: 'POST'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess(`Order converted to invoice: ${data.invoice.invoiceNumber}`);
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to convert order: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error converting order: ' + error.message);
-            }
-        }
-
-        async function deleteOrder(orderId) {
-            if (!confirm('Are you sure you want to delete this order?')) return;
-            
-            try {
-                const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Order deleted successfully!');
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to delete order: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error deleting order: ' + error.message);
-            }
-        }
-
-        function openBulkUpdateModal() {
-            if (selectedOrders.length === 0) {
-                alert('Please select orders to update');
-                return;
-            }
-            
-            const newStatus = prompt(`Update ${selectedOrders.length} orders to status (pending, processing, shipped, delivered, cancelled):`);
-            if (!newStatus) return;
-            
-            const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-            if (!validStatuses.includes(newStatus)) {
-                alert('Invalid status. Valid options: ' + validStatuses.join(', '));
-                return;
-            }
-            
-            bulkUpdateOrderStatus(newStatus);
-        }
-
-        async function bulkUpdateOrderStatus(status) {
-            try {
-                const response = await fetch('/api/orders/bulk/status', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderIds: selectedOrders, status })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess(`${data.updatedCount} orders updated to ${status}`);
-                    selectedOrders = [];
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to bulk update orders: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error bulk updating orders: ' + error.message);
-            }
-        }
-
-        function showOrderError(message) {
-            const errorDiv = document.getElementById('orders-error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        function showOrderModal(order) {
-            // Simple order view modal - you can enhance this
-            const modalContent = `
-                <h3>Order ${order.order_number}</h3>
-                <p><strong>Customer:</strong> ${order.customer_name} (${order.customer_email})</p>
-                <p><strong>Status:</strong> ${order.status}</p>
-                <p><strong>Total:</strong> ${formatCurrency(order.total_amount)}</p>
-                <p><strong>Date:</strong> ${formatDate(order.order_date)}</p>
-                ${order.tracking_number ? `<p><strong>Tracking:</strong> ${order.tracking_number}</p>` : ''}
-                <h4>Items:</h4>
-                <ul>
-                    ${order.items.map(item => `<li>${item.quantity}x ${item.product_name} - ${formatCurrency(item.line_total)}</li>`).join('')}
-                </ul>
-            `;
-            
-            alert(modalContent.replace(/<[^>]*>/g, '\n')); // Simple alert for now
-        }
-
-        function openAddOrderModal() {
-            alert('Add Order functionality would open a form modal here. This feature can be implemented based on your specific needs.');
-        }
-
-        async function seedOrders() {
-            if (!confirm('This will add sample orders to your system. Continue?')) return;
-
-            try {
-                console.log('Attempting to seed orders...');
-                const response = await fetch('/api/orders/seed', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                console.log('Response status:', response.status);
-                const data = await response.json();
-                console.log('Response data:', data);
-                
-                if (data.success) {
-                    showSuccess(data.message);
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to seed orders: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error seeding orders:', error);
-                showError('Error seeding orders: ' + error.message);
-            }
-        }
-
-        function openAddProductModal() {
-            currentProduct = null;
-            document.getElementById('modal-title').textContent = 'Add New Product';
-            document.getElementById('productForm').reset();
-            document.getElementById('product-active').checked = true;
-            document.getElementById('productModal').style.display = 'block';
-        }
-
-        function closeProductModal() {
-            document.getElementById('productModal').style.display = 'none';
-        }
-
-        async function saveProduct(event) {
-            event.preventDefault();
-            
-            // Validate required fields
-            const nameField = document.getElementById('product-name');
-            const skuField = document.getElementById('product-sku');
-            const priceField = document.getElementById('product-price');
-            
-            if (!nameField.value.trim()) {
-                showError('Product name is required');
-                nameField.focus();
-                return;
-            }
-            
-            if (!skuField.value.trim()) {
-                showError('SKU is required');
-                skuField.focus();
-                return;
-            }
-            
-            if (!priceField.value || parseFloat(priceField.value) <= 0) {
-                showError('Valid unit price is required');
-                priceField.focus();
-                return;
-            }
-            
-            const formData = {
-                name: nameField.value.trim(),
-                sku: skuField.value.trim().toUpperCase(),
-                category: document.getElementById('product-category').value.trim(),
-                description: document.getElementById('product-description').value.trim(),
-                unit_price: parseFloat(priceField.value),
-                cost_price: parseFloat(document.getElementById('product-cost').value) || 0,
-                stock_quantity: parseInt(document.getElementById('product-stock').value) || 0,
-                min_stock_level: parseInt(document.getElementById('product-min-stock').value) || 0,
-                tax_rate: parseFloat(document.getElementById('product-tax').value) || 0,
-                weight: parseFloat(document.getElementById('product-weight').value) || null,
-                dimensions: document.getElementById('product-dimensions').value.trim(),
-                image_url: document.getElementById('product-image').value.trim(),
-                is_active: document.getElementById('product-active').checked
-            };
-
-            console.log('Submitting product data:', formData);
-
-            try {
-                const url = currentProduct ? `/api/products/${currentProduct.id}` : '/api/products';
-                const method = currentProduct ? 'PUT' : 'POST';
-                
-                const response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                console.log('Response status:', response.status);
-                const data = await response.json();
-                console.log('Response data:', data);
-                
-                if (data.success) {
-                    showSuccess(currentProduct ? 'Product updated successfully!' : 'Product created successfully!');
-                    closeProductModal();
-                    loadProducts();
-                    loadCategories();
-                } else {
-                    showError('Failed to save product: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error saving product:', error);
-                showError('Error saving product: ' + error.message);
-            }
-        }
-
-        async function editProduct(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            currentProduct = product;
-            document.getElementById('modal-title').textContent = 'Edit Product';
-            
-            document.getElementById('product-name').value = product.name;
-            document.getElementById('product-sku').value = product.sku;
-            document.getElementById('product-category').value = product.category || '';
-            document.getElementById('product-description').value = product.description || '';
-            document.getElementById('product-price').value = product.unit_price;
-            document.getElementById('product-cost').value = product.cost_price;
-            document.getElementById('product-stock').value = product.stock_quantity;
-            document.getElementById('product-min-stock').value = product.min_stock_level;
-            document.getElementById('product-tax').value = product.tax_rate;
-            document.getElementById('product-weight').value = product.weight || '';
-            document.getElementById('product-dimensions').value = product.dimensions || '';
-            document.getElementById('product-image').value = product.image_url || '';
-            document.getElementById('product-active').checked = product.is_active;
-            
-            document.getElementById('productModal').style.display = 'block';
-        }
-
-        async function deleteProduct(productId) {
-            if (!confirm('Are you sure you want to delete this product?')) return;
-
-            try {
-                const response = await fetch(`/api/products/${productId}`, {
-                    method: 'DELETE'
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Product deleted successfully!');
-                    loadProducts();
-                    loadCategories();
-                } else {
-                    showError('Failed to delete product: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error deleting product: ' + error.message);
-            }
-        }
-
-        function updateStock(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            const newStock = prompt(`Update stock for ${product.name}\nCurrent stock: ${product.stock_quantity}`, product.stock_quantity);
-            if (newStock === null) return;
-
-            const quantity = parseInt(newStock);
-            if (isNaN(quantity) || quantity < 0) {
-                alert('Please enter a valid stock quantity');
-                return;
-            }
-
-            updateProductStock(productId, quantity);
-        }
-
-        async function updateProductStock(productId, quantity) {
-            try {
-                const response = await fetch(`/api/products/${productId}/stock`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ quantity })
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Stock updated successfully!');
-                    loadProducts();
-                } else {
-                    showError('Failed to update stock: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error updating stock: ' + error.message);
-            }
-        }
-
-        function showError(message) {
-            const errorDiv = document.getElementById('products-error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        function showSuccess(message) {
-            const successDiv = document.createElement('div');
-            successDiv.className = 'success';
-            successDiv.textContent = message;
-            document.querySelector('.container').insertBefore(successDiv, document.querySelector('.section'));
-            setTimeout(() => {
-                successDiv.remove();
-            }, 5000);
-        }
-
-        async function seedProducts() {
-            if (!confirm('This will add sample products to your catalog. Continue?')) return;
-
-            try {
-                const response = await fetch('/api/seed-products', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess(data.message);
-                    loadProducts();
-                    loadCategories();
-                } else {
-                    showError('Failed to seed products: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error seeding products: ' + error.message);
-            }
-        }
-
-        async function refreshInvoiceNumber() {
-            try {
-                const nextInvoiceElement = document.getElementById('next-invoice-number');
-                if (!nextInvoiceElement) {
-                    // Element doesn't exist, skip this function
-                    return;
-                }
-                
-                const response = await fetch('/api/test-db');
-                const data = await response.json();
-                
-                if (data.success) {
-                    nextInvoiceElement.textContent = data.nextInvoiceNumber;
-                } else {
-                    nextInvoiceElement.textContent = 'Error loading';
-                }
-            } catch (error) {
-                console.error('Error fetching next invoice number:', error);
-                const nextInvoiceElement = document.getElementById('next-invoice-number');
-                if (nextInvoiceElement) {
-                    nextInvoiceElement.textContent = 'Error loading';
-                }
-            }
-        }
-
-        // Invoice Management Functions
-        let selectedInvoices = [];
-        let invoiceSelectionMode = false;
-
-        async function loadInvoices(dateFrom = null, dateTo = null) {
-            try {
-                document.getElementById('invoices-loading').style.display = 'block';
-                const searchTerm = document.getElementById('invoice-search').value;
-                const statusFilter = document.getElementById('invoice-status-filter').value;
-                
-                let url = '/api/invoices?limit=100';
-                if (statusFilter) url += `&status=${statusFilter}`;
-                if (searchTerm) url += `&customerEmail=${searchTerm}`;
-                if (dateFrom) url += `&dateFrom=${dateFrom}`;
-                if (dateTo) url += `&dateTo=${dateTo}`;
-                
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-                
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    invoices = data.invoices;
-                    displayInvoices(invoices);
-                } else {
-                    showInvoiceError('Failed to load invoices: ' + data.error);
-                }
-            } catch (error) {
-                showInvoiceError('Error loading invoices: ' + error.message);
-            } finally {
-                document.getElementById('invoices-loading').style.display = 'none';
-            }
-        }
-
-        function applyInvoiceDateFilters() {
-            const dateFrom = document.getElementById('invoice-date-from').value;
-            const dateTo = document.getElementById('invoice-date-to').value;
-            loadInvoices(dateFrom, dateTo);
-            loadInvoiceStats(dateFrom, dateTo);
-        }
-
-        function clearInvoiceDateFilters() {
-            document.getElementById('invoice-date-from').value = '';
-            document.getElementById('invoice-date-to').value = '';
-            loadInvoices();
-            loadInvoiceStats();
-        }
-
-        function toggleInvoiceSelectionMode() {
-            invoiceSelectionMode = !invoiceSelectionMode;
-            selectedInvoices = [];
-            
-            const selectionButtons = document.querySelectorAll('.invoice-selection-buttons');
-            const selectButton = document.getElementById('select-invoices-btn');
-            
-            if (invoiceSelectionMode) {
-                selectButton.innerHTML = '❌ Cancel Selection';
-                selectButton.classList.remove('btn-primary');
-                selectButton.classList.add('btn-secondary');
-                selectionButtons.forEach(btn => btn.style.display = 'inline-block');
-                displayInvoices(invoices); // Refresh to show checkboxes
-            } else {
-                selectButton.innerHTML = '📋 Select Invoices';
-                selectButton.classList.remove('btn-secondary');
-                selectButton.classList.add('btn-primary');
-                selectionButtons.forEach(btn => btn.style.display = 'none');
-                displayInvoices(invoices); // Refresh to hide checkboxes
-            }
-        }
-
-        function toggleInvoiceSelection(invoiceId) {
-            const index = selectedInvoices.indexOf(invoiceId);
-            if (index > -1) {
-                selectedInvoices.splice(index, 1);
-            } else {
-                selectedInvoices.push(invoiceId);
-            }
-            updateInvoiceSelectionUI();
-        }
-
-        function updateInvoiceSelectionUI() {
-            const deleteButton = document.getElementById('delete-invoices-btn');
-            
-            if (selectedInvoices.length > 0) {
-                deleteButton.innerHTML = `🗑️ Delete Selected (${selectedInvoices.length})`;
-                deleteButton.disabled = false;
-            } else {
-                deleteButton.innerHTML = '🗑️ Delete Selected';
-                deleteButton.disabled = true;
-            }
-        }
-
-
-
-        async function deleteSelectedInvoices() {
-            if (selectedInvoices.length === 0) {
-                alert('Please select invoices to delete');
-                return;
-            }
-
-            const confirmMessage = `Are you sure you want to delete ${selectedInvoices.length} selected invoice(s)? This action cannot be undone.`;
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/invoices/bulk-delete', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        invoiceIds: selectedInvoices
-                    })
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert(`Successfully deleted ${selectedInvoices.length} invoice(s)`);
-                    selectedInvoices = [];
-                    toggleInvoiceSelectionMode(); // Exit selection mode
-                    loadInvoices(); // Reload invoices
-                    loadInvoiceStats(); // Update stats
-                } else {
-                    alert('Failed to delete invoices: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error deleting invoices: ' + error.message);
-            }
-        }
-
-        async function loadInvoiceStats(dateFrom = null, dateTo = null) {
-            try {
-                let url = '/api/stats';
-                const params = new URLSearchParams();
-                if (dateFrom) params.append('dateFrom', dateFrom);
-                if (dateTo) params.append('dateTo', dateTo);
-                if (params.toString()) url += '?' + params.toString();
-                
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-                
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const stats = data.stats;
-                    document.getElementById('total-invoices').textContent = stats.total_invoices || 0;
-                    document.getElementById('draft-invoices').textContent = stats.draft_invoices || 0;
-                    document.getElementById('sent-invoices').textContent = stats.sent_invoices || 0;
-                    document.getElementById('paid-invoices').textContent = stats.paid_invoices || 0;
-                    document.getElementById('total-revenue').textContent = formatCurrency(stats.total_revenue || 0);
-                }
-            } catch (error) {
-                console.error('Error loading invoice stats:', error);
-            }
-        }
-
-        function displayInvoices(invoicesToShow) {
-            const container = document.getElementById('invoices-grid');
-            container.innerHTML = '';
-
-            if (invoicesToShow.length === 0) {
-                container.innerHTML = '<div class="loading">No invoices found</div>';
-                return;
-            }
-
-            // Group invoices by date
-            const groupedInvoices = groupInvoicesByDate(invoicesToShow);
-            
-            // Display each date group
-            Object.keys(groupedInvoices).forEach(dateKey => {
-                const dateGroup = createDateGroup(dateKey, groupedInvoices[dateKey]);
-                container.appendChild(dateGroup);
-            });
-        }
-
-        function groupInvoicesByDate(invoices) {
-            const groups = {};
-            
-            invoices.forEach(invoice => {
-                // Handle empty or invalid dates
-                const invoiceDateStr = invoice.invoice_date || new Date().toISOString().split('T')[0];
-                const invoiceDate = new Date(invoiceDateStr);
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                
-                let dateKey;
-                let sortKey;
-                
-                // Determine the date group key
-                if (isSameDay(invoiceDate, today)) {
-                    dateKey = 'Today';
-                    sortKey = '1-today';
-                } else if (isSameDay(invoiceDate, yesterday)) {
-                    dateKey = 'Yesterday';
-                    sortKey = '2-yesterday';
-                } else if (isThisWeek(invoiceDate)) {
-                    dateKey = formatDateGroup(invoiceDate, 'this-week');
-                    sortKey = '3-' + formatDate(invoice.invoice_date);
-                } else if (isThisMonth(invoiceDate)) {
-                    dateKey = formatDateGroup(invoiceDate, 'this-month');
-                    sortKey = '4-' + formatDate(invoice.invoice_date);
-                } else {
-                    dateKey = formatDateGroup(invoiceDate, 'older');
-                    sortKey = '5-' + formatDate(invoice.invoice_date);
-                }
-                
-                if (!groups[sortKey]) {
-                    groups[sortKey] = {
-                        displayName: dateKey,
-                        invoices: []
-                    };
-                }
-                groups[sortKey].invoices.push(invoice);
-            });
-            
-            // Sort each group's invoices by date (newest first)
-            Object.keys(groups).forEach(key => {
-                groups[key].invoices.sort((a, b) => new Date(b.invoice_date) - new Date(a.invoice_date));
-            });
-            
-            return groups;
-        }
-
-        function isSameDay(date1, date2) {
-            return date1.getDate() === date2.getDate() &&
-                   date1.getMonth() === date2.getMonth() &&
-                   date1.getFullYear() === date2.getFullYear();
-        }
-
-        function isThisWeek(date) {
-            const today = new Date();
-            const weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - today.getDay());
-            weekStart.setHours(0, 0, 0, 0);
-            
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            weekEnd.setHours(23, 59, 59, 999);
-            
-            return date >= weekStart && date <= weekEnd;
-        }
-
-        function isThisMonth(date) {
-            const today = new Date();
-            return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-        }
-
-        function formatDateGroup(date, type) {
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-            
-            if (type === 'this-week') {
-                return days[date.getDay()];
-            } else if (type === 'this-month') {
-                return `${months[date.getMonth()]} ${date.getDate()}`;
-            } else {
-                return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-            }
-        }
-
-        function createDateGroup(sortKey, group) {
-            const dateGroup = document.createElement('div');
-            dateGroup.className = 'invoice-date-group';
-            
-            const dateHeader = document.createElement('div');
-            dateHeader.className = 'date-group-header';
-            dateHeader.innerHTML = `
-                <h3>${group.displayName}</h3>
-                <span class="invoice-count">${group.invoices.length} invoice${group.invoices.length !== 1 ? 's' : ''}</span>
-            `;
-            
-            const invoicesList = document.createElement('div');
-            invoicesList.className = 'invoices-list';
-            
-            group.invoices.forEach(invoice => {
-                const listItem = createInvoiceListItem(invoice);
-                invoicesList.appendChild(listItem);
-            });
-            
-            dateGroup.appendChild(dateHeader);
-            dateGroup.appendChild(invoicesList);
-            
-            return dateGroup;
-        }
-
-        function createInvoiceListItem(invoice) {
-            const listItem = document.createElement('div');
-            listItem.className = 'invoice-list-item';
-            
-            const statusClass = `status-${invoice.status}`;
-            const statusText = invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1);
-            const totalFormatted = formatCurrency(invoice.grand_total);
-            
-            // Payment stage information
-            const paymentStage = invoice.payment_stage || 'full_payment';
-            let paymentStageDisplay = '';
-            let paymentStageClass = '';
-            
-            if (paymentStage === 'down_payment') {
-                paymentStageDisplay = '💳 Down Payment';
-                paymentStageClass = 'payment-stage-dp';
-            } else if (paymentStage === 'final_payment') {
-                paymentStageDisplay = '💰 Final Payment';
-                paymentStageClass = 'payment-stage-final';
-            } else if (paymentStage === 'completed') {
-                paymentStageDisplay = '✅ Completed';
-                paymentStageClass = 'payment-stage-completed';
-            }
-            
-            listItem.innerHTML = `
-                <div class="invoice-list-content">
-                    ${invoiceSelectionMode ? `
-                    <div class="selection-checkbox">
-                        <input type="checkbox" 
-                               id="invoice-${invoice.id}" 
-                               onchange="toggleInvoiceSelection('${invoice.id}')"
-                               ${selectedInvoices.includes(invoice.id) ? 'checked' : ''}>
-                        <label for="invoice-${invoice.id}"></label>
-                    </div>
-                    ` : ''}
-                    <div class="invoice-main-info">
-                        <div class="invoice-header">
-                            <div class="invoice-number">
-                                <strong>#${invoice.invoice_number}</strong>
-                                ${paymentStageDisplay ? `<span class="payment-stage-badge ${paymentStageClass}">${paymentStageDisplay}</span>` : ''}
-                            </div>
-                            <div class="invoice-status">
-                                <span class="status-badge ${statusClass}">${statusText}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="invoice-details">
-                            <div class="invoice-customer">
-                                <span class="customer-name">👤 ${invoice.customer_name}</span>
-                                <span class="customer-email">${invoice.customer_email}</span>
-                            </div>
-                            
-                            <div class="invoice-meta">
-                                <span class="invoice-date">📅 ${formatDate(invoice.invoice_date)}</span>
-                                <span class="due-date">⏰ Due: ${formatDate(invoice.due_date)}</span>
-                                <span class="invoice-amount">${totalFormatted}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="invoice-actions">
-                        ${getSimplifiedInvoiceActions(invoice)}
-                    </div>
-                </div>
-            `;
-            
-            return listItem;
-        }
-
-        function createInvoiceCard(invoice) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const statusClass = `status-${invoice.status}`;
-            const statusText = invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1);
-            const totalFormatted = formatCurrency(invoice.grand_total);
-            
-            // Payment stage information
-            const paymentStage = invoice.payment_stage || 'full_payment';
-            const paymentStatus = invoice.payment_status || 'pending';
-            let paymentStageDisplay = '';
-            let paymentStageClass = '';
-            
-            if (paymentStage === 'down_payment') {
-                paymentStageDisplay = '💳 Uang Muka';
-                paymentStageClass = 'stage-down-payment';
-            } else if (paymentStage === 'final_payment') {
-                paymentStageDisplay = '💰 Sisa Pembayaran';
-                paymentStageClass = 'stage-remaining';
-            } else if (paymentStage === 'completed') {
-                paymentStageDisplay = '✅ Lunas';
-                paymentStageClass = 'stage-completed';
-            } else {
-                paymentStageDisplay = '💸 Pembayaran Penuh';
-                paymentStageClass = 'stage-full';
-            }
-            
-            card.innerHTML = `
-                ${invoiceSelectionMode ? `
-                <div class="selection-checkbox">
-                    <input type="checkbox" 
-                           id="invoice-${invoice.id}" 
-                           onchange="toggleInvoiceSelection('${invoice.id}')"
-                           ${selectedInvoices.includes(invoice.id) ? 'checked' : ''}>
-                    <label for="invoice-${invoice.id}"></label>
-                </div>
-                ` : ''}
-                <div class="product-header">
-                    <div>
-                        <div class="product-name">${invoice.invoice_number}</div>
-                        <div class="product-sku">Customer: ${invoice.customer_name}</div>
-                        ${paymentStage !== 'full_payment' ? `<div class="payment-stage-badge ${paymentStageClass}">${paymentStageDisplay}</div>` : ''}
-                    </div>
-                    <div class="status-badge ${statusClass}">${statusText}</div>
-                </div>
-                <div class="product-price">${totalFormatted}</div>
-                <div class="product-stock">
-                    <span>Date: ${formatDate(invoice.invoice_date)}</span>
-                </div>
-                <div>Email: ${invoice.customer_email}</div>
-                <div class="product-actions">
-                    ${getSimplifiedInvoiceActions(invoice)}
-                </div>
-            `;
-            
-            return card;
-        }
-        
-        function getPaymentActionButtons(invoice) {
-            const paymentStage = invoice.payment_stage || 'full_payment';
-            const status = invoice.status;
-            
-            if (status === 'draft') {
-                return `<button class="btn btn-sm btn-warning" onclick="updateInvoiceStatus(${invoice.id}, 'sent')">📤 Send</button>`;
-            } else if (status === 'sent') {
-                if (paymentStage === 'down_payment') {
-                    return `<button class="btn btn-sm btn-success" onclick="confirmDownPayment(${invoice.id})">💰 Confirm Down Payment</button>`;
-                } else if (paymentStage === 'final_payment') {
-                    return `<button class="btn btn-sm btn-success" onclick="confirmFinalPayment(${invoice.id})">✅ Confirm Final Payment</button>`;
-                } else {
-                    return `<button class="btn btn-sm btn-success" onclick="updateInvoiceStatus(${invoice.id}, 'paid')">💰 Paid</button>`;
-                }
-            } else if (status === 'dp_paid') {
-                // After down payment is confirmed, show final payment button
-                if (paymentStage === 'final_payment') {
-                    return `<button class="btn btn-sm btn-success" onclick="confirmFinalPayment(${invoice.id})">✅ Confirm Final Payment</button>`;
-                }
-            }
-            return '';
-        }
-
-        // Simplified Invoice Actions
-        function getSimplifiedInvoiceActions(invoice) {
-            const status = invoice.status;
-            let actions = [];
-
-            // View button - always available
-            actions.push(`<button class="btn btn-sm btn-primary" onclick="viewInvoiceDetailed(${invoice.id})" title="View invoice details and payment confirmations">👁️ View</button>`);
-
-            // Share button - removed as requested
-
-            // Print button - always available
-            actions.push(`<button class="btn btn-sm btn-success" onclick="printInvoice('${invoice.invoice_number}')" title="Download/Print PDF">🖨️ Print</button>`);
-
-            // Confirm Payment button - based on payment stage and status
-            if (status === 'sent' || status === 'dp_paid') {
-                const paymentStage = invoice.payment_stage || 'full_payment';
-                
-                // Debug logging for payment stage
-                console.log(`🔍 Invoice ${invoice.invoice_number} - Status: ${status}, Payment Stage: ${paymentStage}, Final Payment Token: ${invoice.final_payment_token ? 'Yes' : 'No'}`);
-                
-                if (paymentStage === 'down_payment') {
-                    actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmDownPayment(${invoice.id})" title="Confirm down payment received">✅ Confirm DP</button>`);
-                } else if (paymentStage === 'final_payment') {
-                    // Show confirm button only - final payment link is now in View modal
-                    actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmFinalPayment(${invoice.id})" title="Confirm final payment received">✅ Confirm Final</button>`);
-                    
-                    // Add debug info for final payment stage
-                    if (!invoice.final_payment_token) {
-                        console.warn(`⚠️ Invoice ${invoice.invoice_number} is in final_payment stage but missing final_payment_token`);
-                    }
-                } else if (paymentStage === 'full_payment') {
-                    actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmPaymentAndMoveToOrders(${invoice.id}, 'full')" title="Confirm payment received">✅ Confirm Payment</button>`);
-                }
-            }
-
-            // Delete button - always available
-            actions.push(`<button class="btn btn-sm btn-danger" onclick="deleteInvoice(${invoice.id})" title="Delete this invoice">🗑️ Delete</button>`);
-
-            return actions.join('');
-        }
-
-        function filterInvoices() {
-            const searchTerm = document.getElementById('invoice-search').value.toLowerCase();
-            const statusFilter = document.getElementById('invoice-status-filter').value;
-            
-            let filtered = invoices.filter(invoice => {
-                const matchesSearch = !searchTerm || 
-                    invoice.customer_name.toLowerCase().includes(searchTerm) ||
-                    invoice.customer_email.toLowerCase().includes(searchTerm) ||
-                    invoice.invoice_number.toLowerCase().includes(searchTerm);
-                
-                const matchesStatus = !statusFilter || invoice.status === statusFilter;
-                
-                return matchesSearch && matchesStatus;
-            });
-            
-            displayInvoices(filtered);
-        }
-
-        async function viewInvoice(invoiceId) {
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`);
-                const data = await response.json();
-                
-                if (data.success && data.invoice) {
-                    showInvoiceModal(data.invoice);
-                } else {
-                    alert('Failed to load invoice details: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error loading invoice details: ' + error.message);
-            }
-        }
-
-        // Enhanced View with Payment Confirmations
-        async function viewInvoiceDetailed(invoiceId) {
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`);
-                const data = await response.json();
-                
-                if (data.success && data.invoice) {
-                    showEnhancedInvoiceModal(data.invoice);
-                } else {
-                    alert('Failed to load invoice details: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error loading invoice details: ' + error.message);
-            }
-        }
-
-        async function editInvoice(invoiceId) {
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`);
-                const data = await response.json();
-                
-                if (data.success && data.invoice) {
-                    const invoice = data.invoice;
-                    
-                    // Parse invoice items
-                    let items = [];
-                    try {
-                        if (Array.isArray(invoice.items_json)) {
-                            items = invoice.items_json;
-                        } else if (typeof invoice.items_json === 'string') {
-                            items = JSON.parse(invoice.items_json);
-                        }
-                    } catch (e) {
-                        console.error('Error parsing items:', e);
-                        items = [];
-                    }
-                    
-                    // Create a simplified description from the invoice data
-                    const description = `Invoice for: ${invoice.customer_name}
-Email: ${invoice.customer_email}
-Phone: ${invoice.customer_phone || 'N/A'}
-Address: ${invoice.customer_address || 'N/A'}
-
-Items:
-${items.map(item => `${item.quantity || 1}x ${item.productName || item.product_name || 'Unknown'} - ${formatCurrency(item.unitPrice || item.unit_price || 0)}`).join('\n')}
-
-Total: ${formatCurrency(invoice.grand_total)}`;
-                    
-                    // Open the invoice generator with pre-filled data
-                    const url = `/web-interface-indonesian.html?edit=${invoiceId}&desc=${encodeURIComponent(description)}`;
-                    window.open(url, '_blank');
-                } else {
-                    alert('Failed to load invoice for editing: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error loading invoice for editing: ' + error.message);
-            }
-        }
-
-        function showInvoiceModal(invoice) {
-            const modal = document.getElementById('invoiceModal');
-            const content = document.getElementById('invoiceModalContent');
-            
-            let items = [];
-            console.log('🔧 [Merchant Dashboard] Processing invoice items...');
-            console.log('🔧 Raw items_json:', invoice.items_json);
-            console.log('🔧 Type:', typeof invoice.items_json);
-            
-            try {
-                // Try multiple parsing strategies
-                if (Array.isArray(invoice.items_json)) {
-                    items = invoice.items_json;
-                    console.log('✅ Items parsed as array:', items);
-                } else if (typeof invoice.items_json === 'string') {
-                    items = JSON.parse(invoice.items_json);
-                    console.log('✅ Items parsed from string:', items);
-                } else if (invoice.items_json && typeof invoice.items_json === 'object') {
-                    items = [invoice.items_json];
-                    console.log('✅ Items converted from object:', items);
-                } else {
-                    // Fallback: try to find items in other locations
-                    console.log('🔧 Trying fallback methods...');
-                    if (invoice.items && Array.isArray(invoice.items)) {
-                        items = invoice.items;
-                        console.log('✅ Found items in invoice.items:', items);
-                    }
-                }
-                
-                // Validate and fix items structure
-                if (Array.isArray(items)) {
-                    items = items.map((item, index) => {
-                        return {
-                            productName: item.productName || item.product_name || item.name || `Product ${index + 1}`,
-                            quantity: parseInt(item.quantity || item.qty || 1),
-                            unitPrice: parseFloat(item.unitPrice || item.unit_price || item.price || 0),
-                            lineTotal: parseFloat(item.lineTotal || item.line_total || item.total || (item.quantity || 1) * (item.unitPrice || item.unit_price || item.price || 0)),
-                            description: item.description || item.desc || ''
-                        };
-                    });
-                    console.log('✅ Processed items:', items);
-                }
-                
-            } catch (e) {
-                console.error('❌ Error parsing items:', e);
-                items = [{
-                    productName: 'Error: Items parsing failed',
-                    quantity: 1,
-                    unitPrice: 0,
-                    lineTotal: 0,
-                    description: e.message
-                }];
-            }
-            
-            content.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h3>Invoice #${invoice.invoice_number}</h3>
-                    <p><strong>Status:</strong> <span class="status-badge status-${invoice.status}">${invoice.status}</span></p>
-                    <p><strong>Date:</strong> ${formatDate(invoice.invoice_date)}</p>
-                    <p><strong>Due Date:</strong> ${formatDate(invoice.due_date)}</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Customer Information</h4>
-                    <p><strong>Name:</strong> ${invoice.customer_name}</p>
-                    <p><strong>Email:</strong> ${invoice.customer_email}</p>
-                    <p><strong>Phone:</strong> ${invoice.customer_phone || 'N/A'}</p>
-                    <p><strong>Address:</strong> ${invoice.customer_address || 'N/A'}</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Financial Summary</h4>
-                    <p><strong>Subtotal:</strong> ${formatCurrency(invoice.subtotal)}</p>
-                    <p><strong>Tax:</strong> ${formatCurrency(invoice.tax_amount)}</p>
-                    <p><strong>Shipping:</strong> ${formatCurrency(invoice.shipping_cost)}</p>
-                    <p><strong>Discount:</strong> ${formatCurrency(invoice.discount)}</p>
-                    <p><strong>Total:</strong> <strong>${formatCurrency(invoice.grand_total)}</strong></p>
-                </div>
-                
-                ${generatePaymentSchedulePreview(invoice)}
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Items</h4>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th style="padding: 8px; text-align: left;">Product</th>
-                                <th style="padding: 8px; text-align: right;">Qty</th>
-                                <th style="padding: 8px; text-align: right;">Price</th>
-                                <th style="padding: 8px; text-align: right;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map(item => `
-                                <tr>
-                                    <td style="padding: 8px;">${item.productName || item.product_name || 'Unknown Product'}</td>
-                                    <td style="padding: 8px; text-align: right;">${item.quantity || 0}</td>
-                                    <td style="padding: 8px; text-align: right;">${formatCurrency(item.unitPrice || item.unit_price || 0)}</td>
-                                    <td style="padding: 8px; text-align: right;">${formatCurrency(item.lineTotal || item.line_total || 0)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <button class="btn btn-primary" onclick="downloadInvoicePDF('${invoice.invoice_number}')">📄 Download PDF</button>
-                    ${invoice.customer_token ? `<button class="btn btn-info" onclick="copyInvoiceLink('${invoice.customer_token}')">🔗 Copy Link</button>` : ''}
-                    <button class="btn btn-secondary" onclick="closeInvoiceModal()">Close</button>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-            
-            // Initialize mobile controls if on mobile
-            setTimeout(() => initializeInvoiceModalMobile(), 100);
-        }
-
-        // Enhanced Invoice Modal with Payment Confirmations
-        function showEnhancedInvoiceModal(invoice) {
-            const modal = document.getElementById('invoiceModal');
-            const content = document.getElementById('invoiceModalContent');
-            
-            let items = [];
-            try {
-                if (Array.isArray(invoice.items_json)) {
-                    items = invoice.items_json;
-                } else if (typeof invoice.items_json === 'string') {
-                    items = JSON.parse(invoice.items_json);
-                } else {
-                    items = [];
-                }
-            } catch (e) {
-                console.error('Error parsing items:', e);
-                items = [];
-            }
-            
-            content.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h3>📄 Invoice #${invoice.invoice_number}</h3>
-                    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin: 15px 0;">
-                        <div><strong>Status:</strong> <span class="status-badge status-${invoice.status}">${invoice.status.toUpperCase()}</span></div>
-                        <div><strong>Date:</strong> ${formatDate(invoice.invoice_date)}</div>
-                        <div><strong>Due Date:</strong> ${formatDate(invoice.due_date)}</div>
-                        <div><strong>Total:</strong> <span style="color: #28a745; font-size: 1.2em; font-weight: bold;">${formatCurrency(invoice.grand_total)}</span></div>
-                    </div>
-                </div>
-                
-                <!-- Payment Confirmations Section -->
-                ${generatePaymentConfirmationsSection(invoice)}
-                
-                <!-- Customer Information -->
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <h4>👤 Customer Information</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <p><strong>Name:</strong> ${invoice.customer_name}</p>
-                            <p><strong>Email:</strong> ${invoice.customer_email}</p>
-                        </div>
-                        <div>
-                            <p><strong>Phone:</strong> ${invoice.customer_phone || 'N/A'}</p>
-                            <p><strong>Address:</strong> ${invoice.customer_address || 'N/A'}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Financial Summary -->
-                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <h4>💰 Financial Summary</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <p><strong>Subtotal:</strong> ${formatCurrency(invoice.subtotal)}</p>
-                            <p><strong>Tax:</strong> ${formatCurrency(invoice.tax_amount)}</p>
-                        </div>
-                        <div>
-                            <p><strong>Shipping:</strong> ${formatCurrency(invoice.shipping_cost)}</p>
-                            <p><strong>Discount:</strong> ${formatCurrency(invoice.discount)}</p>
-                        </div>
-                    </div>
-                    <hr style="margin: 10px 0;">
-                    <p style="font-size: 1.1em;"><strong>Grand Total:</strong> <span style="color: #28a745; font-weight: bold;">${formatCurrency(invoice.grand_total)}</span></p>
-                </div>
-                
-                ${generatePaymentSchedulePreview(invoice)}
-                
-                <!-- Items Table -->
-                <div style="margin-bottom: 20px;">
-                    <h4>📦 Items</h4>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;">
-                            <thead>
-                                <tr style="background: #343a40; color: white;">
-                                    <th style="padding: 12px; text-align: left;">Product</th>
-                                    <th style="padding: 12px; text-align: center;">Qty</th>
-                                    <th style="padding: 12px; text-align: right;">Price</th>
-                                    <th style="padding: 12px; text-align: right;">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items.map((item, index) => `
-                                    <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'}; border-bottom: 1px solid #dee2e6;">
-                                        <td style="padding: 12px;">${item.productName || item.product_name || 'Unknown Product'}</td>
-                                        <td style="padding: 12px; text-align: center;">${item.quantity || 0}</td>
-                                        <td style="padding: 12px; text-align: right;">${formatCurrency(item.unitPrice || item.unit_price || 0)}</td>
-                                        <td style="padding: 12px; text-align: right; font-weight: bold;">${formatCurrency(item.lineTotal || item.line_total || 0)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Action Buttons -->
-                <!-- Final Payment Email Section for invoices in final_payment stage -->
-                ${invoice.payment_stage === 'final_payment' && invoice.final_payment_token ? `
-                <div style="margin-top: 30px; padding: 20px; border: 2px solid #fd7e14; border-radius: 8px; background-color: #fff8f0;">
-                    <h5 style="margin-bottom: 15px; color: #fd7e14;">🏦 Final Payment Required</h5>
-                    <p style="margin-bottom: 15px; color: #6c757d;">This invoice requires final payment completion. Send the final payment email to the customer:</p>
-                    
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                        <input type="email" id="finalPaymentEmailInput" placeholder="Customer email address" 
-                               value="${invoice.customer_email || ''}" 
-                               style="flex: 1; min-width: 250px; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
-                        <button onclick="sendFinalPaymentEmail(${invoice.id}, document.getElementById('finalPaymentEmailInput').value)" 
-                                class="btn btn-warning" style="min-width: 140px;">🏦 Send Final Payment Email</button>
-                    </div>
-                    
-                    <div style="font-size: 12px; color: #6c757d;">
-                        <strong>Final Payment Amount:</strong> ${formatCurrency(invoice.final_payment_amount || 0)}<br>
-                        <strong>Invoice Link:</strong> ${window.location.origin}/invoice?token=${invoice.customer_token}
-                    </div>
-                </div>
-                ` : ''}
-                
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #dee2e6; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                    <button class="btn btn-success" onclick="printInvoice('${invoice.invoice_number}')" style="min-width: 120px;">🖨️ Print/PDF</button>
-                    ${invoice.customer_token ? `<button class="btn btn-info" onclick="copyInvoiceLink('${invoice.customer_token}')" style="min-width: 120px;">🔗 Copy Link</button>` : ''}
-                    <button class="btn" style="background-color: var(--whatsapp); color: white; min-width: 120px;" onclick="shareViaWhatsApp('${invoice.id}')">📱 WhatsApp</button>
-                    ${invoice.customer_email && invoice.payment_stage !== 'final_payment' ? `<button class="btn btn-primary" onclick="sendInvoiceEmail(${invoice.id}, '${invoice.customer_email}')" style="min-width: 120px;">📧 Send Email</button>` : ''}
-                    <button class="btn btn-secondary" onclick="closeInvoiceModal()" style="min-width: 120px;">✖️ Close</button>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-            
-            // Initialize mobile controls if on mobile
-            setTimeout(() => initializeInvoiceModalMobile(), 100);
-        }
-
-        // Generate Payment Confirmations Section
-        function generatePaymentConfirmationsSection(invoice) {
-            if (invoice.status === 'draft') {
-                return `
-                    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
-                        <h4>⚠️ Payment Status</h4>
-                        <p>This invoice is still in draft mode. Send it to the customer to enable payment confirmations.</p>
-                    </div>
-                `;
-            } else if (invoice.status === 'sent' || invoice.status === 'dp_paid') {
-                const paymentStage = invoice.payment_stage || 'full_payment';
-                const paymentSchedule = invoice.payment_schedule_json ? 
-                    (typeof invoice.payment_schedule_json === 'string' ? JSON.parse(invoice.payment_schedule_json) : invoice.payment_schedule_json) : null;
-                
-                let stageInfo = '';
-                let headerIcon = '💳';
-                let headerText = 'Payment Confirmations';
-                
-                if (paymentStage === 'down_payment') {
-                    headerIcon = '💰';
-                    headerText = 'Down Payment Confirmations';
-                    stageInfo = `<div style="background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #ffc107;">
-                        <strong>📋 Payment Stage:</strong> Down Payment (${paymentSchedule ? formatCurrency(paymentSchedule.downPayment.amount) : 'N/A'})
-                        <br><small>After confirmation, final payment link will be generated for remaining amount.</small>
-                    </div>`;
-                } else if (paymentStage === 'final_payment') {
-                    headerIcon = '🏁';
-                    headerText = 'Final Payment Confirmations';
-                    stageInfo = `<div style="background: #e2e3ff; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #6f42c1;">
-                        <strong>📋 Payment Stage:</strong> Final Payment (${paymentSchedule ? formatCurrency(paymentSchedule.remainingBalance.amount) : 'N/A'})
-                        <br><small>After confirmation, invoice will be completed and order will be created.</small>
-                    </div>`;
-                } else {
-                    stageInfo = `<div style="background: #d4edda; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #28a745;">
-                        <strong>📋 Payment Stage:</strong> Full Payment (${formatCurrency(invoice.grand_total)})
-                        <br><small>After confirmation, invoice will be marked as paid and order will be created.</small>
-                    </div>`;
-                }
-                
-                return `
-                    <div style="background: #cce5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff;">
-                        <h4>${headerIcon} ${headerText}</h4>
-                        ${stageInfo}
-                        <p style="margin-bottom: 15px;">Waiting for customer payment. Payment confirmations will appear here when uploaded by the customer.</p>
-                        <div id="payment-confirmations-${invoice.id}">
-                            <!-- Payment confirmations will be loaded here -->
-                            <div style="background: white; padding: 10px; border-radius: 6px; text-align: center; color: #6c757d;">
-                                <em>No payment confirmations uploaded yet</em>
-                            </div>
-                        </div>
-                        <button class="btn btn-sm btn-warning" onclick="refreshPaymentConfirmations(${invoice.id})" style="margin-top: 10px;">🔄 Refresh</button>
-                    </div>
-                `;
-            } else if (invoice.status === 'paid') {
-                return `
-                    <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745;">
-                        <h4>✅ Payment Confirmed</h4>
-                        <p>This invoice has been marked as paid and moved to orders.</p>
-                        <div id="payment-confirmations-${invoice.id}">
-                            <!-- Payment confirmations will be loaded here -->
-                        </div>
-                        <button class="btn btn-sm btn-info" onclick="refreshPaymentConfirmations(${invoice.id})" style="margin-top: 10px;">📋 View Payment History</button>
-                    </div>
-                `;
-            }
-            return '';
-        }
-
-        function generatePaymentSchedulePreview(invoice) {
-            // Check if invoice has payment schedule data
-            let paymentSchedule = null;
-            try {
-                if (invoice.paymentSchedule) {
-                    paymentSchedule = invoice.paymentSchedule;
-                } else if (invoice.metadata_json) {
-                    const metadata = JSON.parse(invoice.metadata_json);
-                    paymentSchedule = metadata.paymentSchedule;
-                }
-            } catch (e) {
-                console.log('No payment schedule found in invoice');
-            }
-
-            if (!paymentSchedule) {
-                return '';
-            }
-
-            const formatDate = (dateString) => {
-                if (!dateString) return '-';
-                try {
-                    return new Date(dateString).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                    });
-                } catch (e) {
-                    return dateString;
-                }
-            };
-
-            const getStatusBadge = (status) => {
-                const statusClasses = {
-                    'pending': 'background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem;',
-                    'paid': 'background: #d1edff; color: #155724; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem;',
-                    'partial': 'background: #e2e3ff; color: #6D46D6; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem;'
-                };
-                const statusText = status === 'pending' ? '⏳ Pending' : status === 'paid' ? '✅ Paid' : '🔄 Partial';
-                return `<span style="${statusClasses[status] || statusClasses['pending']}">${statusText}</span>`;
-            };
-
-            const totalPaid = paymentSchedule.paymentStatus?.totalPaid || 0;
-            const totalAmount = paymentSchedule.totalAmount;
-            const progressPercentage = totalAmount > 0 ? (totalPaid / totalAmount) * 100 : 0;
-
-            return `
-                <div style="margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%); border-radius: 12px; border: 1px solid #e6ebff;">
-                    <h4 style="color: #8B5FFF; margin-bottom: 15px;">📅 Payment Schedule</h4>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e6ebff;">
-                            <div>
-                                <strong>Down Payment (${paymentSchedule.downPayment.percentage}%)</strong><br>
-                                <span style="color: #8B5FFF; font-size: 1.2rem; font-weight: 600;">${formatCurrency(paymentSchedule.downPayment.amount)}</span><br>
-                                <small style="color: #718096;">Due: ${formatDate(paymentSchedule.downPayment.dueDate)}</small>
-                            </div>
-                            <div>
-                                ${getStatusBadge(paymentSchedule.downPayment.status)}
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 8px; border: 1px solid #e6ebff;">
-                            <div>
-                                <strong>Remaining Balance</strong><br>
-                                <span style="color: #8B5FFF; font-size: 1.2rem; font-weight: 600;">${formatCurrency(paymentSchedule.remainingBalance.amount)}</span><br>
-                                <small style="color: #718096;">Due: ${formatDate(paymentSchedule.remainingBalance.dueDate)}</small>
-                            </div>
-                            <div>
-                                ${getStatusBadge(paymentSchedule.remainingBalance.status)}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 600;">Payment Progress</span>
-                            <span style="color: #718096;">${formatCurrency(totalPaid)} of ${formatCurrency(totalAmount)} paid</span>
-                        </div>
-                        <div style="width: 100%; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden;">
-                            <div style="height: 100%; background: linear-gradient(135deg, #8B5FFF 0%, #9966FF 100%); width: ${progressPercentage}%; border-radius: 4px; transition: width 0.3s ease;"></div>
-                        </div>
-                    </div>
-                    
-                    <div style="padding: 15px; background: linear-gradient(135deg, #8B5FFF 0%, #9966FF 100%); color: white; border-radius: 8px; text-align: center;">
-                        <strong>Payment Status: ${paymentSchedule.paymentStatus?.status.toUpperCase() || 'PENDING'}</strong>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function copyInvoiceLink(customerToken) {
-            console.log('🔗 Copy link called with token:', customerToken);
-            
-            if (!customerToken) {
-                alert('Error: No customer token available for this invoice');
-                return;
-            }
-            
-            const baseUrl = window.location.origin;
-            
-            // Find the invoice by customer token to check status
-            const foundInvoice = invoices.find(inv => inv.customer_token === customerToken);
-            
-            const invoiceUrl = `${baseUrl}/simple-invoice-view.html?id=${foundInvoice.invoice_number}&from=dashboard`;
-            console.log('🔗 Generated URL:', invoiceUrl);
-            console.log('🔍 Found invoice:', foundInvoice);
-            
-            // Copy to clipboard
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(invoiceUrl).then(async () => {
-                    showSuccess('Invoice link copied to clipboard!');
-                    await updateStatusOnShare(foundInvoice);
-                }).catch(() => {
-                    fallbackCopyTextToClipboard(invoiceUrl);
-                });
-            } else {
-                fallbackCopyTextToClipboard(invoiceUrl);
-                await updateStatusOnShare(foundInvoice);
-            }
-        }
-
-        function fallbackCopyTextToClipboard(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            
-            // Avoid scrolling to bottom
-            textArea.style.top = "0";
-            textArea.style.left = "0";
-            textArea.style.position = "fixed";
-
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    showSuccess('Invoice link copied to clipboard!');
-                } else {
-                    showError('Failed to copy link. Please try again.');
-                }
-            } catch (err) {
-                console.error('Fallback: Could not copy text: ', err);
-                showError('Could not copy link. Please copy manually: ' + text);
-            }
-
-            document.body.removeChild(textArea);
-        }
-
-        function closeInvoiceModal() {
-            document.getElementById('invoiceModal').style.display = 'none';
-            // Close any open share dropdowns
-            document.querySelectorAll('.share-menu.show').forEach(menu => {
-                menu.classList.remove('show');
-            });
-            // Hide mobile zoom controls
-            const mobileControls = document.getElementById('mobile-invoice-zoom-controls');
-            if (mobileControls) {
-                mobileControls.style.display = 'none';
-            }
-        }
-        
-        // Mobile Invoice Zoom Functionality
-        let invoiceCurrentScale = 0.8;
-        const invoiceMinScale = 0.3;
-        const invoiceMaxScale = 3.0;
-        
-        function initializeInvoiceModalMobile() {
-            const isMobile = window.innerWidth <= 767;
-            if (!isMobile) return;
-            
-            const mobileControls = document.getElementById('mobile-invoice-zoom-controls');
-            const wrapper = document.getElementById('invoiceModalContentWrapper');
-            
-            if (mobileControls && wrapper) {
-                mobileControls.style.display = 'flex';
-                
-                // Set initial scale
-                invoiceCurrentScale = 0.8;
-                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-                
-                // Add touch gesture support
-                addInvoiceModalTouchGestureSupport();
-            }
-        }
-        
-        function adjustInvoiceZoom(delta) {
-            invoiceCurrentScale = Math.max(invoiceMinScale, Math.min(invoiceMaxScale, invoiceCurrentScale + delta));
-            
-            const wrapper = document.getElementById('invoiceModalContentWrapper');
-            const indicator = document.getElementById('invoice-zoom-indicator');
-            
-            if (wrapper) {
-                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-            }
-            
-            // Show zoom indicator
-            if (indicator) {
-                indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
-                indicator.classList.add('show');
-                setTimeout(() => indicator.classList.remove('show'), 1500);
-            }
-        }
-        
-        function fitInvoiceToScreen() {
-            const modal = document.getElementById('invoiceModal');
-            if (!modal) return;
-            
-            const modalContent = modal.querySelector('.invoice-modal-content');
-            if (!modalContent) return;
-            
-            const containerWidth = modalContent.clientWidth - 32; // Account for padding
-            const estimatedContentWidth = 400; // Estimated invoice content width
-            invoiceCurrentScale = Math.max(containerWidth / estimatedContentWidth, invoiceMinScale);
-            invoiceCurrentScale = Math.min(invoiceCurrentScale, invoiceMaxScale);
-            
-            const wrapper = document.getElementById('invoiceModalContentWrapper');
-            const indicator = document.getElementById('invoice-zoom-indicator');
-            
-            if (wrapper) {
-                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-            }
-            
-            if (indicator) {
-                indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
-                indicator.classList.add('show');
-                setTimeout(() => indicator.classList.remove('show'), 1500);
-            }
-        }
-        
-        function addInvoiceModalTouchGestureSupport() {
-            const wrapper = document.getElementById('invoiceModalContentWrapper');
-            if (!wrapper) return;
-            
-            let initialDistance = 0;
-            let initialScale = invoiceCurrentScale;
-            let lastTap = 0;
-            
-            wrapper.addEventListener('touchstart', function(e) {
-                if (e.touches.length === 2) {
-                    // Pinch-zoom start
-                    e.preventDefault();
-                    initialDistance = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    initialScale = invoiceCurrentScale;
-                } else if (e.touches.length === 1) {
-                    // Double-tap detection
-                    const currentTime = new Date().getTime();
-                    const tapGap = currentTime - lastTap;
-                    
-                    if (tapGap < 300 && tapGap > 0) {
-                        // Double-tap detected
-                        e.preventDefault();
-                        const targetScale = invoiceCurrentScale < 1.5 ? 2.0 : 0.8;
-                        invoiceCurrentScale = targetScale;
-                        
-                        wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-                        
-                        const indicator = document.getElementById('invoice-zoom-indicator');
-                        if (indicator) {
-                            indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
-                            indicator.classList.add('show');
-                            setTimeout(() => indicator.classList.remove('show'), 1500);
-                        }
-                    }
-                    lastTap = currentTime;
-                }
-            });
-            
-            wrapper.addEventListener('touchmove', function(e) {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const currentDistance = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    
-                    const scale = (currentDistance / initialDistance) * initialScale;
-                    invoiceCurrentScale = Math.max(invoiceMinScale, Math.min(invoiceMaxScale, scale));
-                    
-                    wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-                    
-                    const indicator = document.getElementById('invoice-zoom-indicator');
-                    if (indicator) {
-                        indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
-                        indicator.classList.add('show');
-                    }
-                }
-            });
-            
-            wrapper.addEventListener('touchend', function(e) {
-                if (e.touches.length === 0) {
-                    const indicator = document.getElementById('invoice-zoom-indicator');
-                    if (indicator) {
-                        setTimeout(() => indicator.classList.remove('show'), 1500);
-                    }
-                }
-            });
-        }
-
-        // Share Dropdown Functions
-        function toggleShareDropdown(invoiceId) {
-            const menu = document.getElementById(`share-menu-${invoiceId}`);
-            if (!menu) {
-                console.error('Share menu not found for invoice:', invoiceId);
-                return;
-            }
-            
-            // Close all other dropdowns first
-            document.querySelectorAll('.share-menu.show').forEach(otherMenu => {
-                if (otherMenu !== menu) {
-                    otherMenu.classList.remove('show');
-                }
-            });
-            
-            // Toggle current dropdown
-            menu.classList.toggle('show');
-            
-            // Debug log
-            console.log('Share dropdown toggled for invoice:', invoiceId, 'Visible:', menu.classList.contains('show'));
-        }
-
-        async function shareViaWhatsApp(invoiceId) {
-            console.log('📱 WhatsApp share called with ID:', invoiceId);
-            
-            // Get invoice data to construct WhatsApp message
-            const invoice = invoices.find(inv => inv.id == invoiceId || inv.id === parseInt(invoiceId));
-            console.log('🔍 Found invoice for WhatsApp:', invoice);
-            
-            if (!invoice) {
-                console.warn('Invoice not found for ID:', invoiceId, 'Available invoices:', invoices.map(inv => ({id: inv.id, number: inv.invoice_number})));
-                alert('Invoice not found for WhatsApp sharing');
-                return;
-            }
-
-            const baseUrl = window.location.origin;
-            const invoiceUrl = `${baseUrl}/simple-invoice-view.html?id=${invoice.invoice_number}`;
-            
-            // Parse invoice data with proper fallbacks
-            const invoiceNumber = invoice.invoice_number || 'N/A';
-            const customerName = invoice.customer_name || '';
-            const customerPhone = invoice.customer_phone || '';
-            const customerAddress = invoice.customer_address || '';
-            const businessName = invoice.business_name || 'Business';
-            const total = invoice.grand_total || 0;
-            const subtotal = invoice.subtotal || total;
-            const discount = invoice.discount_amount || 0;
-            const shippingCost = invoice.shipping_cost || 0;
-            
-            // Parse items from JSON with error handling
-            let items = [];
-            try {
-                if (invoice.items_json) {
-                    if (typeof invoice.items_json === 'string') {
-                        items = JSON.parse(invoice.items_json);
-                    } else if (Array.isArray(invoice.items_json)) {
-                        items = invoice.items_json;
-                    }
-                }
-            } catch (e) {
-                console.error('Error parsing items for WhatsApp:', e);
-                items = [];
-            }
-            
-            // Format items list
-            let itemsList = '';
-            if (items.length > 0) {
-                itemsList = items.map((item, index) => {
-                    const qty = item.quantity || 0;
-                    const price = item.unit_price || item.unitPrice || 0;
-                    const total = item.line_total || item.lineTotal || (qty * price);
-                    const productName = item.product_name || item.productName || 'Produk';
-                    return `${index + 1}. ${productName}\n   ${qty}x @ Rp ${price.toLocaleString('id-ID')} = Rp ${total.toLocaleString('id-ID')}`;
-                }).join('\n\n');
-            }
-            
-            // Check for payment schedule with proper date handling
-            let paymentSchedule = '';
-            try {
-                if (invoice.payment_schedule_json) {
-                    let schedule;
-                    if (typeof invoice.payment_schedule_json === 'string') {
-                        schedule = JSON.parse(invoice.payment_schedule_json);
-                    } else {
-                        schedule = invoice.payment_schedule_json;
-                    }
-                    
-                    if (schedule && schedule.scheduleType === 'down_payment') {
-                        const dp = schedule.downPayment;
-                        const remaining = schedule.remainingBalance;
-                        if (dp && remaining) {
-                            const dpDate = dp.dueDate ? new Date(dp.dueDate).toLocaleDateString('id-ID') : 'Segera';
-                            const finalDate = remaining.dueDate ? new Date(remaining.dueDate).toLocaleDateString('id-ID') : 'Sesuai kesepakatan';
-                            paymentSchedule = `\n📅 *JADWAL PEMBAYARAN*\n• DP (${dp.percentage}%): Rp ${dp.amount.toLocaleString('id-ID')} - Jatuh Tempo: ${dpDate}\n• Pelunasan: Rp ${remaining.amount.toLocaleString('id-ID')} - Jatuh Tempo: ${finalDate}`;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error parsing payment schedule:', error);
-            }
-            
-            // Get notes
-            let notes = '';
-            try {
-                if (invoice.notes_json) {
-                    let notesData;
-                    if (typeof invoice.notes_json === 'string') {
-                        notesData = JSON.parse(invoice.notes_json);
-                    } else {
-                        notesData = invoice.notes_json;
-                    }
-                    if (notesData && notesData.publicNotes) {
-                        notes = `\n📝 *CATATAN*\n${notesData.publicNotes}`;
-                    }
-                }
-            } catch (error) {
-                console.error('Error parsing notes:', error);
-            }
-            
-            // Get proper due date
-            const dueDate = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('id-ID') : 'Sesuai kesepakatan';
-            
-            // Create comprehensive WhatsApp message
-            const message = `🧾 *FAKTUR #${invoiceNumber}*
-
-*DARI:* ${businessName}
-*KEPADA:* ${customerName}
-
-👤 *MOHON KONFIRMASI DATA ANDA:*
-📱 Telepon: ${customerPhone || 'Belum diisi'}
-📍 Alamat: ${customerAddress || 'Belum diisi'}
-${customerPhone || customerAddress ? '\n*Jika ada yang salah, silakan beritahu kami.*' : '\n*Silakan berikan no. telepon dan alamat lengkap Anda.*'}
-
-🛒 *DETAIL PEMBELIAN:*${itemsList ? `\n${itemsList}` : '\nTidak ada detail item'}
-
-💰 *RINGKASAN BIAYA:*
-• Subtotal: Rp ${subtotal.toLocaleString('id-ID')}${discount > 0 ? `\n• Diskon: -Rp ${discount.toLocaleString('id-ID')}` : ''}${shippingCost > 0 ? `\n• Ongkos Kirim: Rp ${shippingCost.toLocaleString('id-ID')}` : ''}
-• *TOTAL: Rp ${total.toLocaleString('id-ID')}*${paymentSchedule}${notes}
-
-📋 *LIHAT FAKTUR LENGKAP:*
-${invoiceUrl}
-
-Terima kasih! 🙏`;
-
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-            
-            // Update status after sharing
-            await updateStatusOnShare(invoice);
-            
-            // Close dropdown
-            document.getElementById(`share-menu-${invoiceId}`).classList.remove('show');
-        }
-
-        // Direct Print Function - Generate and print immediately like faktur preview
-        async function printInvoice(invoiceNumber) {
-            console.log('🖨️ Print function called for invoice:', invoiceNumber);
-            
-            try {
-                // Get the invoice by number to find the ID
-                const invoiceResponse = await fetch(`/api/invoices/number/${invoiceNumber}`);
-                const invoiceResult = await invoiceResponse.json();
-                
-                if (!invoiceResult.success) {
-                    alert('Failed to load invoice for printing: ' + invoiceResult.error);
-                    return;
-                }
-
-                const invoice = invoiceResult.invoice;
-                console.log('🔍 Found invoice for printing:', invoice);
-                
-                // Open the updated invoice view with print parameter
-                // This ensures we use the same formatting as the customer-facing view
-                const printUrl = `/invoice?id=${invoice.id}&print=true&from=dashboard`;
-                window.open(printUrl, '_blank', 'width=1000,height=800');
-                
-            } catch (error) {
-                console.error('Error loading invoice for printing:', error);
-                alert('Error loading invoice for printing: ' + error.message);
-            }
-        }
-
-        // DEPRECATED: Direct print function that generates unified invoice template
-        // Now using updated invoice view for consistent formatting
-        /* function directPrintInvoice(invoiceData) {
-            console.log('🖨️ Generating unified invoice template for direct printing');
-            
-            try {
-                // Generate the printable HTML using unified template
-                const printableHTML = generateUnifiedInvoiceForPrint(invoiceData);
-                
-                // Create new window and print immediately
-                const printWindow = window.open('', '_blank', 'width=800,height=600');
-                if (!printWindow) {
-                    alert('Popup blocked. Please allow popups for this site and try again.');
-                    return;
-                }
-                
-                printWindow.document.write(printableHTML);
-                printWindow.document.close();
-                
-                // Wait for content to load then print immediately
-                printWindow.onload = function() {
-                    setTimeout(() => {
-                        console.log('🖨️ Triggering print dialog');
-                        printWindow.print();
-                        // Close after printing (or user cancels)
-                        setTimeout(() => {
-                            printWindow.close();
-                        }, 100);
-                    }, 250); // Small delay to ensure styles are loaded
-                };
-                
-            } catch (error) {
-                console.error('Error generating invoice for direct printing:', error);
-                alert('Error generating invoice for printing: ' + error.message);
-            }
-        } */
-
-
-        // Payment Confirmation Functions
-        async function refreshPaymentConfirmations(invoiceId) {
-            try {
-                // Placeholder for payment confirmations API
-                // This would fetch payment confirmations uploaded by customers
-                const response = await fetch(`/api/invoices/${invoiceId}/payment-confirmations`);
-                const data = await response.json();
-                
-                const container = document.getElementById(`payment-confirmations-${invoiceId}`);
-                if (data.success && data.confirmations && data.confirmations.length > 0) {
-                    // Get current invoice to determine payment stage
-                    const invoice = invoices.find(inv => inv.id == invoiceId || inv.id === parseInt(invoiceId));
-                    const paymentStage = invoice ? invoice.payment_stage || 'full_payment' : 'full_payment';
-                    
-                    // Determine button text based on payment stage
-                    let approveButtonText = '✅ Approve';
-                    if (paymentStage === 'down_payment') {
-                        approveButtonText = '✅ Approve DP';
-                    } else if (paymentStage === 'final_payment') {
-                        approveButtonText = '✅ Approve Final';
-                    } else {
-                        approveButtonText = '✅ Approve Payment';
-                    }
-                    container.innerHTML = data.confirmations.map(conf => `
-                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                                <div>
-                                    <strong style="color: #2563eb;">Payment Confirmation</strong>
-                                    <div style="font-size: 0.9em; color: #666; margin-top: 4px;">
-                                        <div>Uploaded: ${conf.uploadDate ? formatDate(conf.uploadDate) : 'Unknown date'}</div>
-                                        <div>Status: <span style="color: ${conf.status === 'pending' ? '#f59e0b' : (conf.status === 'approved' ? '#10b981' : '#ef4444')}; font-weight: bold;">${conf.status || 'pending'}</span></div>
-                                        ${conf.notes ? `<div>Notes: ${conf.notes}</div>` : ''}
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 8px; flex-direction: column;">
-                                    <button class="btn btn-sm btn-info" onclick="viewPaymentProof('${conf.filePath}')">📄 View Proof</button>
-                                    ${conf.status === 'pending' ? `
-                                        <div style="display: flex; gap: 5px;">
-                                            <button class="btn btn-sm btn-success" onclick="approvePaymentConfirmation(${invoiceId}, '${conf.id}')" style="font-size: 0.8em;">${approveButtonText}</button>
-                                            <button class="btn btn-sm btn-danger" onclick="rejectPaymentConfirmation(${invoiceId}, '${conf.id}')" style="font-size: 0.8em;">❌ Reject</button>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-                            ${conf.status === 'approved' ? `
-                                <div style="background: #d1fae5; border: 1px solid #10b981; padding: 8px; border-radius: 4px; font-size: 0.85em; color: #065f46;">
-                                    ✅ Payment approved and converted to order
-                                </div>
-                            ` : ''}
-                            ${conf.status === 'rejected' ? `
-                                <div style="background: #fee2e2; border: 1px solid #ef4444; padding: 8px; border-radius: 4px; font-size: 0.85em; color: #991b1b;">
-                                    ❌ Payment rejected
-                                </div>
-                            ` : ''}
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = `
-                        <div style="background: white; padding: 10px; border-radius: 6px; text-align: center; color: #6c757d;">
-                            <em>No payment confirmations uploaded yet</em>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error refreshing payment confirmations:', error);
-                alert('Failed to refresh payment confirmations');
-            }
-        }
-
-        function viewPaymentProof(fileUrl) {
-            // Open payment proof in new window
-            window.open(fileUrl, '_blank');
-        }
-
-        // Approve payment confirmation
-        async function approvePaymentConfirmation(invoiceId, confirmationId) {
-            try {
-                // Get current invoice to determine payment stage
-                const invoice = invoices.find(inv => inv.id == invoiceId || inv.id === parseInt(invoiceId));
-                if (!invoice) {
-                    alert('Invoice not found');
-                    return;
-                }
-
-                const paymentStage = invoice.payment_stage || 'full_payment';
-                const merchantNotes = prompt('Add notes (optional):') || '';
-                
-                let endpoint, confirmMessage, successMessage;
-                
-                // Route to appropriate stage-specific endpoint
-                if (paymentStage === 'down_payment') {
-                    endpoint = `/api/invoices/${invoiceId}/confirm-down-payment`;
-                    confirmMessage = 'Approve down payment confirmation? This will generate a final payment link.';
-                    successMessage = '✅ Down payment confirmed! Final payment link generated for customer.';
-                } else if (paymentStage === 'final_payment') {
-                    endpoint = `/api/invoices/${invoiceId}/confirm-final-payment`;
-                    confirmMessage = 'Approve final payment confirmation? This will complete the invoice and create an order.';
-                    successMessage = '✅ Final payment confirmed! Invoice completed and order created.';
-                } else {
-                    endpoint = `/api/invoices/${invoiceId}/status`;
-                    confirmMessage = 'Approve payment confirmation? This will mark invoice as paid and create an order.';
-                    successMessage = '✅ Payment confirmed! Invoice marked as paid and order created.';
-                }
-
-                if (!confirm(confirmMessage)) {
-                    return;
-                }
-                
-                let requestBody;
-                if (paymentStage === 'down_payment' || paymentStage === 'final_payment') {
-                    requestBody = JSON.stringify({ merchantNotes });
-                } else {
-                    requestBody = JSON.stringify({ 
-                        status: 'paid',
-                        payment_confirmed_at: new Date().toISOString(),
-                        merchantNotes 
-                    });
-                }
-
-                const response = await fetch(endpoint, {
-                    method: paymentStage === 'down_payment' || paymentStage === 'final_payment' ? 'POST' : 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: requestBody
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Show appropriate success message
-                    if (result.orderNumber) {
-                        alert(`${successMessage}\n\nOrder created: ${result.orderNumber}`);
-                    } else {
-                        alert(successMessage);
-                    }
-                    
-                    // Close modal if open
-                    closeInvoiceModal();
-                    
-                    // Refresh data
-                    await loadInvoices();
-                    if (typeof loadOrders !== 'undefined') {
-                        loadOrders();
-                    }
-                } else {
-                    alert('Error approving payment: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error approving payment confirmation:', error);
-                alert('Error approving payment confirmation');
-            }
-        }
-
-        // Reject payment confirmation
-        async function rejectPaymentConfirmation(invoiceId, confirmationId) {
-            try {
-                const merchantNotes = prompt('Reason for rejection:') || '';
-                
-                if (!merchantNotes.trim()) {
-                    alert('Please provide a reason for rejection');
-                    return;
-                }
-                
-                const response = await fetch(`/api/invoices/${invoiceId}/payment-confirmations/reject`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ merchantNotes })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('❌ Payment confirmation rejected.');
-                    // Refresh payment confirmations to show updated status
-                    await refreshPaymentConfirmations(invoiceId);
-                    // Refresh the invoice list to update status
-                    loadInvoices();
-                } else {
-                    alert('Error rejecting payment: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error rejecting payment confirmation:', error);
-                alert('Error rejecting payment confirmation');
-            }
-        }
-
-        // Confirm Payment and Move to Orders
-        async function confirmPaymentAndMoveToOrders(invoiceId, paymentType) {
-            const invoice = invoices.find(inv => inv.id === invoiceId);
-            if (!invoice) {
-                alert('Invoice not found');
-                return;
-            }
-
-            let confirmMessage = '';
-            if (paymentType === 'down_payment') {
-                confirmMessage = 'Are you sure you want to confirm the down payment for this invoice?';
-            } else if (paymentType === 'final') {
-                confirmMessage = 'Are you sure you want to confirm the final payment for this invoice?';
-            } else {
-                confirmMessage = 'Are you sure you want to confirm payment for this invoice? This will mark it as paid and move it to Orders.';
-            }
-
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-
-            try {
-                // Update invoice status to paid
-                const response = await fetch(`/api/invoices/${invoiceId}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        status: 'paid',
-                        payment_confirmed_at: new Date().toISOString(),
-                        payment_type: paymentType
-                    })
-                });
-
-                const data = await response.json();
-                console.log('📊 Payment confirmation response:', data);
-                
-                if (data.success) {
-                    if (data.orderCreated || data.orderId) {
-                        alert(`✅ Payment confirmed! Invoice has been marked as paid and moved to Orders.\n\nOrder created: ${data.orderNumber || data.orderId}`);
-                    } else {
-                        alert('✅ Payment confirmed! Invoice has been marked as paid.');
-                        console.warn('⚠️ Order was not created automatically. Check server logs.');
-                    }
-                    
-                    // Close modal if open
-                    closeInvoiceModal();
-                    
-                    // Refresh invoices list
-                    await loadInvoices();
-                    
-                    // Refresh orders list if we're on that tab
-                    if (document.querySelector('.nav-btn.active')?.textContent?.includes('Orders')) {
-                        await loadOrders();
-                    }
-                    
-                } else {
-                    alert('❌ Failed to confirm payment: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error confirming payment:', error);
-                alert('❌ Error confirming payment: ' + error.message);
-            }
-        }
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.share-dropdown')) {
-                document.querySelectorAll('.share-menu.show').forEach(menu => {
-                    menu.classList.remove('show');
-                });
-            }
-        });
-
-        async function updateInvoiceStatus(invoiceId, newStatus) {
-            if (!confirm(`Are you sure you want to mark this invoice as ${newStatus}?`)) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ status: newStatus })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess(`Invoice status updated to ${newStatus}`);
-                    loadInvoices();
-                    loadInvoiceStats();
-                } else {
-                    showError('Failed to update invoice status: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error updating invoice status: ' + error.message);
-            }
-        }
-
-        // Automatically update invoice status when sharing actions occur
-        async function updateStatusOnShare(invoice) {
-            if (!invoice) return;
-            
-            // Only auto-update if status is 'draft' - change to 'sent' when shared
-            if (invoice.status === 'draft') {
-                try {
-                    console.log(`📤 Auto-updating invoice ${invoice.invoice_number} status from 'draft' to 'sent' after sharing`);
-                    
-                    const response = await fetch(`/api/invoices/${invoice.id}/status`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ 
-                            status: 'sent',
-                            sent_at: new Date().toISOString()
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        console.log('✅ Invoice status automatically updated to sent');
-                        // Update the local invoice object
-                        invoice.status = 'sent';
-                        invoice.sent_at = new Date().toISOString();
-                        // Refresh the invoices list to show updated status
-                        loadInvoices();
-                        loadInvoiceStats();
-                    } else {
-                        console.error('❌ Failed to auto-update invoice status:', data.error);
-                    }
-                } catch (error) {
-                    console.error('❌ Error auto-updating invoice status:', error);
-                }
-            }
-        }
-
-        async function confirmDownPayment(invoiceId) {
-            if (!confirm('Confirm that down payment has been received? This will generate a final payment link for the customer.')) {
-                return;
-            }
-            
-            console.log('💰 Confirming down payment for invoice ID:', invoiceId);
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}/confirm-down-payment`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                console.log('📡 DP confirmation response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('📡 DP confirmation response data:', data);
-                
-                if (data.success) {
-                    showSuccess('✅ Down payment confirmed! Final payment link generated.');
-                    
-                    // Validate we have the required data
-                    if (!data.finalPaymentToken) {
-                        showError('Warning: Final payment token not received from server');
-                        console.error('❌ Missing finalPaymentToken in response:', data);
-                    }
-                    
-                    // Refresh invoices list first to get updated data
-                    await loadInvoices();
-                    await loadInvoiceStats();
-                    
-                    // Show final payment link modal with updated invoice data
-                    if (data.finalPaymentToken) {
-                        try {
-                            const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`);
-                            console.log('📡 Invoice fetch response status:', invoiceResponse.status);
-                            
-                            if (!invoiceResponse.ok) {
-                                throw new Error(`Failed to fetch updated invoice: HTTP ${invoiceResponse.status}`);
-                            }
-                            
-                            const invoiceData = await invoiceResponse.json();
-                            console.log('📡 Updated invoice data:', invoiceData);
-                            
-                            if (invoiceData.success && invoiceData.invoice) {
-                                setTimeout(() => {
-                                    showFinalPaymentLink(invoiceData.invoice.invoice_number);
-                                }, 1000);
-                            } else {
-                                showError('Failed to fetch updated invoice data: ' + (invoiceData.error || 'Unknown error'));
-                            }
-                        } catch (invoiceError) {
-                            console.error('❌ Error fetching updated invoice:', invoiceError);
-                            showError('Warning: Could not show final payment link. Please refresh and try again.');
-                        }
-                    }
-                } else {
-                    showError('Failed to confirm down payment: ' + (data.error || 'Unknown error'));
-                    console.error('❌ DP confirmation failed:', data);
-                }
-            } catch (error) {
-                console.error('❌ Error confirming down payment:', error);
-                showError('Error confirming down payment: ' + error.message);
-            }
-        }
-
-        async function confirmFinalPayment(invoiceId) {
-            if (!confirm('Confirm that final payment has been received? This will complete the invoice and move it to orders.')) {
-                return;
-            }
-            
-            console.log('💰 Confirming final payment for invoice ID:', invoiceId);
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}/confirm-final-payment`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                console.log('📡 Final payment confirmation response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('📡 Final payment confirmation response data:', data);
-                
-                if (data.success) {
-                    const orderMessage = data.orderNumber ? ` Order created: ${data.orderNumber}` : '';
-                    showSuccess(`✅ Final payment confirmed! Invoice completed and moved to orders.${orderMessage}`);
-                    
-                    console.log('✅ Final payment confirmed successfully:', {
-                        invoiceId: invoiceId,
-                        orderNumber: data.orderNumber,
-                        orderResult: data.orderResult
-                    });
-                    
-                    // Refresh data
-                    await loadInvoices();
-                    await loadInvoiceStats();
-                    
-                    // If on orders tab, refresh orders too
-                    if (document.querySelector('.nav-btn.active')?.textContent?.includes('Orders')) {
-                        await loadOrders();
-                    }
-                    
-                    // Optional: Navigate to orders section after a delay
-                    if (data.orderNumber) {
-                        setTimeout(() => {
-                            if (confirm('Would you like to view the new order?')) {
-                                document.querySelector('[data-section="orders"]')?.click();
-                            }
-                        }, 2000);
-                    }
-                } else {
-                    showError('Failed to confirm final payment: ' + (data.error || 'Unknown error'));
-                    console.error('❌ Final payment confirmation failed:', data);
-                }
-            } catch (error) {
-                console.error('❌ Error confirming final payment:', error);
-                showError('Error confirming final payment: ' + error.message);
-            }
-        }
-
-        function showFinalPaymentLink(invoiceNumber) {
-            const invoice = invoices.find(inv => inv.invoice_number === invoiceNumber);
-            
-            console.log('🔗 Showing final payment link for invoice:', invoiceNumber);
-            console.log('📄 Invoice data:', invoice);
-            
-            if (!invoice) {
-                showError('Invoice not found for final payment link');
-                return;
-            }
-            
-            if (!invoice.final_payment_token) {
-                showError('Final payment token not found. Please try confirming the down payment again.');
-                return;
-            }
-            
-            const finalPaymentUrl = `${window.location.origin}/final-payment?token=${invoice.final_payment_token}`;
-            console.log('🔗 Generated final payment URL:', finalPaymentUrl);
-            
-            // Show modal with final payment link
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>🔗 Invoice Link for Final Payment</h3>
-                        <button class="modal-close" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Send this invoice link to the customer for final payment:</p>
-                        <div class="link-box">
-                            <input type="text" value="${finalPaymentUrl}" readonly onclick="this.select()" class="link-input">
-                            <button onclick="copyToClipboard('${finalPaymentUrl}'); showSuccess('Link copied to clipboard!')" class="btn btn-sm btn-primary">📋 Copy</button>
-                        </div>
-                        
-                        <!-- Email Section -->
-                        <div class="email-section" style="margin-top: 20px; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; background-color: #f8f9fa;">
-                            <h5 style="margin-bottom: 10px;">📧 Send via Email</h5>
-                            <div class="email-input-group" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                                <input type="email" id="finalPaymentEmail" placeholder="Customer email address" 
-                                       value="${invoice?.customer_email || ''}" 
-                                       style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                                <button onclick="sendFinalPaymentEmail(${invoice?.id}, document.getElementById('finalPaymentEmail').value)" 
-                                        class="btn btn-sm btn-success">📧 Send Email</button>
-                            </div>
-                            <small style="color: #6c757d;">This will send a professional email with the invoice link for final payment completion.</small>
-                        </div>
-                        
-                        <div class="share-buttons" style="margin-top: 15px;">
-                            <button onclick="shareViaWhatsAppLink('${invoiceUrl}')" class="btn btn-sm btn-success">📱 WhatsApp</button>
-                            <button onclick="shareViaMailto('${invoiceUrl}')" class="btn btn-sm btn-secondary">📧 Mailto</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-        }
-        
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log('Link copied to clipboard');
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-            });
-        }
-        
-        function shareViaWhatsAppLink(url) {
-            const whatsappUrl = `https://api.whatsapp.com/send?text=Silakan selesaikan pembayaran akhir invoice Anda: ${encodeURIComponent(url)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-        
-        function shareViaMailto(url) {
-            const subject = 'Final Payment Required - Invoice';
-            const body = `Please complete your final payment using this link: ${url}`;
-            const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            window.open(mailtoUrl);
-        }
-        
-        function getFinalPaymentToken(invoiceNumber) {
-            const invoice = invoices.find(inv => inv.invoice_number === invoiceNumber);
-            return invoice?.final_payment_token || '';
-        }
-        
-        async function sendFinalPaymentEmail(invoiceId, customerEmail) {
-            if (!customerEmail) {
-                alert('Please enter a customer email address');
-                return;
-            }
-            
-            // Validate email format
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(customerEmail)) {
-                alert('Please enter a valid email address');
-                return;
-            }
-            
-            const confirmSend = confirm(`Send final payment email to ${customerEmail}?`);
-            if (!confirmSend) return;
-            
-            try {
-                const response = await fetch('/api/final-payment/send-email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        invoiceId: invoiceId,
-                        customerEmail: customerEmail
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSuccess('✅ Final payment email sent successfully!');
-                    
-                    // Close the modal
-                    const modal = document.querySelector('.modal-overlay');
-                    if (modal) {
-                        modal.remove();
-                    }
-                } else {
-                    showError('Failed to send final payment email: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error sending final payment email:', error);
-                showError('Error sending final payment email: ' + error.message);
-            }
-        }
-
-        async function sendInvoiceEmail(invoiceId, customerEmail) {
-            if (!customerEmail) {
-                alert('No customer email available for this invoice');
-                return;
-            }
-            
-            const confirmSend = confirm(`Send invoice email to ${customerEmail}?`);
-            if (!confirmSend) return;
-            
-            try {
-                const response = await fetch('/api/notifications/send-invoice', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        invoice_id: invoiceId,
-                        customer_email: customerEmail,
-                        include_pdf: true
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('Invoice email sent successfully!');
-                    
-                    // Update status after successful email send
-                    const invoice = invoices.find(inv => inv.id === invoiceId);
-                    await updateStatusOnShare(invoice);
-                } else {
-                    alert('Failed to send invoice email: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error sending invoice email:', error);
-                alert('Error sending invoice email: ' + error.message);
-            }
-        }
-
-        async function deleteInvoice(invoiceId) {
-            if (!confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`, {
-                    method: 'DELETE'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Invoice deleted successfully');
-                    loadInvoices();
-                    loadInvoiceStats();
-                } else {
-                    showError('Failed to delete invoice: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error deleting invoice: ' + error.message);
-            }
-        }
-
-        async function downloadInvoicePDF(invoiceNumber) {
-            try {
-                // First get the invoice by number to get the ID
-                const invoiceResponse = await fetch(`/api/invoices/number/${invoiceNumber}`);
-                const invoiceResult = await invoiceResponse.json();
-                
-                if (!invoiceResult.success) {
-                    alert('Failed to fetch invoice data: ' + invoiceResult.error);
-                    return;
-                }
-
-                const invoice = invoiceResult.invoice;
-                
-                // Try the PDF endpoint that takes invoice ID
-                const response = await fetch(`/api/invoices/pdf/${invoice.id}`);
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Invoice-${invoiceNumber}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    
-                    console.log('✅ PDF downloaded successfully');
-                } else {
-                    console.warn('PDF endpoint not available, using fallback method');
-                    // Fallback: Open invoice view in new window for printing
-                    fallbackPrintInvoice(invoice);
-                }
-            } catch (error) {
-                console.error('PDF Download Error:', error);
-                console.log('Using fallback print method');
-                // Try to get invoice data and use fallback
-                try {
-                    const invoiceResponse = await fetch(`/api/invoices/number/${invoiceNumber}`);
-                    const invoiceResult = await invoiceResponse.json();
-                    if (invoiceResult.success) {
-                        fallbackPrintInvoice(invoiceResult.invoice);
-                    } else {
-                        alert('Could not load invoice for printing');
-                    }
-                } catch (fallbackError) {
-                    alert('Error generating PDF: ' + error.message);
-                }
-            }
-        }
-
-        function fallbackPrintInvoice(invoice) {
-            if (!invoice.customer_token) {
-                alert('Cannot print: Invoice does not have a customer token. Please regenerate the invoice.');
-                return;
-            }
-
-            // Open invoice view in new window
-            const baseUrl = window.location.origin;
-            const invoiceUrl = `${baseUrl}/simple-invoice-view.html?id=${invoice.invoice_number}&from=dashboard`;
-            
-            // Show user a helpful message
-            const userConfirm = confirm(
-                'PDF generation is not available. Would you like to open the invoice in a new window where you can print it manually?\n\n' +
-                'Click OK to open invoice, or Cancel to copy the link instead.'
-            );
-            
-            if (userConfirm) {
-                const printWindow = window.open(invoiceUrl, '_blank');
-                
-                if (printWindow) {
-                    // Additional instruction after window opens
-                    setTimeout(() => {
-                        alert('Invoice opened! Use Ctrl+P (or Cmd+P on Mac) to print.');
-                    }, 1000);
-                } else {
-                    // Popup blocked
-                    alert('Popup was blocked. Copying invoice link to clipboard instead...');
-                    copyInvoiceLink(invoice.customer_token);
-                }
-            } else {
-                // User chose to copy link
-                copyInvoiceLink(invoice.customer_token);
-            }
-        }
-
-        function refreshInvoices() {
-            loadInvoices();
-            loadInvoiceStats();
-        }
-
-        function showInvoiceError(message) {
-            const errorDiv = document.getElementById('invoices-error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return 'No date';
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Invalid date';
-            return date.toLocaleDateString('id-ID', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        }
-
-        // Order Print Functions
-        function printShippingLabel(orderId) {
-            const baseUrl = window.location.origin;
-            const labelUrl = `${baseUrl}/shipping-label.html?id=${orderId}`;
-            
-            const userConfirm = confirm(
-                'Open shipping label in a new window?\n\n' +
-                'Click OK to open label for printing, or Cancel to copy the link.'
-            );
-            
-            if (userConfirm) {
-                const printWindow = window.open(labelUrl, '_blank');
-                
-                if (printWindow) {
-                    setTimeout(() => {
-                        alert('📦 Shipping label opened! Use Ctrl+P (or Cmd+P on Mac) to print.');
-                    }, 1000);
-                } else {
-                    alert('Popup blocked. Copying link to clipboard...');
-                    navigator.clipboard?.writeText(labelUrl).then(() => {
-                        alert('📋 Shipping label link copied to clipboard!');
-                    }).catch(() => {
-                        alert('Link: ' + labelUrl);
-                    });
-                }
-            } else {
-                navigator.clipboard?.writeText(labelUrl).then(() => {
-                    alert('📋 Shipping label link copied to clipboard!');
-                }).catch(() => {
-                    alert('Link: ' + labelUrl);
-                });
-            }
-        }
-
-        function printServiceTicket(orderId) {
-            openServiceTicketModal(orderId);
-        }
-
-        async function openServiceTicketModal(orderId) {
-            try {
-                const response = await fetch(`/api/orders/${orderId}`);
-                const data = await response.json();
-                
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to load order');
-                }
-                
-                const businessResponse = await fetch('/api/business-settings');
-                const businessData = await businessResponse.json();
-                const businessSettings = businessData.success ? businessData.settings : businessData;
-                
-                const modalContent = document.getElementById('serviceTicketModalContent');
-                modalContent.innerHTML = generateServiceTicketHTML(data.order, businessSettings);
-                
-                // Store data for printing
-                const modal = document.getElementById('serviceTicketModal');
-                modal._orderData = data.order;
-                modal._businessSettings = businessSettings;
-                
-                modal.style.display = 'block';
-            } catch (error) {
-                console.error('Error loading service ticket:', error);
-                alert('Error loading service ticket: ' + error.message);
-            }
-        }
-
-        function closeServiceTicketModal() {
-            document.getElementById('serviceTicketModal').style.display = 'none';
-            document.getElementById('serviceTicketModalContent').innerHTML = '';
-        }
-
-        function generateServiceTicketHTML(order, businessSettings) {
-            // Add null checks for order properties
-            
-            // Comprehensive address fallback chain
-            const customerAddress = order.customer_address || 
-                                  order.home_address || 
-                                  order.address || 
-                                  order.shipping_address || 
-                                  order.billing_address;
-            
-            // Group items by name and sum quantities for simplified display
-            const itemGroups = {};
-            if (order.items && order.items.length > 0) {
-                order.items.forEach(item => {
-                    const name = item.product_name || item.description || 'Unknown Item';
-                    const quantity = item.quantity || 1;
-                    
-                    if (itemGroups[name]) {
-                        itemGroups[name] += quantity;
-                    } else {
-                        itemGroups[name] = quantity;
-                    }
-                });
-            }
-            
-            return `
-                <div class="service-ticket-modal">
-                    <div class="service-ticket">
-                        <!-- Header Section -->
-                        <div class="ticket-header">
-                            <h1 class="company-name">${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Business Name'}</h1>
-                            <div class="order-info">
-                                <div class="order-number">${order.order_number || `Order #${order.id}`}</div>
-                                <div class="order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                }) : 'N/A'}</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Ship To Section -->
-                        <div class="ship-to-section">
-                            <h2 class="section-title">Ship To</h2>
-                            <div class="address-info">
-                                <div class="customer-name">${order.customer_name || 'Walk-in Customer'}</div>
-                                <div>${customerAddress || 'Address not provided'}</div>
-                                <div>${order.customer_phone || 'Phone not provided'}</div>
-                                <div>${order.customer_email || 'Email not provided'}</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Items Section -->
-                        <div class="items-section">
-                            <div class="items-header">
-                                <h2 class="section-title">Items</h2>
-                                <div class="quantity-header">Quantity</div>
-                            </div>
-                            <ul class="items-list">
-                                ${Object.keys(itemGroups).length > 0 
-                                    ? Object.entries(itemGroups).map(([name, totalQuantity]) => `
-                                        <li class="item-row">
-                                            <div class="item-name">${name}</div>
-                                            <div class="item-quantity">${totalQuantity}</div>
-                                        </li>
-                                    `).join('')
-                                    : `<li class="item-row">
-                                        <div class="item-name">No items found</div>
-                                        <div class="item-quantity">0</div>
-                                    </li>`
-                                }
-                            </ul>
-                        </div>
-                        
-                        <!-- Footer Section -->
-                        <div class="ticket-footer">
-                            <div class="thank-you">Thank you for shopping with us!</div>
-                            <div class="company-info">
-                                <strong>${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Your Business'}</strong>
-                                <div>${businessSettings.address || 'Business Address'}</div>
-                                <div>${businessSettings.phone || 'Phone'} | ${businessSettings.email || 'business@email.com'}</div>
-                                <div>${businessSettings.website || 'company.com'}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button class="print-button" onclick="printServiceTicketModal()">
-                        🖨️ Print Ticket
-                    </button>
-                </div>
-            `;
-        }
-
-        function printServiceTicketModal() {
-            const modal = document.getElementById('serviceTicketModal');
-            const order = modal._orderData;
-            const businessSettings = modal._businessSettings;
-            
-            if (!order || !businessSettings) {
-                alert('Unable to print - ticket data not available');
-                return;
-            }
-            
-            const thermalContent = generateThermalTicketHTML(order, businessSettings);
-            
-            const printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Thermal Ticket</title>
-                    <style>
-                        @page {
-                            size: 10cm 15cm;
-                            margin: 0.2cm;
-                        }
-                        
-                        body {
-                            font-family: Arial, sans-serif;
-                            font-size: 10px;
-                            line-height: 1.3;
-                            margin: 0;
-                            padding: 0.2cm;
-                            width: 9.6cm;
-                            box-sizing: border-box;
-                        }
-                        
-                        .thermal-ticket {
-                            width: 100%;
-                            border: 1px solid #333;
-                            padding: 12px 16px;
-                            background: white;
-                        }
-                        
-                        .thermal-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-start;
-                            border-bottom: 1px solid #333;
-                            padding-bottom: 8px;
-                            margin-bottom: 12px;
-                        }
-                        
-                        .thermal-title {
-                            font-size: 16px;
-                            font-weight: bold;
-                            margin: 0;
-                        }
-                        
-                        .thermal-order-info {
-                            text-align: right;
-                            font-size: 10px;
-                            line-height: 1.3;
-                        }
-                        
-                        .thermal-order-number {
-                            font-weight: normal;
-                            margin-bottom: 2px;
-                        }
-                        
-                        .thermal-order-date {
-                            color: #666;
-                        }
-                        
-                        .thermal-section {
-                            margin-bottom: 6px;
-                            font-size: 9px;
-                        }
-                        
-                        .thermal-section h4 {
-                            font-size: 10px;
-                            margin: 0 0 3px 0;
-                            font-weight: bold;
-                            text-decoration: underline;
-                        }
-                        
-                        .thermal-row {
-                            margin-bottom: 1px;
-                            word-wrap: break-word;
-                            overflow-wrap: break-word;
-                        }
-                        
-                        .thermal-label {
-                            font-weight: bold;
-                            display: inline-block;
-                            width: 2.2cm;
-                            vertical-align: top;
-                        }
-                        
-                        .thermal-address {
-                            font-size: 7px;
-                            line-height: 1.0;
-                        }
-                        
-                        .thermal-items-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            margin-bottom: 8px;
-                            padding-bottom: 4px;
-                            border-bottom: 1px solid #333;
-                        }
-                        
-                        .thermal-items-header h4 {
-                            margin: 0;
-                            font-size: 11px;
-                            font-weight: bold;
-                        }
-                        
-                        .thermal-items-list {
-                            margin-top: 6px;
-                        }
-                        
-                        .thermal-item-row {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            padding: 3px 0;
-                            line-height: 1.3;
-                        }
-                        
-                        .thermal-item-name {
-                            font-size: 10px;
-                            color: #000;
-                            flex-grow: 1;
-                            padding-right: 20px;
-                        }
-                        
-                        .thermal-item-quantity {
-                            font-size: 10px;
-                            color: #000;
-                            text-align: right;
-                            min-width: 30px;
-                        }
-                        
-                        .thermal-notes {
-                            font-size: 8px;
-                            border-top: 1px dashed #000;
-                            padding-top: 3px;
-                            margin-top: 5px;
-                        }
-                        
-                        .thermal-footer {
-                            text-align: center;
-                            margin-top: 20px;
-                            padding-top: 16px;
-                        }
-                        
-                        .thermal-thank-you {
-                            font-size: 12px;
-                            margin-bottom: 12px;
-                            font-weight: normal;
-                        }
-                        
-                        .thermal-business-info {
-                            font-size: 10px;
-                            line-height: 1.3;
-                        }
-                        
-                        .thermal-business-info strong {
-                            font-weight: bold;
-                            font-size: 11px;
-                            margin-bottom: 4px;
-                            display: block;
-                        }
-                        
-                        /* Mobile thermal ticket adjustments */
-                        @media screen and (max-width: 768px) {
-                            body {
-                                width: 100%;
-                                max-width: 100%;
-                                padding: 0.1cm;
-                                font-size: 9px;
-                            }
-                            
-                            .thermal-ticket {
-                                border-width: 1px;
-                                padding: 8px;
-                            }
-                            
-                            .thermal-title {
-                                font-size: 12px;
-                            }
-                            
-                            .thermal-section h4 {
-                                font-size: 9px;
-                            }
-                            
-                            .thermal-row {
-                                flex-direction: column;
-                                gap: 2px;
-                            }
-                            
-                            .thermal-total {
-                                font-size: 10px;
-                            }
-                        }
-
-                        @media print {
-                            body {
-                                margin: 0 !important;
-                                padding: 0 !important;
-                                width: 9.6cm;
-                            }
-                            
-                            .thermal-ticket {
-                                page-break-inside: avoid;
-                            }
-                        }
-                        
-                        /* Mobile print-specific adjustments */
-                        @media print and (max-width: 768px) {
-                            body {
-                                width: 100% !important;
-                                max-width: 100% !important;
-                                font-size: 8px;
-                            }
-                            
-                            .thermal-ticket {
-                                width: 100%;
-                                max-width: 100%;
-                                border-width: 1px;
-                                padding: 6px;
-                                margin: 0;
-                            }
-                            
-                            .thermal-title {
-                                font-size: 11px;
-                            }
-                            
-                            .thermal-subtitle {
-                                font-size: 8px;
-                            }
-                            
-                            .thermal-section h4 {
-                                font-size: 8px;
-                            }
-                            
-                            .thermal-row {
-                                font-size: 7px;
-                            }
-                            
-                            .thermal-total {
-                                font-size: 9px;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${thermalContent}
-                </body>
-                </html>
-            `);
-            
-            printWindow.document.close();
-            printWindow.focus();
-            
-            // Delay print to ensure styles are loaded
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
-        }
-
-        function generateThermalTicketHTML(order, businessSettings) {
-            // Add null checks for order properties
-            
-            // Comprehensive address fallback chain
-            const customerAddress = order.customer_address || 
-                                  order.home_address || 
-                                  order.address || 
-                                  order.shipping_address || 
-                                  order.billing_address;
-            
-            return `
-                <div class="thermal-ticket">
-                    <div class="thermal-header">
-                        <div class="thermal-title">${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Business Name'}</div>
-                        <div class="thermal-order-info">
-                            <div class="thermal-order-number">${order.order_number || 'ORD-' + new Date().getFullYear() + String(Math.random()).substring(2, 8)}</div>
-                            <div class="thermal-order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long', 
-                                day: 'numeric'
-                            }) : new Date().toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="thermal-section ship-to-section">
-                        <h4>SHIP TO</h4>
-                        <div class="thermal-row">
-                            <span class="thermal-label">Name:</span>
-                            <span>${order.customer_name || 'Walk-in Customer'}</span>
-                        </div>
-                        ${order.customer_phone ? `
-                        <div class="thermal-row">
-                            <span class="thermal-label">Phone:</span>
-                            <span>${order.customer_phone}</span>
-                        </div>
-                        ` : ''}
-                        ${order.customer_email ? `
-                        <div class="thermal-row">
-                            <span class="thermal-label">Email:</span>
-                            <span>${order.customer_email}</span>
-                        </div>
-                        ` : ''}
-                        ${customerAddress ? `
-                        <div class="thermal-row">
-                            <span class="thermal-label">Address:</span>
-                            <span class="thermal-address">${customerAddress}</span>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    ${order.items && order.items.length > 0 ? `
-                    <div class="thermal-section items-section">
-                        <div class="thermal-items-header">
-                            <h4>ITEMS</h4>
-                            <h4>QUANTITY</h4>
-                        </div>
-                        <div class="thermal-items-list">
-                            ${order.items.map(item => `
-                                <div class="thermal-item-row">
-                                    <div class="thermal-item-name">${item.product_name || item.description || 'Item'}</div>
-                                    <div class="thermal-item-quantity">${item.quantity || 1}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : `
-                    <div class="thermal-section items-section">
-                        <div class="thermal-items-header">
-                            <h4>ITEMS</h4>
-                            <h4>QUANTITY</h4>
-                        </div>
-                        <div class="thermal-items-list">
-                            <div class="thermal-item-row">
-                                <div class="thermal-item-name">No items found</div>
-                                <div class="thermal-item-quantity">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    `}
-                    
-                    ${order.notes ? `
-                    <div class="thermal-notes">
-                        <strong>Notes:</strong><br>
-                        ${order.notes}
-                    </div>
-                    ` : ''}
-                    
-                    <div class="thermal-footer">
-                        <div class="thermal-thank-you">Thank you for shopping with us!</div>
-                        <div class="thermal-business-info">
-                            <strong>${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Your Business'}</strong>
-                            <div>${businessSettings.address || 'Business Address'}</div>
-                            <div>${businessSettings.phone || 'Phone'} | ${businessSettings.email || 'business@email.com'}</div>
-                            <div>${businessSettings.website || 'company.com'}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Order Selection Mode Functions
-        let selectedOrders = new Set();
-        let isSelectionMode = false;
-
-        function toggleOrderSelectionMode() {
-            const btn = document.getElementById('select-orders-btn');
-            const printBtn = document.getElementById('print-orders-btn');
-            const statusBtn = document.getElementById('change-status-btn');
-            const ordersContainer = document.getElementById('orders-grid');
-
-            if (!isSelectionMode) {
-                // Enter selection mode
-                isSelectionMode = true;
-                btn.textContent = '❌ Cancel Selection';
-                btn.className = 'btn btn-secondary';
-                
-                // Show bulk action buttons
-                printBtn.style.display = 'inline-block';
-                statusBtn.style.display = 'inline-block';
-                
-                // Show all checkboxes
-                ordersContainer.classList.add('selection-mode');
-                const checkboxes = ordersContainer.querySelectorAll('.order-selection');
-                checkboxes.forEach(checkbox => {
-                    checkbox.style.display = 'block';
-                });
-            } else {
-                // Exit selection mode
-                isSelectionMode = false;
-                selectedOrders.clear();
-                btn.textContent = '📋 Select Orders';
-                btn.className = 'btn btn-primary';
-                
-                // Hide bulk action buttons
-                printBtn.style.display = 'none';
-                statusBtn.style.display = 'none';
-                
-                // Hide all checkboxes and uncheck them
-                ordersContainer.classList.remove('selection-mode');
-                const checkboxes = ordersContainer.querySelectorAll('.order-selection');
-                checkboxes.forEach(checkbox => {
-                    checkbox.style.display = 'none';
-                    const input = checkbox.querySelector('input[type="checkbox"]');
-                    if (input) input.checked = false;
-                });
-            }
-        }
-
-        function toggleOrderSelection(orderId, isChecked) {
-            if (isChecked) {
-                selectedOrders.add(orderId);
-            } else {
-                selectedOrders.delete(orderId);
-            }
-        }
-
-        async function printSelectedOrders() {
-            if (selectedOrders.size === 0) {
-                alert('Please select at least one order to print.');
-                return;
-            }
-            const selectedOrdersList = orders.filter(order => selectedOrders.has(order.id));
-            
-            // Get business settings for thermal tickets
-            let businessSettings = null;
-            try {
-                const response = await fetch('/api/business-settings');
-                if (response.ok) {
-                    const data = await response.json();
-                    businessSettings = data;
-                }
-            } catch (error) {
-                console.warn('Could not load business settings for printing, trying business profile...');
-                try {
-                    const profileResponse = await fetch('/api/business-profile');
-                    if (profileResponse.ok) {
-                        const profileData = await profileResponse.json();
-                        businessSettings = profileData.profile;
-                    }
-                } catch (profileError) {
-                    console.warn('Could not load business profile either');
-                }
-            }
-            
-            // Ensure consistent fallback structure
-            if (!businessSettings) {
-                businessSettings = {
-                    name: 'Your Business',
-                    address: 'Business address not provided',
-                    phone: 'Phone not provided'
-                };
-            }
-            
-            // Use the same thermal ticket styling as individual prints
-            let printContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Service Tickets</title>
-                    <style>
-                        @page {
-                            size: 10cm 15cm;
-                            margin: 0.2cm;
-                        }
-                        
-                        body {
-                            font-family: 'Courier New', monospace;
-                            font-size: 10px;
-                            line-height: 1.1;
-                            margin: 0;
-                            padding: 0.2cm;
-                            width: 9.6cm;
-                            box-sizing: border-box;
-                        }
-                        
-                        .thermal-ticket {
-                            width: 100%;
-                            border: 2px solid #000;
-                            padding: 10px;
-                            page-break-after: always;
-                            box-sizing: border-box;
-                        }
-                        
-                        .thermal-ticket:last-child {
-                            page-break-after: auto;
-                        }
-                        
-                        .thermal-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-start;
-                            border-bottom: 1px solid #333;
-                            padding-bottom: 8px;
-                            margin-bottom: 12px;
-                        }
-                        
-                        .thermal-title {
-                            font-size: 16px;
-                            font-weight: bold;
-                            margin: 0;
-                        }
-                        
-                        .thermal-order-info {
-                            text-align: right;
-                            font-size: 10px;
-                            line-height: 1.3;
-                        }
-                        
-                        .thermal-order-number {
-                            font-weight: normal;
-                            margin-bottom: 2px;
-                        }
-                        
-                        .thermal-order-date {
-                            color: #666;
-                        }
-                        
-                        .thermal-section {
-                            margin-bottom: 8px;
-                            padding-bottom: 5px;
-                            border-bottom: 1px solid #ccc;
-                        }
-                        
-                        .thermal-section:last-child {
-                            border-bottom: none;
-                        }
-                        
-                        .thermal-section h4 {
-                            font-size: 10px;
-                            margin: 0 0 3px 0;
-                            font-weight: bold;
-                            text-decoration: underline;
-                        }
-                        
-                        .thermal-row {
-                            display: flex;
-                            margin-bottom: 2px;
-                        }
-                        
-                        .thermal-label {
-                            width: 60px;
-                            font-weight: bold;
-                            flex-shrink: 0;
-                        }
-                        
-                        .thermal-address {
-                            font-size: 9px;
-                            line-height: 1.2;
-                        }
-                        
-                        .thermal-items {
-                            width: 100%;
-                            border-collapse: collapse;
-                            font-size: 8px;
-                            margin-top: 3px;
-                        }
-                        
-                        .thermal-items th,
-                        .thermal-items td {
-                            border: 1px solid #000;
-                            padding: 2px;
-                            text-align: left;
-                        }
-                        
-                        .thermal-items th {
-                            background: #f0f0f0;
-                            font-weight: bold;
-                        }
-                        
-                        .thermal-notes {
-                            margin-top: 8px;
-                            padding: 5px;
-                            background: #f9f9f9;
-                            border: 1px solid #ddd;
-                            font-size: 9px;
-                        }
-                        
-                        .thermal-business-contact {
-                            margin: 6px 0;
-                            font-size: 9px;
-                            line-height: 1.2;
-                        }
-                        
-                        .thermal-business-address {
-                            margin-bottom: 2px;
-                            font-weight: normal;
-                        }
-                        
-                        .thermal-business-phone {
-                            font-weight: normal;
-                        }
-                    </style>
-                </head>
-                <body>`;
-            
-            // Generate thermal ticket for each selected order
-            for (const order of selectedOrdersList) {
-                printContent += generateThermalTicketHTML(order, businessSettings);
-            }
-            
-            printContent += `
-                </body>
-                </html>`;
-            
-            const printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes');
-            printWindow.document.write(printContent);
-            printWindow.document.close();
-            printWindow.focus();
-            
-            // Delay print to ensure styles are loaded
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
-        }
-
-        async function changeSelectedOrdersStatus() {
-            if (selectedOrders.size === 0) {
-                alert('Please select at least one order to update.');
-                return;
-            }
-
-            // Populate the modal with selected orders info
-            updateBulkStatusModal();
-            
-            // Show the modal
-            document.getElementById('bulkStatusModal').style.display = 'block';
-        }
-
-        function updateBulkStatusModal() {
-            const selectedOrdersList = orders.filter(order => selectedOrders.has(order.id));
-            const count = selectedOrdersList.length;
-            
-            // Update count
-            document.getElementById('selected-orders-count').textContent = `${count} order${count !== 1 ? 's' : ''} selected`;
-            
-            // Update orders list
-            const ordersList = document.getElementById('selected-orders-list');
-            ordersList.innerHTML = selectedOrdersList.map(order => 
-                `<div style="margin: 2px 0; padding: 2px 5px; background: white; border-radius: 2px; font-size: 0.8rem;">
-                    ${order.order_number || `#${order.id}`} - ${order.customer_name || 'Walk-in Customer'}
-                </div>`
-            ).join('');
-            
-            // Reset form
-            document.getElementById('bulk-new-status').value = '';
-            document.getElementById('bulk-tracking-number').value = '';
-            document.getElementById('bulk-status-notes').value = '';
-            document.getElementById('bulk-tracking-group').style.display = 'none';
-        }
-
-        function closeBulkStatusModal() {
-            document.getElementById('bulkStatusModal').style.display = 'none';
-        }
-
-        // Bulk Status Modal Event Handlers
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle bulk status form submission
-            document.getElementById('bulkStatusForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const newStatus = document.getElementById('bulk-new-status').value;
-                const trackingNumber = document.getElementById('bulk-tracking-number').value;
-                const notes = document.getElementById('bulk-status-notes').value;
-                
-                if (!newStatus) {
-                    alert('Please select a status');
-                    return;
-                }
-
-                // Show loading state
-                const btnText = document.getElementById('bulk-update-btn-text');
-                const loading = document.getElementById('bulk-update-loading');
-                btnText.style.display = 'none';
-                loading.style.display = 'inline';
-                
-                try {
-                    const updateData = { status: newStatus };
-                    if (trackingNumber) updateData.tracking_number = trackingNumber;
-                    if (notes) updateData.notes = notes;
-
-                    const updatePromises = Array.from(selectedOrders).map(orderId => 
-                        fetch(`/api/orders/${orderId}/status`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(updateData)
-                        })
-                    );
-
-                    await Promise.all(updatePromises);
-                    
-                    alert(`Successfully updated ${selectedOrders.size} orders to "${newStatus}"`);
-                    
-                    // Close modal and refresh
-                    closeBulkStatusModal();
-                    loadOrders();
-                    selectedOrders.clear();
-                    toggleOrderSelectionMode();
-                    
-                } catch (error) {
-                    alert('Error updating orders: ' + error.message);
-                } finally {
-                    // Reset loading state
-                    btnText.style.display = 'inline';
-                    loading.style.display = 'none';
-                }
-            });
-
-            // Show/hide tracking number field based on status
-            document.getElementById('bulk-new-status').addEventListener('change', function() {
-                const trackingGroup = document.getElementById('bulk-tracking-group');
-                if (this.value === 'shipped') {
-                    trackingGroup.style.display = 'block';
-                } else {
-                    trackingGroup.style.display = 'none';
-                }
-            });
-        });
-
-        // Customer Management Functions
-        async function loadCustomers() {
-            try {
-                document.getElementById('customers-loading').style.display = 'block';
-                const searchTerm = document.getElementById('customer-search').value;
-                
-                let url = '/api/customers?limit=100';
-                if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.success) {
-                    customers = data.customers;
-                    displayCustomers(customers);
-                } else {
-                    showCustomerError('Failed to load customers: ' + data.error);
-                }
-            } catch (error) {
-                showCustomerError('Error loading customers: ' + error.message);
-            } finally {
-                document.getElementById('customers-loading').style.display = 'none';
-            }
-        }
-
-        async function loadCustomerStats() {
-            try {
-                const response = await fetch('/api/customers/stats');
-                const data = await response.json();
-                
-                if (data.success) {
-                    const stats = data.stats;
-                    document.getElementById('total-customers').textContent = stats.total_customers || 0;
-                    document.getElementById('active-customers').textContent = stats.active_customers || 0;
-                    document.getElementById('repeat-customers').textContent = stats.repeat_customers || 0;
-                    document.getElementById('new-customers').textContent = stats.new_customers_this_month || 0;
-                    document.getElementById('average-clv').textContent = formatCurrency(stats.average_clv || 0);
-                }
-            } catch (error) {
-                console.error('Error loading customer stats:', error);
-            }
-        }
-
-        function displayCustomers(customersToShow) {
-            const container = document.getElementById('customers-grid');
-            container.innerHTML = '';
-
-            if (customersToShow.length === 0) {
-                container.innerHTML = '<div class="loading">No customers found</div>';
-                return;
-            }
-
-            // Group customers by activity level
-            const groupedCustomers = groupCustomersByActivity(customersToShow);
-            
-            // Display each activity group
-            Object.keys(groupedCustomers).forEach(activityKey => {
-                const activityGroup = createCustomerActivityGroup(activityKey, groupedCustomers[activityKey]);
-                container.appendChild(activityGroup);
-            });
-        }
-
-        function groupCustomersByActivity(customers) {
-            const groups = {};
-            
-            customers.forEach(customer => {
-                const totalOrders = customer.total_orders || 0;
-                const totalSpent = customer.total_spent || 0;
-                
-                let activityLevel;
-                if (totalOrders === 0) {
-                    activityLevel = 'New Customers';
-                } else if (totalOrders >= 10 || totalSpent >= 10000000) { // 10M IDR
-                    activityLevel = 'VIP Customers';
-                } else if (totalOrders >= 3 || totalSpent >= 1000000) { // 1M IDR
-                    activityLevel = 'Regular Customers';
-                } else {
-                    activityLevel = 'Occasional Customers';
-                }
-                
-                if (!groups[activityLevel]) {
-                    groups[activityLevel] = {
-                        displayName: activityLevel,
-                        customers: []
-                    };
-                }
-                groups[activityLevel].customers.push(customer);
-            });
-            
-            // Sort each group's customers by total spent (highest first)
-            Object.keys(groups).forEach(key => {
-                groups[key].customers.sort((a, b) => (b.total_spent || 0) - (a.total_spent || 0));
-            });
-            
-            // Define order of groups
-            const orderedGroups = {};
-            const groupOrder = ['VIP Customers', 'Regular Customers', 'Occasional Customers', 'New Customers'];
-            groupOrder.forEach(groupName => {
-                if (groups[groupName]) {
-                    orderedGroups[groupName] = groups[groupName];
-                }
-            });
-            
-            return orderedGroups;
-        }
-
-        function createCustomerActivityGroup(activityKey, group) {
-            const activityGroup = document.createElement('div');
-            activityGroup.className = 'customer-activity-group';
-            
-            const activityHeader = document.createElement('div');
-            activityHeader.className = 'activity-group-header';
-            activityHeader.innerHTML = `
-                <h3>${group.displayName}</h3>
-                <span class="customer-count">${group.customers.length} customer${group.customers.length !== 1 ? 's' : ''}</span>
-            `;
-            
-            const customersList = document.createElement('div');
-            customersList.className = 'customers-list';
-            
-            group.customers.forEach(customer => {
-                const listItem = createCustomerListItem(customer);
-                customersList.appendChild(listItem);
-            });
-            
-            activityGroup.appendChild(activityHeader);
-            activityGroup.appendChild(customersList);
-            
-            return activityGroup;
-        }
-
-        function createCustomerListItem(customer) {
-            const listItem = document.createElement('div');
-            listItem.className = 'customer-list-item';
-            
-            const totalSpentFormatted = formatCurrency(customer.total_spent || 0);
-            const totalOrders = customer.total_orders || 0;
-            const totalInvoices = customer.total_invoices || 0;
-            
-            listItem.innerHTML = `
-                <div class="customer-list-content">
-                    <div class="customer-avatar">
-                        <div class="customer-avatar-circle">
-                            ${customer.name ? customer.name.charAt(0).toUpperCase() : '👤'}
-                        </div>
-                    </div>
-                    
-                    <div class="customer-main-info">
-                        <div class="customer-header">
-                            <div class="customer-name">
-                                <strong>${customer.name || 'Unnamed Customer'}</strong>
-                            </div>
-                        </div>
-                        
-                        <div class="customer-details">
-                            <div class="customer-contact">
-                                <span class="customer-email">📧 ${customer.email || 'No email'}</span>
-                                <span class="customer-phone">📞 ${customer.phone || 'No phone'}</span>
-                                ${customer.address ? `<span class="customer-address">🏠 ${customer.address}</span>` : ''}
-                            </div>
-                            
-                            <div class="customer-stats">
-                                <span class="orders-count">📦 ${totalOrders} orders</span>
-                                <span class="invoices-count">📄 ${totalInvoices} invoices</span>
-                                <span class="total-spent">${totalSpentFormatted}</span>
-                                ${customer.last_order_date ? `<span class="last-order">📅 Last: ${formatDate(customer.last_order_date)}</span>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="customer-actions">
-                        ${getCustomerActionButtons(customer)}
-                    </div>
-                </div>
-            `;
-            
-            return listItem;
-        }
-
-
-        function getCustomerActionButtons(customer) {
-            let actions = [];
-
-            // View button - always available
-            actions.push(`<button class="btn btn-sm btn-primary" onclick="viewCustomer(${customer.id})" title="View customer details">👁️ View</button>`);
-
-            // Edit button - always available
-            actions.push(`<button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})" title="Edit customer information">✏️ Edit</button>`);
-
-            // Delete button - always available
-            actions.push(`<button class="btn btn-sm btn-danger" onclick="deleteCustomer(${customer.id})" title="Delete this customer">🗑️ Delete</button>`);
-
-            return actions.join('');
-        }
-
-        function createCustomerCard(customer) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const statusClass = customer.status === 'active' ? 'stock-high' : 'stock-low';
-            const statusText = customer.status === 'active' ? 'Active' : 'Inactive';
-            const totalSpentFormatted = formatCurrency(customer.total_spent || 0);
-            
-            card.innerHTML = `
-                <div class="product-header">
-                    <div>
-                        <div class="product-name">${customer.name || 'Unknown'}</div>
-                        <div class="product-sku">Email: ${customer.email}</div>
-                    </div>
-                    <div class="stock-badge ${statusClass}">${statusText}</div>
-                </div>
-                <div class="product-price">${totalSpentFormatted}</div>
-                <div class="product-stock">
-                    <span>Orders: ${customer.total_orders || 0}</span>
-                    <span>Invoices: ${customer.total_invoices || 0}</span>
-                </div>
-                <div>Phone: ${customer.phone || 'N/A'}</div>
-                ${customer.last_order_date ? `<div>Last Order: ${formatDate(customer.last_order_date)}</div>` : ''}
-                <div class="product-actions">
-                    <button class="btn btn-sm btn-primary" onclick="viewCustomer(${customer.id})">👁️ View</button>
-                    <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">✏️ Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteCustomer(${customer.id})">🗑️ Delete</button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        function filterCustomers() {
-            const searchTerm = document.getElementById('customer-search').value.toLowerCase();
-            const sortOption = document.getElementById('customer-sort').value;
-            
-            let filtered = customers.filter(customer => {
-                return !searchTerm || 
-                    (customer.name && customer.name.toLowerCase().includes(searchTerm)) ||
-                    (customer.email && customer.email.toLowerCase().includes(searchTerm)) ||
-                    (customer.phone && customer.phone.toLowerCase().includes(searchTerm)) ||
-                    (customer.address && customer.address.toLowerCase().includes(searchTerm));
-            });
-            
-            // Sort customers based on selected option
-            filtered.sort((a, b) => {
-                switch (sortOption) {
-                    case 'name':
-                        const nameA = (a.name || '').toLowerCase();
-                        const nameB = (b.name || '').toLowerCase();
-                        return nameA.localeCompare(nameB);
-                    case 'orders':
-                        return (b.total_orders || 0) - (a.total_orders || 0);
-                    case 'spent':
-                        return (b.total_spent || 0) - (a.total_spent || 0);
-                    case 'recent':
-                        const dateA = a.last_order_date ? new Date(a.last_order_date) : new Date(0);
-                        const dateB = b.last_order_date ? new Date(b.last_order_date) : new Date(0);
-                        return dateB - dateA;
-                    default:
-                        return 0;
-                }
-            });
-            
-            displayCustomers(filtered);
-        }
-
-        async function viewCustomer(customerId) {
-            try {
-                const response = await fetch(`/api/customers/${customerId}`);
-                const data = await response.json();
-                
-                if (data.success && data.customer) {
-                    showCustomerModal(data.customer);
-                } else {
-                    alert('Failed to load customer details: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error loading customer details: ' + error.message);
-            }
-        }
-
-        function showCustomerModal(customer) {
-            const modal = document.getElementById('customerModal');
-            const content = document.getElementById('customerModalContent');
-            
-            content.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h3>${customer.name || 'Unknown Customer'}</h3>
-                    <p><strong>Email:</strong> ${customer.email}</p>
-                    <p><strong>Phone:</strong> ${customer.phone || 'N/A'}</p>
-                    <p><strong>Address:</strong> ${customer.address || 'N/A'}</p>
-                    <p><strong>Status:</strong> <span class="status-badge ${customer.status === 'active' ? 'status-paid' : 'status-draft'}">${customer.status}</span></p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Customer Statistics</h4>
-                    <p><strong>Total Spent:</strong> ${formatCurrency(customer.total_spent || 0)}</p>
-                    <p><strong>Total Orders:</strong> ${customer.total_orders || 0}</p>
-                    <p><strong>Total Invoices:</strong> ${customer.total_invoices || 0}</p>
-                    <p><strong>Average Order Value:</strong> ${formatCurrency(customer.avg_order_value || 0)}</p>
-                    <p><strong>Customer Since:</strong> ${formatDate(customer.created_at)}</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Recent Orders</h4>
-                    ${customer.orders && customer.orders.length > 0 ? 
-                        `<table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: #f8f9fa;">
-                                    <th style="padding: 8px; text-align: left;">Order #</th>
-                                    <th style="padding: 8px; text-align: left;">Date</th>
-                                    <th style="padding: 8px; text-align: right;">Amount</th>
-                                    <th style="padding: 8px; text-align: left;">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${customer.orders.slice(0, 5).map(order => `
-                                    <tr>
-                                        <td style="padding: 8px;">${order.order_number}</td>
-                                        <td style="padding: 8px;">${formatDate(order.order_date)}</td>
-                                        <td style="padding: 8px; text-align: right;">${formatCurrency(order.total_amount)}</td>
-                                        <td style="padding: 8px;">${order.status}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>` 
-                        : '<p>No orders found</p>'
-                    }
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <button class="btn btn-primary" onclick="editCustomer(${customer.id})">✏️ Edit Customer</button>
-                    <button class="btn btn-secondary" onclick="closeCustomerModal()">Close</button>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-        }
-
-        function closeCustomerModal() {
-            document.getElementById('customerModal').style.display = 'none';
-        }
-
-        function editCustomer(customerId) {
-            const customer = customers.find(c => c.id === customerId);
-            if (!customer) return;
-
-            const name = prompt('Customer Name:', customer.name || '');
-            if (name === null) return;
-
-            const phone = prompt('Phone Number:', customer.phone || '');
-            if (phone === null) return;
-
-            const address = prompt('Address:', customer.address || '');
-            if (address === null) return;
-
-            updateCustomer(customerId, { name, phone, address });
-        }
-
-        async function updateCustomer(customerId, customerData) {
-            try {
-                const response = await fetch(`/api/customers/${customerId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(customerData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Customer updated successfully');
-                    loadCustomers();
-                    loadCustomerStats();
-                } else {
-                    showError('Failed to update customer: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error updating customer: ' + error.message);
-            }
-        }
-
-        async function deleteCustomer(customerId) {
-            if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/customers/${customerId}`, {
-                    method: 'DELETE'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Customer deleted successfully');
-                    loadCustomers();
-                    loadCustomerStats();
-                } else {
-                    showError('Failed to delete customer: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error deleting customer: ' + error.message);
-            }
-        }
-
-        async function exportCustomers() {
-            try {
-                const response = await fetch('/api/customers/export/csv');
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `customers-${new Date().toISOString().split('T')[0]}.csv`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    showSuccess('Customer data exported successfully');
-                } else {
-                    const errorText = await response.text();
-                    showError('Failed to export customers: ' + errorText);
-                }
-            } catch (error) {
-                console.error('Export Error:', error);
-                showError('Error exporting customers: ' + error.message);
-            }
-        }
-
-        function refreshCustomers() {
-            loadCustomers();
-            loadCustomerStats();
-        }
-
-        function showCustomerError(message) {
-            const errorDiv = document.getElementById('customers-error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const productModal = document.getElementById('productModal');
-            const invoiceModal = document.getElementById('invoiceModal');
-            const customerModal = document.getElementById('customerModal');
-            const serviceTicketModal = document.getElementById('serviceTicketModal');
-            
-            if (event.target === productModal) {
-                closeProductModal();
-            } else if (event.target === invoiceModal) {
-                closeInvoiceModal();
-            } else if (event.target === customerModal) {
-                closeCustomerModal();
-            } else if (event.target === serviceTicketModal) {
-                closeServiceTicketModal();
-            }
-        }
-
-
-
-
-
-
-        // Logout function
-        async function handleLogout() {
-            const confirmed = confirm('Are you sure you want to logout?');
-            if (!confirmed) return;
-
-            try {
-                // Show loading state
-                const logoutBtn = document.querySelector('.header-logout-btn');
-                const originalText = logoutBtn.innerHTML;
-                logoutBtn.innerHTML = '<span>⏳</span> Logging out...';
-                logoutBtn.disabled = true;
-
-                // Call logout API
-                const response = await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Clear any local storage data
-                    localStorage.removeItem('merchantToken');
-                    localStorage.removeItem('businessProfile');
-                    
-                    // Show success message briefly
-                    logoutBtn.innerHTML = '<span>✅</span> Logged out!';
-                    
-                    // Redirect to login page after a short delay
-                    setTimeout(() => {
-                        window.location.href = '/auth/login';
-                    }, 1000);
-                } else {
-                    throw new Error(result.error || 'Logout failed');
-                }
-            } catch (error) {
-                console.error('Logout error:', error);
-                alert('Failed to logout. Please try again.');
-                
-                // Reset button state
-                const logoutBtn = document.querySelector('.header-logout-btn');
-                logoutBtn.innerHTML = '<span>🚪</span> Logout';
-                logoutBtn.disabled = false;
-            }
-        }
-
-    </script>
-</body>
-</html>
+        if (paymentStage === 'down_payment') {
+          // Down payment confirmed - move to final payment stage
+          updateData.payment_status = 'partial';
+          updateData.status = 'dp_paid';
+          updateData.payment_stage = 'final_payment';
+          updateData.dp_confirmed_date = new Date().toISOString();
+          console.log(`Down payment confirmed for invoice ${invoice.invoice_number} - moved to final payment stage`);
+        } else if (paymentStage === 'final_payment') {
+          // Final payment confirmed - complete the invoice
+          updateData.payment_status = 'paid';
+          updateData.status = 'paid';
+          console.log(`Final payment confirmed for invoice ${invoice.invoice_number} - invoice completed`);
+        } else {
+          // Full payment confirmed
+          updateData.payment_status = 'paid';
+          updateData.status = 'paid';
+          console.log(`Full payment confirmed for invoice ${invoice.invoice_number}`);
+        }
+      } else if (status === 'rejected') {
+        // Payment confirmation rejected - revert to pending payment
+        updateData.payment_status = 'pending';
+        updateData.status = 'pending';
+        console.log(`Payment confirmation rejected for invoice ${invoice.invoice_number}`);
+      }
+
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .update(updateData)
+        .eq('id', parseInt(invoiceId))
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating payment confirmation status:', error);
+      throw error;
+    }
+  }
+
+  // Update payment stage (down_payment -> final_payment -> completed)
+  async updatePaymentStage(invoiceId, newStage, newStatus) {
+    try {
+      console.log(`🔄 Updating payment stage for invoice ${invoiceId}:`, { newStage, newStatus });
+
+      const { data, error } = await this.supabase
+        .from('invoices')
+        .update({
+          payment_stage: newStage,
+          payment_status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', parseInt(invoiceId))
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating payment stage:', error);
+      throw error;
+    }
+  }
+
+  // Missing functions for compatibility
+  async getSubscriptionInfo() {
+    // Return a default subscription status for premium features
+    return {
+      plan: 'free',
+      features: {
+        branding: false,
+        advancedAnalytics: false,
+        unlimitedInvoices: false
+      },
+      status: 'active'
+    };
+  }
+
+  async createBackup() {
+    // For Supabase, we don't need manual backup as it's handled by the platform
+    console.log('📋 Backup functionality not needed with Supabase - data is automatically backed up');
+    return {
+      success: true,
+      message: 'Supabase handles automatic backups'
+    };
+  }
+
+  async resetAccountData(merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for account reset');
+    }
+
+    try {
+      // Delete merchant-specific data in reverse dependency order
+      await this.supabase.from('access_logs').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('orders').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('invoices').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('products').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('customers').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('business_settings').delete().eq('merchant_id', merchantId);
+
+      console.log(`✅ Account data reset completed for merchant ${merchantId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('Error resetting account data:', error);
+      throw error;
+    }
+  }
+
+  async searchCustomers(query, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for customer search');
+    }
+
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+
+    try {
+      const { data, error } = await this.supabase
+        .from('customers')
+        .select('*')
+        .eq('merchant_id', merchantId)
+        .or(`name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`)
+        .limit(20);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error searching customers:', error);
+      throw error;
+    }
+  }
+
+  close() {
+    // No-op for compatibility
+  }
+}
+
+export default SupabaseDatabase;
