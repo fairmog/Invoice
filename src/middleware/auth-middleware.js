@@ -103,6 +103,13 @@ export function optionalAuth(req, res, next) {
  */
 export function redirectIfAuthenticated(req, res, next) {
   try {
+    // Check for redirect loop prevention
+    if (req.query.from === 'merchant') {
+      // Clear invalid tokens to prevent loops
+      res.clearCookie('merchantToken');
+      return next();
+    }
+
     const token = getTokenFromRequest(req);
 
     if (token) {
@@ -123,7 +130,8 @@ export function redirectIfAuthenticated(req, res, next) {
           return res.redirect('/merchant');
         }
       } catch (jwtError) {
-        // Invalid token - continue to login/register
+        // Invalid token - clear it and continue to login/register
+        res.clearCookie('merchantToken');
         next();
       }
     } else {
@@ -210,7 +218,7 @@ export function validateMerchantStatus(database) {
  */
 export function authRateLimit() {
   const attempts = new Map();
-  const maxAttempts = 5;
+  const maxAttempts = 50; // Increased from 5 to allow normal usage
   const windowMs = 15 * 60 * 1000; // 15 minutes
 
   return (req, res, next) => {
@@ -327,8 +335,14 @@ function handleAuthFailure(res, message, code = 'AUTH_REQUIRED') {
       code: code
     });
   } else {
-    // Redirect to login for web requests
-    return res.redirect(`/auth/login?redirect=${encodeURIComponent(res.req.originalUrl)}`);
+    // Clear invalid tokens to prevent loops
+    res.clearCookie('merchantToken');
+    
+    // Add loop prevention parameter
+    const redirectUrl = res.req.originalUrl;
+    const loginUrl = `/auth/login?redirect=${encodeURIComponent(redirectUrl)}&from=merchant`;
+    
+    return res.redirect(loginUrl);
   }
 }
 
