@@ -15,7 +15,7 @@ class AIAutoLearning {
     this.database = database;
   }
 
-  async analyzeExtractedData(extractedData) {
+  async analyzeExtractedData(extractedData, merchantId = null) {
     console.log('Analyzing extracted data for auto-learning:', extractedData);
     
     const results = {
@@ -37,7 +37,7 @@ class AIAutoLearning {
     // Analyze product data
     if (extractedData.items && Array.isArray(extractedData.items)) {
       for (const item of extractedData.items) {
-        const productAnalysis = await this.analyzeProduct(item);
+        const productAnalysis = await this.analyzeProduct(item, merchantId);
         results.productAnalysis.push(productAnalysis);
         if (productAnalysis.isNew) {
           results.newProductsDetected = true;
@@ -115,10 +115,10 @@ class AIAutoLearning {
     }
   }
 
-  async analyzeProduct(productData) {
+  async analyzeProduct(productData, merchantId = null) {
     try {
       // Check if product already exists (by name similarity)
-      const existingProducts = await this.database.getAllProducts(100, 0, null, true);
+      const existingProducts = await this.database.getAllProducts(100, 0, null, true, merchantId);
       const existingProduct = existingProducts.find(p => 
         this.calculateSimilarity(p.name.toLowerCase(), productData.productName.toLowerCase()) > 0.8
       );
