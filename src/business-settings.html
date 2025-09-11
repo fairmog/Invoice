@@ -534,6 +534,9 @@
                 <button class="tab-button" data-tab="account-settings">
                     👤 Account Settings
                 </button>
+                <button class="tab-button" data-tab="invoice-design">
+                    🎨 Invoice Design
+                </button>
                 <button class="tab-button" data-tab="email-setup">
                     📧 Email & Setup
                 </button>
@@ -908,6 +911,29 @@
                         </div>
                     </div>
 
+
+                    <!-- Account Actions -->
+                    <h3 style="margin: 40px 0 20px; color: var(--text-primary);">🔧 Account Actions</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-secondary" onclick="exportAccountData()">
+                            📥 Export Data
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="downloadBackup()">
+                            💾 Download Backup
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="resetAccountData()">
+                            🔄 Reset Account
+                        </button>
+                    </div>
+                    <div class="help-text" style="margin-top: 10px;">
+                        Export your business data, create backups, or reset your account to start fresh.
+                    </div>
+                </div>
+
+                <!-- Invoice Design Tab -->
+                <div class="tab-panel" id="invoice-design">
+                    <h2>🎨 Invoice Design & Branding</h2>
+
                     <!-- Premium Branding Section -->
                     <div id="premiumBrandingSection">
                         <!-- Free User Upgrade Prompt -->
@@ -1046,23 +1072,6 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Account Actions -->
-                    <h3 style="margin: 40px 0 20px; color: var(--text-primary);">🔧 Account Actions</h3>
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-secondary" onclick="exportAccountData()">
-                            📥 Export Data
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="downloadBackup()">
-                            💾 Download Backup
-                        </button>
-                        <button type="button" class="btn btn-warning" onclick="resetAccountData()">
-                            🔄 Reset Account
-                        </button>
-                    </div>
-                    <div class="help-text" style="margin-top: 10px;">
-                        Export your business data, create backups, or reset your account to start fresh.
                     </div>
                 </div>
 
