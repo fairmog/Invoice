@@ -1565,7 +1565,7 @@ app.get('/api/usage-stats', authMiddleware.authenticateMerchant, async (req, res
 });
 
 // Subscription Info API endpoint
-app.get('/api/subscription-info', async (req, res) => {
+app.get('/api/subscription-info', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const subscription = await database.getSubscriptionInfo();
     res.json(subscription || {
@@ -1613,7 +1613,7 @@ app.get('/api/export-data', authMiddleware.authenticateMerchant, async (req, res
 });
 
 // Backup API endpoint  
-app.get('/api/backup-data', async (req, res) => {
+app.get('/api/backup-data', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     console.log('💾 Creating backup...');
     
@@ -1632,7 +1632,7 @@ app.get('/api/backup-data', async (req, res) => {
 });
 
 // Account Reset API endpoint
-app.post('/api/reset-account', async (req, res) => {
+app.post('/api/reset-account', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     console.log('🔄 Resetting account data...');
     
@@ -1956,10 +1956,10 @@ app.post('/api/invoices/:id/payment-confirmation', upload.single('paymentProof')
 });
 
 // Down Payment Confirmation API
-app.post('/api/invoices/:id/confirm-down-payment', async (req, res) => {
+app.post('/api/invoices/:id/confirm-down-payment', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const invoiceId = req.params.id;
-    const invoice = await database.getInvoice(invoiceId);
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
     
     if (!invoice) {
       return res.status(404).json({ 
@@ -2021,7 +2021,7 @@ app.post('/api/invoices/:id/confirm-down-payment', async (req, res) => {
     updatedInvoice.payment_schedule_json = JSON.stringify(paymentSchedule);
 
     // Save changes to Supabase database
-    await database.updateInvoice(invoiceId, updatedInvoice);
+    await database.updateInvoice(invoiceId, updatedInvoice, req.merchant.id);
     
     console.log(`✅ Down payment confirmed for invoice ${invoice.invoice_number}`);
     
@@ -2044,10 +2044,10 @@ app.post('/api/invoices/:id/confirm-down-payment', async (req, res) => {
 });
 
 // Final Payment Confirmation API
-app.post('/api/invoices/:id/confirm-final-payment', async (req, res) => {
+app.post('/api/invoices/:id/confirm-final-payment', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const invoiceId = req.params.id;
-    const invoice = await database.getInvoice(invoiceId);
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
     
     if (!invoice) {
       return res.status(404).json({ 
@@ -2085,7 +2085,7 @@ app.post('/api/invoices/:id/confirm-final-payment', async (req, res) => {
     }
 
     // Save changes to Supabase database
-    await database.updateInvoice(invoiceId, updatedInvoice);
+    await database.updateInvoice(invoiceId, updatedInvoice, req.merchant.id);
     
     // Auto-create order from fully paid invoice
     let orderResult = null;
@@ -2592,7 +2592,7 @@ app.post('/api/confirm-invoice', authMiddleware.authenticateMerchant, async (req
         // UPDATE existing invoice
         console.log('🔧 Step 4: Updating existing invoice with ID:', invoiceId);
         try {
-          savedInvoice = await database.updateInvoice(invoiceId, invoiceWithProfile);
+          savedInvoice = await database.updateInvoice(invoiceId, invoiceWithProfile, req.merchant.id);
           if (!savedInvoice) {
             console.error('❌ Invoice not found for update:', invoiceId);
             return res.status(404).json({
@@ -2609,7 +2609,7 @@ app.post('/api/confirm-invoice', authMiddleware.authenticateMerchant, async (req
         // CREATE new invoice
         console.log('🔧 Step 4: Creating new invoice');
         try {
-          savedInvoice = await database.saveInvoice(invoiceWithProfile);
+          savedInvoice = await database.saveInvoice(invoiceWithProfile, req.merchant.id);
           console.log('✅ New invoice created successfully:', savedInvoice.invoiceNumber);
         } catch (saveError) {
           console.error('💥 Invoice save failed:', saveError);
@@ -3110,7 +3110,7 @@ app.get('/api/export/options', authMiddleware.authenticateMerchant, async (req, 
 });
 
 // API endpoint to send invoice by email
-app.post('/api/invoices/send-email', async (req, res) => {
+app.post('/api/invoices/send-email', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { invoiceId, customerEmail, businessProfile } = req.body;
     
@@ -3122,7 +3122,7 @@ app.post('/api/invoices/send-email', async (req, res) => {
     }
     
     // Get invoice from database
-    const invoice = await database.getInvoice(invoiceId);
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
     if (!invoice) {
       return res.status(404).json({
         success: false,
@@ -3548,9 +3548,9 @@ app.post('/api/auto-learning/edit-product', async (req, res) => {
 });
 
 // API endpoint to get merchant catalog
-app.get('/api/catalog', async (req, res) => {
+app.get('/api/catalog', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const products = await database.getAllProducts(100, 0, null, true);
+    const products = await database.getAllProducts(100, 0, null, true, req.merchant.id);
     
     // Convert database products to catalog format for compatibility
     const catalog = products.map(product => ({
@@ -3578,7 +3578,7 @@ app.get('/api/catalog', async (req, res) => {
 });
 
 // Invoice Management API Endpoints
-app.get('/api/invoices', async (req, res) => {
+app.get('/api/invoices', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { limit = 50, offset = 0, status, customerEmail, dateFrom, dateTo } = req.query;
     const invoices = await database.getAllInvoices(
@@ -3587,7 +3587,8 @@ app.get('/api/invoices', async (req, res) => {
       status, 
       customerEmail,
       dateFrom,
-      dateTo
+      dateTo,
+      req.merchant.id
     );
     
     res.json({
@@ -3710,7 +3711,7 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
 });
 
 // Get payment confirmations for an invoice
-app.get('/api/invoices/:id/payment-confirmations', async (req, res) => {
+app.get('/api/invoices/:id/payment-confirmations', authMiddleware.authenticateMerchant, async (req, res) => {
   console.log(`🔍 Payment confirmations request for invoice: ${req.params.id}`);
   
   try {
@@ -3719,7 +3720,7 @@ app.get('/api/invoices/:id/payment-confirmations', async (req, res) => {
     
     // Step 1: Get invoice from database
     console.log('🔄 Fetching invoice from database...');
-    const invoice = await database.getInvoice(invoiceId);
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
     console.log(`📊 Invoice data received:`, invoice ? 'Found' : 'Not found');
     
     if (!invoice) {
@@ -3874,7 +3875,7 @@ app.get('/api/invoices/number/:invoiceNumber', async (req, res) => {
   }
 });
 
-app.put('/api/invoices/:id/status', async (req, res) => {
+app.put('/api/invoices/:id/status', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { status } = req.body;
     if (!['draft', 'sent', 'paid'].includes(status)) {
@@ -3884,7 +3885,7 @@ app.put('/api/invoices/:id/status', async (req, res) => {
       });
     }
     
-    const result = await database.updateInvoiceStatus(parseInt(req.params.id), status);
+    const result = await database.updateInvoiceStatus(parseInt(req.params.id), status, req.merchant.id);
     
     // Check if order was created (if status was updated to paid)
     let orderInfo = null;
@@ -3913,7 +3914,7 @@ app.put('/api/invoices/:id/status', async (req, res) => {
 });
 
 // Payment stage management
-app.put('/api/invoices/:id/payment-stage', async (req, res) => {
+app.put('/api/invoices/:id/payment-stage', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { action, status } = req.body;
     const invoiceId = parseInt(req.params.id);
@@ -3928,7 +3929,7 @@ app.put('/api/invoices/:id/payment-stage', async (req, res) => {
     }
     
     // Get current invoice to check payment stage
-    const invoice = await database.getInvoice(invoiceId);
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
     if (!invoice) {
       return res.status(404).json({
         success: false,
@@ -3979,9 +3980,9 @@ app.put('/api/invoices/:id/payment-stage', async (req, res) => {
   }
 });
 
-app.delete('/api/invoices/:id', async (req, res) => {
+app.delete('/api/invoices/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.deleteInvoice(parseInt(req.params.id));
+    const result = await database.deleteInvoice(parseInt(req.params.id), req.merchant.id);
     res.json({
       success: true,
       message: 'Invoice deleted successfully',
@@ -4157,7 +4158,7 @@ app.get('/api/customer/invoices/:email', async (req, res) => {
 });
 
 // Product Management API Endpoints
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     console.log('Creating product with data:', req.body);
     
@@ -4169,7 +4170,7 @@ app.post('/api/products', async (req, res) => {
       });
     }
     
-    const result = await database.createProduct(req.body);
+    const result = await database.createProduct(req.body, req.merchant.id);
     console.log('Product created successfully:', result);
     
     res.json({
@@ -4194,14 +4195,15 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.get('/api/products', async (req, res) => {
+app.get('/api/products', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { limit = 50, offset = 0, category, active_only = 'true' } = req.query;
     const products = await database.getAllProducts(
       parseInt(limit),
       parseInt(offset),
       category,
-      active_only === 'true'
+      active_only === 'true',
+      req.merchant.id
     );
     
     res.json({
@@ -4222,9 +4224,9 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.get('/api/products/categories', async (req, res) => {
+app.get('/api/products/categories', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const categories = await database.getProductCategories();
+    const categories = await database.getProductCategories(req.merchant.id);
     res.json({
       success: true,
       categories
@@ -4277,9 +4279,9 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.updateProduct(parseInt(req.params.id), req.body);
+    const result = await database.updateProduct(parseInt(req.params.id), req.body, req.merchant.id);
     if (result.changes === 0) {
       return res.status(404).json({
         success: false,
@@ -4300,9 +4302,9 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.deleteProduct(parseInt(req.params.id));
+    const result = await database.deleteProduct(parseInt(req.params.id), req.merchant.id);
     if (result.changes === 0) {
       return res.status(404).json({
         success: false,
@@ -4323,7 +4325,7 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id/stock', async (req, res) => {
+app.put('/api/products/:id/stock', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { quantity, operation = 'set' } = req.body;
     const result = await database.updateProductStock(parseInt(req.params.id), quantity, operation);
@@ -4348,7 +4350,7 @@ app.put('/api/products/:id/stock', async (req, res) => {
 });
 
 // Order Management API Endpoints
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     console.log('Creating order with data:', req.body);
     
@@ -4360,7 +4362,7 @@ app.post('/api/orders', async (req, res) => {
       });
     }
     
-    const result = await database.createOrder(req.body);
+    const result = await database.createOrder(req.body, req.merchant.id);
     console.log('Order created successfully:', result);
     
     res.json({
@@ -4378,7 +4380,7 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-app.get('/api/orders', async (req, res) => {
+app.get('/api/orders', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { 
       limit = 50, 
@@ -4395,7 +4397,8 @@ app.get('/api/orders', async (req, res) => {
       status,
       customerEmail,
       dateFrom,
-      dateTo
+      dateTo,
+      req.merchant.id
     );
     
     res.json({
@@ -4457,7 +4460,7 @@ app.get('/api/orders/:id', async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { status, tracking_number, notes } = req.body;
     
@@ -4473,7 +4476,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
     if (tracking_number) additionalData.tracking_number = tracking_number;
     if (notes) additionalData.notes = notes;
     
-    const result = await database.updateOrderStatus(parseInt(req.params.id), status, additionalData);
+    const result = await database.updateOrderStatus(parseInt(req.params.id), status, additionalData, req.merchant.id);
     
     if (result.changes === 0) {
       return res.status(404).json({
@@ -4495,7 +4498,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
   }
 });
 
-app.put('/api/orders/bulk/status', async (req, res) => {
+app.put('/api/orders/bulk/status', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { orderIds, status, tracking_number } = req.body;
     
@@ -4533,7 +4536,7 @@ app.put('/api/orders/bulk/status', async (req, res) => {
   }
 });
 
-app.delete('/api/orders/:id', async (req, res) => {
+app.delete('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const result = await database.deleteOrder(parseInt(req.params.id));
     
@@ -6130,7 +6133,7 @@ app.get('/api/search/invoices', authMiddleware.authenticateMerchant, async (req,
   }
 });
 
-app.get('/api/search/customers', async (req, res) => {
+app.get('/api/search/customers', authMiddleware.authenticateMerchant, async (req, res) => {
   const startTime = Date.now();
   try {
     const { 
@@ -6149,7 +6152,7 @@ app.get('/api/search/customers', async (req, res) => {
       // Use optimized database search method
       const searchResult = await database.searchCustomers(
         searchTerm, 
-        null, 
+        req.merchant.id, 
         parseInt(limit), 
         parseInt(offset)
       );
@@ -6188,7 +6191,7 @@ app.get('/api/search/customers', async (req, res) => {
   }
 });
 
-app.get('/api/search/products', async (req, res) => {
+app.get('/api/search/products', authMiddleware.authenticateMerchant, async (req, res) => {
   const startTime = Date.now();
   try {
     const { 
@@ -6214,7 +6217,8 @@ app.get('/api/search/products', async (req, res) => {
         null, // priceMax
         active_only === 'true',
         parseInt(limit), 
-        parseInt(offset)
+        parseInt(offset),
+        req.merchant.id
       );
       
       result = {
