@@ -771,7 +771,7 @@ class SupabaseDatabase {
     // Auto-create order if paid
     if (status === 'paid') {
       try {
-        const orderResult = await this.createOrderFromInvoice(invoiceId);
+        const orderResult = await this.createOrderFromInvoice(invoiceId, merchantId);
         return {
           ...data,
           orderCreated: true,
@@ -892,10 +892,15 @@ class SupabaseDatabase {
     }
   }
 
-  async getInvoiceStats(dateFrom = null, dateTo = null) {
+  async getInvoiceStats(dateFrom = null, dateTo = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice stats');
+    }
+
     let query = this.supabase
       .from('invoices')
-      .select('status, grand_total, created_at');
+      .select('status, grand_total, created_at')
+      .eq('merchant_id', merchantId);
 
     if (dateFrom) {
       query = query.gte('created_at', dateFrom);
@@ -1260,17 +1265,22 @@ class SupabaseDatabase {
     return { lastInsertRowid: data.id, orderNumber: orderNumber };
   }
 
-  async createOrderFromInvoice(invoiceId) {
-    const invoice = await this.getInvoice(invoiceId);
+  async createOrderFromInvoice(invoiceId, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order creation');
+    }
+    
+    const invoice = await this.getInvoice(invoiceId, merchantId);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error('Invoice not found or access denied');
     }
 
-    // Check if order already exists
+    // Check if order already exists for this merchant
     const { data: existingOrder } = await this.supabase
       .from('orders')
       .select('*')
       .eq('source_invoice_id', invoiceId)
+      .eq('merchant_id', merchantId)
       .single();
     
     if (existingOrder) {
@@ -1306,7 +1316,7 @@ class SupabaseDatabase {
       }))
     };
 
-    const result = await this.createOrder(orderData);
+    const result = await this.createOrder(orderData, merchantId);
     
     // Update invoice metadata
     const metadata = invoice.metadata_json || {};
@@ -1316,7 +1326,8 @@ class SupabaseDatabase {
     await this.supabase
       .from('invoices')
       .update({ metadata_json: metadata })
-      .eq('id', invoiceId);
+      .eq('id', invoiceId)
+      .eq('merchant_id', merchantId);
 
     console.log(`Order ${result.orderNumber} auto-created from invoice ${invoice.invoice_number}`);
     return result;
@@ -1455,10 +1466,15 @@ class SupabaseDatabase {
     };
   }
 
-  async getOrderStats(dateFrom = null, dateTo = null) {
+  async getOrderStats(dateFrom = null, dateTo = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order stats');
+    }
+
     let query = this.supabase
       .from('orders')
-      .select('status, total_amount, created_at');
+      .select('status, total_amount, created_at')
+      .eq('merchant_id', merchantId);
 
     if (dateFrom) {
       query = query.gte('created_at', dateFrom);
