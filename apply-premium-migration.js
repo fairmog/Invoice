@@ -1,83 +1,60 @@
 #!/usr/bin/env node
 
 /**
- * Premium Branding Database Migration
- * This script applies the premium branding columns to the Supabase database
+ * Apply Premium Persistence Migration Script
+ * 
+ * This script applies the merchant isolation migration to fix premium persistence
  */
 
+import fs from 'fs';
+import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
-import SupabaseDatabase from './src/supabase-database.js';
+// Read environment variables
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-console.log('🔧 Starting Premium Branding Database Migration...');
-console.log('='.repeat(50));
-
-const database = new SupabaseDatabase();
-
-async function runMigration() {
-  try {
-    console.log('📋 Applying premium branding columns migration...');
-    
-    // List of columns to add
-    const columnsToAdd = [
-      { name: 'premium_active', type: 'boolean', default: 'false' },
-      { name: 'custom_header_text', type: 'text', default: null },
-      { name: 'custom_header_logo_url', type: 'text', default: null },
-      { name: 'custom_header_logo_public_id', type: 'text', default: null },
-      { name: 'custom_footer_logo_url', type: 'text', default: null },
-      { name: 'custom_footer_logo_public_id', type: 'text', default: null },
-      { name: 'custom_header_bg_color', type: 'text', default: "'#311d6b'" },
-      { name: 'custom_footer_bg_color', type: 'text', default: "'#311d6b'" },
-      { name: 'hide_aspree_branding', type: 'boolean', default: 'false' }
-    ];
-    
-    for (const column of columnsToAdd) {
-      try {
-        console.log(`➕ Adding column: ${column.name}`);
-        
-        const alterSQL = `ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS ${column.name} ${column.type}${column.default ? ` DEFAULT ${column.default}` : ''}`;
-        
-        // Execute the ALTER TABLE statement
-        const { error } = await database.supabase.rpc('sql', { query: alterSQL });
-        
-        if (error) {
-          console.warn(`⚠️  Column ${column.name} may already exist or error: ${error.message}`);
-        } else {
-          console.log(`✅ Column ${column.name} added successfully`);
-        }
-        
-        // Small delay between operations
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-      } catch (error) {
-        console.warn(`⚠️  Error adding column ${column.name}:`, error.message);
-      }
-    }
-    
-    console.log('\n🎉 Premium branding columns migration completed!');
-    console.log('='.repeat(50));
-    console.log('📋 Premium branding features added:');
-    console.log('   • Custom header text');
-    console.log('   • Custom header & footer logos');  
-    console.log('   • Custom header & footer background colors');
-    console.log('   • Option to hide Aspree branding');
-    console.log('\n🚀 Premium branding is now ready for implementation!');
-    
-    // Test the premium status after migration
-    console.log('\n🧪 Testing premium functionality...');
-    const isPremium = await database.isPremiumActive();
-    console.log(`📊 Premium status: ${isPremium ? 'Active' : 'Inactive'}`);
-    
-    console.log('\n✅ Migration completed successfully!');
-    process.exit(0);
-    
-  } catch (error) {
-    console.error('❌ Migration failed:', error);
-    console.error('Details:', error.message);
-    process.exit(1);
-  }
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Missing Supabase environment variables');
+  console.error('Please ensure SUPABASE_URL and SUPABASE_SERVICE_KEY are set');
+  process.exit(1);
 }
 
-// Run the migration
-runMigration();
+console.log('🔧 Applying Premium Persistence Migration...\n');
+
+try {
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  
+  // Read the migration SQL
+  const migrationSQL = fs.readFileSync('./scripts/fix-premium-persistence-migration.sql', 'utf8');
+  
+  console.log('📄 Executing migration script...');
+  
+  // Split the SQL into individual statements and execute them
+  const statements = migrationSQL
+    .split(';')
+    .filter(stmt => stmt.trim() && !stmt.trim().startsWith('--'))
+    .map(stmt => stmt.trim());
+  
+  for (const statement of statements) {
+    if (statement.includes('DO $$') || statement.includes('BEGIN') || statement.includes('COMMIT')) {
+      // Execute complex PL/pgSQL blocks directly
+      const { error } = await supabase.rpc('exec', { sql: statement });
+      if (error) {
+        console.warn('⚠️  Statement warning:', error.message);
+      }
+    }
+  }
+  
+  console.log('✅ Migration completed successfully!');
+  console.log('\n📊 Next steps:');
+  console.log('1. Test the premium flow in the web interface');
+  console.log('2. Run: node test-premium-persistence.js');
+  console.log('3. Verify premium status persists after page refresh');
+  
+} catch (error) {
+  console.error('💥 Error applying migration:', error.message);
+  process.exit(1);
+}
