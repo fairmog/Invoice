@@ -1120,6 +1120,7 @@ class SupabaseDatabase {
           .from('business_settings')
           .update(mappedSettings)
           .eq('id', existing.id)
+          .eq('merchant_id', merchantId)
           .select()
           .single();
 
@@ -1130,10 +1131,11 @@ class SupabaseDatabase {
         result = data;
       } else {
         console.log('✨ Creating new business settings record');
-        // Add merchant_id to new records if provided
-        if (merchantId) {
-          mappedSettings.merchant_id = merchantId;
+        // Add merchant_id to new records - required for merchant isolation
+        if (!merchantId) {
+          throw new Error('Merchant ID is required when creating new business settings');
         }
+        mappedSettings.merchant_id = merchantId;
         const { data, error } = await this.supabase
           .from('business_settings')
           .insert(mappedSettings)
