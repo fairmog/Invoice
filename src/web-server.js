@@ -677,10 +677,11 @@ app.post('/api/auth/logout',
       
       const result = authService.logout();
       
-      // Enhanced response with cleanup confirmation
+      // Enhanced response with cleanup confirmation and redirect URL
       res.json({
         ...result,
         message: 'Successfully logged out. All sessions cleared.',
+        redirectUrl: '/auth/login?from=merchant',
         timestamp: new Date().toISOString()
       });
       
@@ -2386,7 +2387,7 @@ app.post('/api/preview-invoice', authMiddleware.authenticateMerchant, async (req
     let catalog = getFromCache(catalogCacheKey);
     
     if (!catalog) {
-      const products = await database.getAllProducts(100, 0, null, true);
+      const products = await database.getAllProducts(100, 0, null, true, req.merchant.id);
       catalog = products.map(product => ({
         id: `prod_${product.id}`,
         name: product.name,
