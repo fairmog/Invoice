@@ -128,7 +128,7 @@
             gap: 80px;
             padding: 20px 32px;
             border-bottom: 1px solid var(--border);
-            background: var(--bg-light);
+            background: var(--bg);
             border-radius: 8px;
             margin: 0 12px;
         }
@@ -413,6 +413,59 @@
             @page {
                 margin: 10mm;
                 size: A4 portrait;
+            }
+            
+            /* Remove grid lines and ensure clean print */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                box-shadow: none !important;
+            }
+            
+            /* Clean white backgrounds for most elements */
+            body, .container, .paper, .parties, .summary {
+                background: white !important;
+                border: none !important;
+            }
+            
+            /* Preserve footer band styling */
+            .footer-band {
+                background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .footer-band h4, .footer-band p, .footer-band ul, .footer-band li {
+                color: white !important;
+            }
+            
+            /* Preserve essential borders for table structure */
+            .items-table, .items-table th, .items-table td {
+                border: 1px solid #e2e8f0 !important;
+            }
+            
+            /* Ensure single page layout */
+            .paper {
+                page-break-inside: avoid !important;
+                height: auto !important;
+                min-height: auto !important;
+                max-height: none !important;
+            }
+            
+            /* Prevent unnecessary page breaks */
+            .parties, .items-section, .summary, .footer-band {
+                page-break-inside: avoid !important;
+            }
+            
+            /* Compact print layout */
+            .container {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+            
+            .paper-wrapper {
+                transform: none !important;
             }
             
             /* Keep all original styling intact */
