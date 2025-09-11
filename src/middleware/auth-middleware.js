@@ -103,8 +103,9 @@ export function optionalAuth(req, res, next) {
  */
 export function redirectIfAuthenticated(req, res, next) {
   try {
-    // Check for redirect loop prevention
-    if (req.query.from === 'merchant') {
+    // Check for redirect loop prevention - handle both query parameter patterns
+    if (req.query.from === 'merchant' || req.query.from) {
+      console.log('🔄 Redirect loop prevention activated:', req.originalUrl);
       // Clear invalid tokens to prevent loops
       res.clearCookie('merchantToken');
       return next();
@@ -119,6 +120,8 @@ export function redirectIfAuthenticated(req, res, next) {
           audience: 'merchant'
         });
 
+        console.log('✅ Valid token found, redirecting to dashboard for:', decoded.email);
+
         // Valid token - redirect to dashboard
         if (req.path.includes('/api/')) {
           return res.json({
@@ -130,11 +133,13 @@ export function redirectIfAuthenticated(req, res, next) {
           return res.redirect('/merchant');
         }
       } catch (jwtError) {
+        console.log('❌ Invalid token found, clearing cookie:', jwtError.message);
         // Invalid token - clear it and continue to login/register
         res.clearCookie('merchantToken');
         next();
       }
     } else {
+      console.log('ℹ️  No token found, proceeding to login/register page');
       next();
     }
   } catch (error) {
@@ -335,13 +340,23 @@ function handleAuthFailure(res, message, code = 'AUTH_REQUIRED') {
       code: code
     });
   } else {
+    console.log('🚫 Auth failure, redirecting to login:', message);
+    
     // Clear invalid tokens to prevent loops
     res.clearCookie('merchantToken');
     
-    // Add loop prevention parameter
-    const redirectUrl = res.req.originalUrl;
-    const loginUrl = `/auth/login?redirect=${encodeURIComponent(redirectUrl)}&from=merchant`;
+    // Check if we're already in a redirect loop
+    const currentUrl = res.req.originalUrl;
+    if (currentUrl.includes('from=')) {
+      console.log('⚠️  Already in redirect loop, preventing further redirects');
+      return res.redirect('/auth/login');
+    }
     
+    // Add loop prevention parameter with more specific source
+    const redirectUrl = encodeURIComponent(currentUrl);
+    const loginUrl = `/auth/login?redirect=${redirectUrl}&from=auth_failure`;
+    
+    console.log('🔄 Redirecting to login with loop prevention:', loginUrl);
     return res.redirect(loginUrl);
   }
 }
