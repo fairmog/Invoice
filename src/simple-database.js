@@ -1957,26 +1957,26 @@ class SimpleDatabase {
     }
   }
 
-  async activatePremiumBranding(premiumSettings = {}) {
+  async activatePremiumBranding(premiumSettings = {}, merchantId = null) {
     try {
       const updateData = {
         premiumActive: true,
         ...premiumSettings
       };
 
-      return await this.updateBusinessSettings(updateData);
+      return await this.updateBusinessSettings(updateData, merchantId);
     } catch (error) {
       console.error('Error activating premium branding:', error);
       throw error;
     }
   }
 
-  async deactivatePremiumBranding() {
+  async deactivatePremiumBranding(merchantId = null) {
     try {
       return await this.updateBusinessSettings({
         premiumActive: false,
         hideAspreeBranding: false
-      });
+      }, merchantId);
     } catch (error) {
       console.error('Error deactivating premium branding:', error);
       throw error;
