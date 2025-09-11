@@ -1362,14 +1362,22 @@ app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoU
       mimeType: req.file.mimetype
     });
     
-    // Upload to Cloudinary
+    // Upload to Cloudinary with merchant isolation and old logo cleanup
     const currentSettings = await database.getBusinessSettings(req.merchant.id) || {};
     const businessName = currentSettings.name || 'business';
-    console.log('🏢 Using business name for upload:', businessName);
+    const oldPublicId = currentSettings.logo_public_id || currentSettings.logoPublicId;
+    
+    console.log('🏢 Uploading logo for merchant:', {
+      merchantId: req.merchant.id,
+      businessName: businessName,
+      oldPublicId: oldPublicId
+    });
     
     const uploadResult = await cloudinaryService.uploadBusinessLogo(
       req.file.buffer, 
-      businessName
+      businessName,
+      req.merchant.id,  // Add merchant ID for isolation
+      oldPublicId       // Add old public ID for cleanup
     );
     
     if (!uploadResult.success) {
