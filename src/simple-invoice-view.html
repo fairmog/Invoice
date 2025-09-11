@@ -259,6 +259,7 @@
             font-size: 20px !important;
             padding-top: 12px;
             border-top: 2px solid var(--text);
+            margin-top: 8px;
         }
         
         .payment-stage-note {
@@ -1074,6 +1075,12 @@
                 display: none !important;
             }
             .payment-confirmation-status {
+                display: none !important;
+            }
+            .zoom-indicator, .pan-indicator {
+                display: none !important;
+            }
+            .zoom-controls {
                 display: none !important;
             }
             
@@ -1935,10 +1942,10 @@
                                 </ul>
                             </div>
                             ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
-                            <div class="footer-section" style="display: flex; align-items: flex-start; justify-content: flex-end; padding: 0; margin: 0;">
+                            <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
                                 ${businessProfile?.premiumActive && businessProfile.customFooterLogoUrl ? 
-                                    `<img src="${businessProfile.customFooterLogoUrl}" alt="Footer Logo" style="height: 80px; width: auto; opacity: 0.9;">` :
-                                    `<img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 80px; width: auto; opacity: 0.9;">`
+                                    `<img src="${businessProfile.customFooterLogoUrl}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9;">` :
+                                    `<img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">`
                                 }
                             </div>
                             `}
