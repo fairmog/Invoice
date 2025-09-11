@@ -1518,9 +1518,11 @@
                     showAlert('Logo uploaded successfully!', 'success');
                     console.log('✅ Logo uploaded:', result.logoUrl);
                     
-                    // Update the logo display immediately after successful upload
+                    // Update the logo display immediately after successful upload with forced refresh
+                    const logoImg = document.getElementById('current-business-logo');
+                    logoImg.onload = () => console.log('🖼️ New logo loaded successfully');
                     displayCurrentLogo(result.logoUrl);
-                    console.log('🖼️ Logo preview updated in UI');
+                    console.log('🖼️ Logo preview updated in UI with cache-busting');
                 } else {
                     throw new Error(result.error || 'Upload failed');
                 }
@@ -1576,7 +1578,10 @@
                 const logoPlaceholder = document.getElementById('logo-placeholder');
                 const removeBtn = document.getElementById('remove-logo-btn');
                 
-                logoImg.src = logoUrl;
+                // Add cache-busting parameter if not already present
+                const cacheBustedUrl = logoUrl.includes('?v=') ? logoUrl : `${logoUrl}?v=${Date.now()}`;
+                
+                logoImg.src = cacheBustedUrl;
                 logoImg.style.display = 'block';
                 logoPlaceholder.style.display = 'none';
                 removeBtn.style.display = 'inline-block';
