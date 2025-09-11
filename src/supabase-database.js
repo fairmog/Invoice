@@ -16,7 +16,11 @@ class SupabaseDatabase {
   }
 
   // Product CRUD operations
-  async createProduct(productData) {
+  async createProduct(productData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for product creation');
+    }
+
     const { data, error } = await this.supabase
       .from('products')
       .insert({
@@ -32,7 +36,8 @@ class SupabaseDatabase {
         tax_rate: productData.tax_rate || 0,
         dimensions: productData.dimensions || '',
         weight: productData.weight || null,
-        image_url: productData.image_url || ''
+        image_url: productData.image_url || '',
+        merchant_id: merchantId
       })
       .select()
       .single();
@@ -69,15 +74,15 @@ class SupabaseDatabase {
     return data;
   }
 
-  async getAllProducts(limit = 50, offset = 0, category = null, active_only = true, merchantId = null) {
+  async getAllProducts(limit = 50, offset = 0, category = null, active_only = true, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for product access');
+    }
+
     let query = this.supabase
       .from('products')
-      .select('*');
-
-    // Filter by merchant if provided
-    if (merchantId) {
-      query = query.eq('merchant_id', merchantId);
-    }
+      .select('*')
+      .eq('merchant_id', merchantId);
 
     if (active_only) {
       query = query.eq('is_active', true);
@@ -95,10 +100,15 @@ class SupabaseDatabase {
     return data || [];
   }
 
-  async searchProducts(searchTerm, category = null, priceMin = null, priceMax = null, active_only = true, limit = 50, offset = 0) {
+  async searchProducts(searchTerm, category = null, priceMin = null, priceMax = null, active_only = true, limit = 50, offset = 0, merchantId = null) {
     let query = this.supabase
       .from('products')
       .select('*');
+
+    // CRITICAL: Add merchant filtering first
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
 
     if (active_only) {
       query = query.eq('is_active', true);
@@ -134,7 +144,11 @@ class SupabaseDatabase {
     };
   }
 
-  async updateProduct(id, productData) {
+  async updateProduct(id, productData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for product updates');
+    }
+
     const { data, error } = await this.supabase
       .from('products')
       .update({
@@ -152,17 +166,23 @@ class SupabaseDatabase {
         image_url: productData.image_url || ''
       })
       .eq('id', id)
+      .eq('merchant_id', merchantId)
       .select();
 
     if (error) throw error;
     return { changes: data ? data.length : 0 };
   }
 
-  async deleteProduct(id) {
+  async deleteProduct(id, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for product deletion');
+    }
+
     const { data, error } = await this.supabase
       .from('products')
       .delete()
       .eq('id', id)
+      .eq('merchant_id', merchantId)
       .select();
 
     if (error) throw error;
@@ -170,12 +190,17 @@ class SupabaseDatabase {
   }
 
   // Customer operations
-  async saveCustomer(customerData) {
+  async saveCustomer(customerData, merchantId) {
     try {
+      if (!merchantId) {
+        throw new Error('Merchant ID is required for customer creation');
+      }
+
       console.log('👤 Saving customer:', {
         name: customerData.name,
         email: customerData.email,
-        hasPhone: !!customerData.phone
+        hasPhone: !!customerData.phone,
+        merchantId
       });
 
       if (!customerData.email || !customerData.name) {
@@ -186,6 +211,7 @@ class SupabaseDatabase {
         .from('customers')
         .select('*')
         .eq('email', customerData.email)
+        .eq('merchant_id', merchantId)
         .single();
 
       if (selectError && selectError.code !== 'PGRST116') {
@@ -206,6 +232,7 @@ class SupabaseDatabase {
             invoice_count: (existing.invoice_count || 0) + 1
           })
           .eq('email', customerData.email)
+          .eq('merchant_id', merchantId)
           .select()
           .single();
 
@@ -231,7 +258,8 @@ class SupabaseDatabase {
             last_invoice_date: new Date().toISOString(),
           invoice_count: customerData.invoice_count || 0,
           total_spent: customerData.total_spent || 0,
-          extraction_method: customerData.extraction_method || 'manual'
+          extraction_method: customerData.extraction_method || 'manual',
+          merchant_id: merchantId
         })
         .select()
         .single();
@@ -389,8 +417,29 @@ class SupabaseDatabase {
     }
   }
 
+  async searchCustomers(searchTerm, merchantId = null, limit = 50, offset = 0) {
+    try {
+      // Use getAllCustomers which already has merchant filtering and search capability
+      const customers = await this.getAllCustomers(limit, offset, searchTerm, merchantId);
+      
+      // Return in the expected format for search API
+      return {
+        customers: customers,
+        total: customers.length,
+        page: Math.floor(offset / limit) + 1,
+        totalPages: Math.ceil(customers.length / limit)
+      };
+    } catch (error) {
+      console.error('Error in searchCustomers:', error);
+      throw error;
+    }
+  }
+
   // Invoice operations
-  async saveInvoice(invoiceData) {
+  async saveInvoice(invoiceData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice creation');
+    }
     try {
       console.log('💾 Saving invoice to database:', {
         hasInvoice: !!(invoiceData.invoice || invoiceData),
@@ -476,7 +525,7 @@ class SupabaseDatabase {
           email: invoice.customer.email,
           phone: invoice.customer.phone,
           address: invoice.customer.address
-        });
+        }, merchantId);
         console.log('✅ Customer record saved/updated');
       } catch (customerError) {
         console.error('⚠️ Warning: Failed to save customer record:', customerError.message);
@@ -515,7 +564,8 @@ class SupabaseDatabase {
         payment_schedule_json: invoice.paymentSchedule || null,
         notes_json: invoice.notes || {},
         calculations_json: invoice.calculations || {},
-        customer_token: customerToken
+        customer_token: customerToken,
+        merchant_id: merchantId
       };
       
       console.log('📋 Inserting invoice data:', {
@@ -575,14 +625,15 @@ class SupabaseDatabase {
     }
   }
 
-  async getAllInvoices(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null, merchantId = null) {
+  async getAllInvoices(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice access');
+    }
+
     let query = this.supabase
       .from('invoices')
-      .select('*');
-
-    if (merchantId) {
-      query = query.eq('merchant_id', merchantId);
-    }
+      .select('*')
+      .eq('merchant_id', merchantId);
 
     if (status) {
       query = query.eq('status', status);
@@ -617,12 +668,18 @@ class SupabaseDatabase {
     return normalizedData;
   }
 
-  async getInvoice(id) {
-    const { data, error } = await this.supabase
+  async getInvoice(id, merchantId = null) {
+    let query = this.supabase
       .from('invoices')
       .select('*')
-      .eq('id', id)
-      .single();
+      .eq('id', id);
+    
+    // Add merchant filtering if merchantId is provided
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
+    
+    const { data, error } = await query.single();
 
     if (error && error.code !== 'PGRST116') throw error;
     
@@ -685,7 +742,11 @@ class SupabaseDatabase {
     return data;
   }
 
-  async updateInvoiceStatus(invoiceId, status) {
+  async updateInvoiceStatus(invoiceId, status, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice status updates');
+    }
+
     const updateData = { 
       status,
       updated_at: new Date().toISOString()
@@ -701,6 +762,7 @@ class SupabaseDatabase {
       .from('invoices')
       .update(updateData)
       .eq('id', invoiceId)
+      .eq('merchant_id', merchantId)
       .select()
       .single();
 
@@ -724,11 +786,16 @@ class SupabaseDatabase {
     return { changes: 1 };
   }
 
-  async deleteInvoice(id) {
+  async deleteInvoice(id, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice deletion');
+    }
+
     const { data, error } = await this.supabase
       .from('invoices')
       .delete()
       .eq('id', id)
+      .eq('merchant_id', merchantId)
       .select()
       .single();
 
@@ -736,7 +803,11 @@ class SupabaseDatabase {
     return { changes: 1, deletedInvoice: data };
   }
 
-  async updateInvoice(invoiceId, updateData) {
+  async updateInvoice(invoiceId, updateData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for invoice updates');
+    }
+    
     console.log(`🔄 Updating invoice ${invoiceId} with data:`, updateData);
     
     try {
@@ -771,6 +842,7 @@ class SupabaseDatabase {
         .from('invoices')
         .update(cleanUpdateData)
         .eq('id', invoiceId)
+        .eq('merchant_id', merchantId)
         .select()
         .single();
 
@@ -794,6 +866,7 @@ class SupabaseDatabase {
             .from('invoices')
             .update(fallbackData)
             .eq('id', invoiceId)
+            .eq('merchant_id', merchantId)
             .select()
             .single();
             
@@ -1120,7 +1193,11 @@ class SupabaseDatabase {
   }
 
   // Order operations
-  async createOrder(orderData) {
+  async createOrder(orderData, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order creation');
+    }
+
     const orderNumber = await this.generateOrderNumber();
     
     // Auto-create/update customer record
@@ -1129,7 +1206,7 @@ class SupabaseDatabase {
       email: orderData.customer_email,
       phone: orderData.customer_phone,
       address: orderData.shipping_address || orderData.billing_address
-    });
+    }, merchantId);
     
     const { data, error } = await this.supabase
       .from('orders')
@@ -1155,7 +1232,8 @@ class SupabaseDatabase {
         shipped_date: orderData.shipped_date || null,
         delivered_date: orderData.delivered_date || null,
         source_invoice_id: orderData.source_invoice_id || null,
-        source_invoice_number: orderData.source_invoice_number || null
+        source_invoice_number: orderData.source_invoice_number || null,
+        merchant_id: merchantId
       })
       .select()
       .single();
@@ -1323,17 +1401,17 @@ class SupabaseDatabase {
     return `${prefix}-${dateString}-${hash}`;
   }
 
-  async getAllOrders(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null, merchantId = null) {
+  async getAllOrders(limit = 50, offset = 0, status = null, customerEmail = null, dateFrom = null, dateTo = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order access');
+    }
+
     let query = this.supabase
       .from('orders')
       .select('*')
+      .eq('merchant_id', merchantId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
-
-    // Filter by merchant if provided
-    if (merchantId) {
-      query = query.eq('merchant_id', merchantId);
-    }
 
     if (status) {
       query = query.eq('status', status);
@@ -1414,18 +1492,23 @@ class SupabaseDatabase {
     return stats;
   }
 
-  async deleteOrder(id) {
+  async deleteOrder(id, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order deletion');
+    }
+
     // First delete order items
     await this.supabase
       .from('order_items')
       .delete()
       .eq('order_id', id);
 
-    // Then delete the order
+    // Then delete the order (with merchant validation)
     const { data, error } = await this.supabase
       .from('orders')
       .delete()
       .eq('id', id)
+      .eq('merchant_id', merchantId)
       .select()
       .single();
 
@@ -1433,7 +1516,11 @@ class SupabaseDatabase {
     return { changes: 1, deletedOrder: data };
   }
 
-  async updateOrderStatus(id, status, trackingNumber = null, notes = null) {
+  async updateOrderStatus(id, status, trackingNumber = null, notes = null, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for order status updates');
+    }
+
     const updateData = {
       status,
       updated_at: new Date().toISOString()
@@ -1457,6 +1544,7 @@ class SupabaseDatabase {
       .from('orders')
       .update(updateData)
       .eq('id', id)
+      .eq('merchant_id', merchantId)
       .select()
       .single();
 
@@ -2227,13 +2315,20 @@ class SupabaseDatabase {
     }
   }
 
-  async getProductCategories() {
+  async getProductCategories(merchantId = null) {
     try {
-      const { data: products, error } = await this.supabase
+      let query = this.supabase
         .from('products')
         .select('category')
         .eq('is_active', true)
         .not('category', 'is', null);
+      
+      // Add merchant filtering if merchantId is provided
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+      
+      const { data: products, error } = await query;
 
       if (error) throw error;
 
