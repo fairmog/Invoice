@@ -347,16 +347,16 @@ class SupabaseDatabase {
   }
 
   async getAllCustomers(limit = 50, offset = 0, searchTerm = null, merchantId = null) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for customer access');
+    }
+
     try {
       let query = this.supabase
         .from('customers')
         .select('*')
+        .eq('merchant_id', merchantId)
         .order('created_at', { ascending: false });
-      
-      // Filter by merchant if provided
-      if (merchantId) {
-        query = query.eq('merchant_id', merchantId);
-      }
       
       // Apply search filter if provided
       if (searchTerm) {
@@ -943,17 +943,15 @@ class SupabaseDatabase {
 
   // Business Settings operations
   async getBusinessSettings(merchantId = null) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for business settings access');
+    }
+
     try {
       let query = this.supabase
         .from('business_settings')
-        .select('*');
-      
-      // If merchantId provided, filter by it; otherwise get the first record (for backward compatibility)
-      if (merchantId) {
-        query = query.eq('merchant_id', merchantId);
-      } else {
-        query = query.limit(1);
-      }
+        .select('*')
+        .eq('merchant_id', merchantId);
       
       const { data, error } = await query.single();
 
@@ -2687,6 +2685,76 @@ class SupabaseDatabase {
       return data;
     } catch (error) {
       console.error('Error updating payment stage:', error);
+      throw error;
+    }
+  }
+
+  // Missing functions for compatibility
+  async getSubscriptionInfo() {
+    // Return a default subscription status for premium features
+    return {
+      plan: 'free',
+      features: {
+        branding: false,
+        advancedAnalytics: false,
+        unlimitedInvoices: false
+      },
+      status: 'active'
+    };
+  }
+
+  async createBackup() {
+    // For Supabase, we don't need manual backup as it's handled by the platform
+    console.log('📋 Backup functionality not needed with Supabase - data is automatically backed up');
+    return {
+      success: true,
+      message: 'Supabase handles automatic backups'
+    };
+  }
+
+  async resetAccountData(merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for account reset');
+    }
+
+    try {
+      // Delete merchant-specific data in reverse dependency order
+      await this.supabase.from('access_logs').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('orders').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('invoices').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('products').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('customers').delete().eq('merchant_id', merchantId);
+      await this.supabase.from('business_settings').delete().eq('merchant_id', merchantId);
+
+      console.log(`✅ Account data reset completed for merchant ${merchantId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('Error resetting account data:', error);
+      throw error;
+    }
+  }
+
+  async searchCustomers(query, merchantId) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for customer search');
+    }
+
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+
+    try {
+      const { data, error } = await this.supabase
+        .from('customers')
+        .select('*')
+        .eq('merchant_id', merchantId)
+        .or(`name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`)
+        .limit(20);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error searching customers:', error);
       throw error;
     }
   }
