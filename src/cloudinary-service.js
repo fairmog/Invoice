@@ -39,9 +39,14 @@ class CloudinaryService {
   // Upload image to Cloudinary
   async uploadImage(fileBuffer, options = {}) {
     try {
+      // Generate merchant-specific public ID for better isolation and cache management
+      const timestamp = Date.now();
+      const merchantId = options.merchantId || 'unknown';
+      const publicId = options.filename || `merchant_${merchantId}_logo_${timestamp}`;
+      
       const defaultOptions = {
-        folder: 'ai-invoice-generator/business-logos',
-        public_id: options.filename || `logo_${Date.now()}`,
+        folder: `ai-invoice-generator/business-logos/merchant_${merchantId}`,
+        public_id: publicId,
         overwrite: true,
         resource_type: 'image',
         format: 'webp', // Auto-convert to WebP for optimization
@@ -73,14 +78,19 @@ class CloudinaryService {
         ).end(fileBuffer);
       });
 
+      // Add timestamp for cache-busting
+      const cacheBustUrl = `${result.secure_url}?v=${timestamp}`;
+      
       return {
         success: true,
-        url: result.secure_url,
+        url: cacheBustUrl,
+        originalUrl: result.secure_url,
         publicId: result.public_id,
         width: result.width,
         height: result.height,
         format: result.format,
         bytes: result.bytes,
+        timestamp: timestamp,
         cloudinaryResult: result
       };
 
@@ -151,19 +161,43 @@ class CloudinaryService {
   }
 
   // Upload business logo specifically
-  async uploadBusinessLogo(fileBuffer, businessName = 'business') {
-    const filename = `logo_${businessName.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`;
-    
-    return await this.uploadImage(fileBuffer, {
-      filename: filename,
-      folder: 'ai-invoice-generator/business-logos',
-      transformation: [
-        { width: 400, height: 300, crop: 'limit' }, // Reasonable size for business logos
-        { quality: 'auto:best' }, // Better quality for logos
-        { background: 'white', extend: 'background' }, // Add white background if needed
-        { fetch_format: 'auto' }
-      ]
-    });
+  async uploadBusinessLogo(fileBuffer, businessName = 'business', merchantId = null, oldPublicId = null) {
+    try {
+      // Delete old logo first if it exists
+      if (oldPublicId) {
+        console.log('🗑️  Deleting old logo before upload:', oldPublicId);
+        const deleteResult = await this.deleteImage(oldPublicId);
+        if (deleteResult.success) {
+          console.log('✅ Old logo deleted successfully');
+        } else {
+          console.warn('⚠️  Failed to delete old logo:', deleteResult.error);
+        }
+      }
+
+      // Create merchant-specific filename and upload
+      const timestamp = Date.now();
+      const filename = merchantId ? 
+        `merchant_${merchantId}_logo_${timestamp}` : 
+        `logo_${businessName.replace(/\s+/g, '_').toLowerCase()}_${timestamp}`;
+      
+      return await this.uploadImage(fileBuffer, {
+        filename: filename,
+        merchantId: merchantId,
+        folder: merchantId ? `ai-invoice-generator/business-logos/merchant_${merchantId}` : 'ai-invoice-generator/business-logos',
+        transformation: [
+          { width: 400, height: 300, crop: 'limit' }, // Reasonable size for business logos
+          { quality: 'auto:best' }, // Better quality for logos
+          { background: 'white', extend: 'background' }, // Add white background if needed
+          { fetch_format: 'auto' }
+        ]
+      });
+    } catch (error) {
+      console.error('❌ Error in uploadBusinessLogo:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 
   // Get image info from Cloudinary
