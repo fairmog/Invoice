@@ -1462,6 +1462,53 @@
             loadUsageStatistics();
         });
 
+        // Authentication Helper Functions
+        function getMerchantToken() {
+            // Check localStorage first, then sessionStorage
+            return localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
+        }
+
+        function getAuthHeaders() {
+            const token = getMerchantToken();
+            if (!token) {
+                console.error('❌ No merchant token found');
+                throw new Error('Authentication required. Please log in again.');
+            }
+            
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function getAuthHeadersForFormData() {
+            const token = getMerchantToken();
+            if (!token) {
+                console.error('❌ No merchant token found');
+                throw new Error('Authentication required. Please log in again.');
+            }
+            
+            // Don't set Content-Type for FormData - browser will set it with boundary
+            return {
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        function handleAuthError(error) {
+            console.error('🔐 Authentication error:', error);
+            if (error.message.includes('Authentication required') || 
+                error.message.includes('Token expired') ||
+                error.message.includes('Invalid token')) {
+                showAlert('Session expired. Please log in again.', 'error');
+                // Redirect to login after a delay
+                setTimeout(() => {
+                    window.location.href = '/auth/login';
+                }, 2000);
+                return true;
+            }
+            return false;
+        }
+
         // Business Logo Upload Functions
         function previewBusinessLogo(event) {
             const file = event.target.files[0];
@@ -1507,10 +1554,18 @@
                 console.log('📸 Uploading business logo...');
                 showAlert('Uploading logo...', 'info');
 
+                // Get authentication headers for FormData request
+                const authHeaders = getAuthHeadersForFormData();
+
                 const response = await fetch('/api/upload-business-logo', {
                     method: 'POST',
+                    headers: authHeaders,
                     body: formData
                 });
+
+                if (response.status === 401) {
+                    throw new Error('Authentication required. Please log in again.');
+                }
 
                 const result = await response.json();
 
@@ -1528,6 +1583,12 @@
                 }
             } catch (error) {
                 console.error('❌ Logo upload failed:', error);
+                
+                // Handle authentication errors specially
+                if (handleAuthError(error)) {
+                    return;
+                }
+                
                 showAlert('Failed to upload logo: ' + error.message, 'error');
                 
                 // Reset preview on error
@@ -1540,9 +1601,16 @@
                 console.log('🗑️ Removing business logo...');
                 showAlert('Removing logo...', 'info');
 
+                const authHeaders = getAuthHeaders();
+
                 const response = await fetch('/api/remove-business-logo', {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: authHeaders
                 });
+
+                if (response.status === 401) {
+                    throw new Error('Authentication required. Please log in again.');
+                }
 
                 const result = await response.json();
 
@@ -1555,6 +1623,12 @@
                 }
             } catch (error) {
                 console.error('❌ Logo removal failed:', error);
+                
+                // Handle authentication errors specially
+                if (handleAuthError(error)) {
+                    return;
+                }
+                
                 showAlert('Failed to remove logo: ' + error.message, 'error');
             }
         }
@@ -1592,7 +1666,16 @@
 
         async function loadBusinessSettings() {
             try {
-                const response = await fetch('/api/business-settings');
+                const authHeaders = getAuthHeaders();
+                
+                const response = await fetch('/api/business-settings', {
+                    headers: authHeaders
+                });
+                
+                if (response.status === 401) {
+                    throw new Error('Authentication required. Please log in again.');
+                }
+                
                 const settings = await response.json();
                 console.log('🔍 Loaded business settings:', settings);
                 console.log('🔍 Logo fields in settings:', {
@@ -1627,6 +1710,13 @@
                 }
             } catch (error) {
                 console.error('Error loading business settings:', error);
+                
+                // Handle authentication errors specially
+                if (handleAuthError(error)) {
+                    return;
+                }
+                
+                showAlert('Failed to load business settings: ' + error.message, 'error');
             }
         }
 
