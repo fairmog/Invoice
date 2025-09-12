@@ -1417,12 +1417,10 @@
             }
 
             const formData = new FormData();
-            const fieldName = logoType === 'header' ? 'headerLogo' : 'footerLogo';
-            formData.append(fieldName, file);
+            formData.append('logo', file);  // Use 'logo' field name as expected by API
+            formData.append('type', logoType);  // Add type field as expected by API
 
-            const endpoint = logoType === 'header' 
-                ? '/api/premium/upload/header-logo' 
-                : '/api/premium/upload/footer-logo';
+            const endpoint = '/api/upload-premium-logo';  // Use unified endpoint
 
             console.log(`📤 Uploading ${logoType} logo to ${endpoint}`);
 
@@ -1450,6 +1448,32 @@
                 url: result.url,
                 publicId: result.publicId
             };
+        }
+
+        // Remove Premium Logo Function
+        async function removePremiumLogo(logoType) {
+            try {
+                console.log(`🗑️ Removing ${logoType} logo`);
+                
+                const response = await fetch(`/api/remove-premium-logo/${logoType}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Remove failed');
+                }
+
+                const result = await response.json();
+                console.log(`✅ ${logoType} logo removed successfully`);
+                
+                return result;
+                
+            } catch (error) {
+                console.error(`❌ Error removing ${logoType} logo:`, error);
+                throw error;
+            }
         }
 
         function updateBrandingPreview() {
