@@ -126,11 +126,7 @@ class AuthService {
         throw new Error('Invalid email or password');
       }
 
-      // Check if account is locked
-      if (merchant.lockedUntil && new Date(merchant.lockedUntil) > new Date()) {
-        const lockTime = Math.ceil((new Date(merchant.lockedUntil) - new Date()) / (1000 * 60));
-        throw new Error(`Account locked. Try again in ${lockTime} minutes`);
-      }
+      // Account locking disabled - users can retry login attempts
 
       // Check if account is active
       if (merchant.status !== 'active') {
@@ -148,7 +144,6 @@ class AuthService {
       // Reset failed login attempts and update last login
       await this.database.updateMerchant(merchant.id, {
         loginAttempts: 0,
-        lockedUntil: null,
         lastLogin: new Date().toISOString()
       });
 
@@ -175,22 +170,16 @@ class AuthService {
   }
 
   /**
-   * Handle failed login attempts
+   * Handle failed login attempts (account locking disabled)
    */
   async handleFailedLogin(merchant) {
     const attempts = (merchant.loginAttempts || 0) + 1;
-    const maxAttempts = 5;
     
-    let updateData = { loginAttempts: attempts };
-    
-    // Lock account after max attempts
-    if (attempts >= maxAttempts) {
-      const lockDuration = 30 * 60 * 1000; // 30 minutes
-      updateData.lockedUntil = new Date(Date.now() + lockDuration).toISOString();
-      updateData.loginAttempts = 0; // Reset counter after locking
-    }
+    // Only track attempts for monitoring purposes - no account locking
+    const updateData = { loginAttempts: attempts };
     
     await this.database.updateMerchant(merchant.id, updateData);
+    console.log(`🔍 Failed login attempt ${attempts} for merchant: ${merchant.email}`);
   }
 
   /**
