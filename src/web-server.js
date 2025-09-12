@@ -389,7 +389,8 @@ app.use((req, res, next) => {
     // Allow framing in development mode
     res.header('X-Frame-Options', 'SAMEORIGIN');
   } else {
-    // Strict security in production
+    // Strict security in production with blob support for image previews
+    res.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https:; font-src 'self' data: https:; object-src 'none'; media-src 'self' blob: https:; frame-src 'self';");
     res.header('X-Frame-Options', 'DENY');
   }
   res.header('X-Content-Type-Options', 'nosniff');
@@ -447,6 +448,38 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Invalid file type. Only JPG, PNG, GIF and PDF files are allowed.'));
+    }
+  }
+});
+
+// Configure multer for custom header/footer logo uploads
+const customLogoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'custom-headers');
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    const logoType = file.fieldname.includes('header') ? 'header' : 'footer';
+    cb(null, `${logoType}-logo-${uniqueSuffix}${ext}`);
+  }
+});
+
+const customLogoUpload = multer({
+  storage: customLogoStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit for logos
+  },
+  fileFilter: function (req, file, cb) {
+    // Allow only image files for logos
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPEG, PNG, GIF, WebP) are allowed for logos'));
     }
   }
 });
@@ -1250,7 +1283,7 @@ app.put('/api/premium/branding', authMiddleware.authenticateMerchant, async (req
 });
 
 // Premium Logo Upload Endpoints
-app.post('/api/premium/upload/header-logo', authMiddleware.authenticateMerchant, upload.single('headerLogo'), async (req, res) => {
+app.post('/api/premium/upload/header-logo', authMiddleware.authenticateMerchant, customLogoUpload.single('headerLogo'), async (req, res) => {
   try {
     const isPremium = await database.isPremiumActive(req.merchant.id);
     if (!isPremium) {
@@ -1291,7 +1324,7 @@ app.post('/api/premium/upload/header-logo', authMiddleware.authenticateMerchant,
   }
 });
 
-app.post('/api/premium/upload/footer-logo', authMiddleware.authenticateMerchant, upload.single('footerLogo'), async (req, res) => {
+app.post('/api/premium/upload/footer-logo', authMiddleware.authenticateMerchant, customLogoUpload.single('footerLogo'), async (req, res) => {
   try {
     const isPremium = await database.isPremiumActive(req.merchant.id);
     if (!isPremium) {
