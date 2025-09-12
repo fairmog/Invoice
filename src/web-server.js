@@ -1051,32 +1051,42 @@ app.post('/api/business-settings', authMiddleware.authenticateMerchant, async (r
 // Route aliases to handle frontend calls to /api/business/settings (with slash)
 app.get('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
+    console.log('🏢 Loading business settings for merchant:', req.merchant.id);
     const settings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🏢 Loaded settings - Premium active:', settings?.premiumActive);
     
     // If no settings in database, return config defaults
     if (!settings || Object.keys(settings).length === 0) {
+      console.log('🏢 No settings found, returning defaults');
       return res.json({
-        name: config.merchant.businessName,
-        email: config.merchant.email,
-        address: config.merchant.address,
-        phone: config.merchant.phone,
-        website: config.merchant.website,
-        taxId: config.merchant.taxId,
-        taxRate: config.merchant.taxRate || 0,
-        taxEnabled: config.merchant.taxRate > 0,
-        taxName: 'PPN',
-        taxDescription: '',
-        termsAndConditions: '',
-        // Include empty logo fields so frontend doesn't get undefined
-        logoUrl: null,
-        logoPublicId: null,
-        logoFilename: null
+        success: true,
+        settings: {
+          name: config.merchant.businessName,
+          email: config.merchant.email,
+          address: config.merchant.address,
+          phone: config.merchant.phone,
+          website: config.merchant.website,
+          taxId: config.merchant.taxId,
+          taxRate: config.merchant.taxRate || 0,
+          taxEnabled: config.merchant.taxRate > 0,
+          taxName: 'PPN',
+          taxDescription: '',
+          termsAndConditions: '',
+          logoUrl: null,
+          logoPublicId: null,
+          logoFilename: null,
+          premiumActive: false
+        }
       });
     }
     
-    res.json(settings);
+    // Return settings wrapped in success object for consistent API response
+    res.json({
+      success: true,
+      settings: settings
+    });
   } catch (error) {
-    console.error('Error loading business settings:', error);
+    console.error('❌ Error loading business settings:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to load business settings'
@@ -1150,14 +1160,28 @@ app.post('/api/premium/activate', authMiddleware.authenticateMerchant, async (re
   try {
     const { premiumSettings = {} } = req.body;
     
-    // In a real implementation, this would:
-    // 1. Verify payment/subscription status
-    // 2. Validate premium entitlement
-    // 3. Activate premium features
+    console.log('🏆 Activating premium branding for merchant:', req.merchant.id);
+    console.log('🏆 Premium settings to apply:', premiumSettings);
     
-    console.log('🏆 Activating premium branding with settings:', premiumSettings);
+    // Check if business settings exist first
+    let existingSettings;
+    try {
+      existingSettings = await database.getBusinessSettings(req.merchant.id);
+      console.log('🏢 Existing business settings:', existingSettings ? 'Found' : 'Not found');
+    } catch (error) {
+      console.log('⚠️ Error getting existing settings:', error.message);
+      // Create default business settings if they don't exist
+      existingSettings = {};
+    }
     
+    // Activate premium branding
+    console.log('🏆 Calling activatePremiumBranding...');
     const result = await database.activatePremiumBranding(premiumSettings, req.merchant.id);
+    console.log('🏆 Premium activation result:', result);
+    
+    // Verify the activation worked by checking the database
+    const verifySettings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Verification - Premium active after update:', verifySettings?.premiumActive);
     
     res.json({
       success: true,
@@ -1165,10 +1189,11 @@ app.post('/api/premium/activate', authMiddleware.authenticateMerchant, async (re
       settings: result
     });
   } catch (error) {
-    console.error('Error activating premium branding:', error);
+    console.error('❌ Error activating premium branding:', error);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      error: 'Failed to activate premium branding'
+      error: 'Failed to activate premium branding: ' + error.message
     });
   }
 });
