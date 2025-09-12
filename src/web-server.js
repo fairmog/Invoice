@@ -6738,6 +6738,145 @@ app.get('/api/analytics/ai-insights', async (req, res) => {
   }
 });
 
+// PREMIUM LOGO UPLOAD API ENDPOINTS
+// Premium Logo Upload Endpoint
+app.post('/api/upload-premium-logo', authMiddleware.authenticateMerchant, upload.single('logo'), async (req, res) => {
+  try {
+    console.log('📸 Premium logo upload request received');
+    console.log('File details:', req.file);
+    console.log('Logo type:', req.body.type); // 'header' or 'footer'
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file uploaded' 
+      });
+    }
+
+    const logoType = req.body.type; // 'header' or 'footer'
+    if (!logoType || !['header', 'footer'].includes(logoType)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid logo type. Must be "header" or "footer"' 
+      });
+    }
+
+    const merchantId = req.merchant.id;
+    console.log(`📤 Uploading ${logoType} logo for merchant:`, merchantId);
+
+    // Upload to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const uploadOptions = {
+        folder: `ai-invoice-generator/premium-logos/${logoType}/merchant_${merchantId}`,
+        public_id: `merchant_${merchantId}_${logoType}_logo_${Date.now()}`,
+        transformation: [
+          { width: logoType === 'header' ? 400 : 200, height: logoType === 'header' ? 200 : 100, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'auto' }
+        ]
+      };
+
+      const uploadStream = cloudinary.uploader.upload_stream(
+        uploadOptions,
+        (error, result) => {
+          if (error) {
+            console.error(`❌ Cloudinary upload error for ${logoType} logo:`, error);
+            reject(error);
+          } else {
+            console.log(`✅ ${logoType} logo uploaded successfully:`, result.secure_url);
+            resolve(result);
+          }
+        }
+      );
+
+      uploadStream.end(req.file.buffer);
+    });
+
+    // Update business settings with new logo URL
+    const updateData = {};
+    if (logoType === 'header') {
+      updateData.customHeaderLogoUrl = result.secure_url;
+      updateData.customHeaderLogoPublicId = result.public_id;
+    } else {
+      updateData.customFooterLogoUrl = result.secure_url;
+      updateData.customFooterLogoPublicId = result.public_id;
+    }
+
+    await database.updateBusinessSettings(updateData, merchantId);
+
+    res.json({
+      success: true,
+      url: result.secure_url,
+      publicId: result.public_id,
+      message: `${logoType} logo uploaded successfully`
+    });
+
+  } catch (error) {
+    console.error(`❌ Error uploading premium ${req.body.type} logo:`, error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to upload logo' 
+    });
+  }
+});
+
+// Remove Premium Logo Endpoint
+app.delete('/api/remove-premium-logo/:type', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const logoType = req.params.type; // 'header' or 'footer'
+    const merchantId = req.merchant.id;
+
+    if (!['header', 'footer'].includes(logoType)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid logo type' 
+      });
+    }
+
+    console.log(`🗑️ Removing ${logoType} logo for merchant:`, merchantId);
+
+    // Get current logo info
+    const settings = await database.getBusinessSettings(merchantId);
+    const publicId = logoType === 'header' ? 
+      settings.customHeaderLogoPublicId || settings.custom_header_logo_public_id :
+      settings.customFooterLogoPublicId || settings.custom_footer_logo_public_id;
+
+    // Remove from Cloudinary if exists
+    if (publicId) {
+      try {
+        await cloudinary.uploader.destroy(publicId);
+        console.log(`✅ ${logoType} logo removed from Cloudinary:`, publicId);
+      } catch (cloudinaryError) {
+        console.error(`⚠️ Error removing ${logoType} logo from Cloudinary:`, cloudinaryError);
+      }
+    }
+
+    // Update database
+    const updateData = {};
+    if (logoType === 'header') {
+      updateData.customHeaderLogoUrl = null;
+      updateData.customHeaderLogoPublicId = null;
+    } else {
+      updateData.customFooterLogoUrl = null;
+      updateData.customFooterLogoPublicId = null;
+    }
+
+    await database.updateBusinessSettings(updateData, merchantId);
+
+    res.json({
+      success: true,
+      message: `${logoType} logo removed successfully`
+    });
+
+  } catch (error) {
+    console.error(`❌ Error removing premium ${req.params.type} logo:`, error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to remove logo' 
+    });
+  }
+});
+
 // Start the server
 async function startServer() {
   // Print configuration summary
