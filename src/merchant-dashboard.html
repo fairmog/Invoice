@@ -3087,6 +3087,47 @@
         let customers = [];
         let currentProduct = null;
 
+        // Navigation Functions
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(`${sectionName}-section`);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+            }
+            
+            // Add active class to clicked nav button
+            const targetButton = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
+            
+            // Load data for the selected section
+            switch(sectionName) {
+                case 'products':
+                    loadProducts();
+                    break;
+                case 'orders':
+                    loadOrders();
+                    break;
+                case 'invoices':
+                    loadInvoices();
+                    break;
+                case 'customers':
+                    loadCustomers();
+                    break;
+            }
+        }
+
         // Authentication Helper Functions
         function getMerchantToken() {
             return localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
@@ -3938,7 +3979,7 @@
                                             <span style="opacity: 0.7;">📧</span>
                                             ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
                                         </li>
-                                        ${businessProfile && businessProfile.website ? \`<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>\${businessProfile.website}</li>\` : invoice.merchant_website ? \`<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>\${invoice.merchant_website}</li>\` : ''}
+                                        ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${businessProfile.website}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${invoice.merchant_website}</li>` : ''}
                                     </ul>
                                 </div>
                                 <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 0; margin-bottom: -30px;">
