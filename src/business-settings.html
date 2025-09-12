@@ -1566,91 +1566,57 @@
         }
 
         async function savePremiumBranding() {
-            const headerText = document.getElementById('customHeaderText').value;
-            const headerBgColor = document.getElementById('customHeaderBgColor').value;
-            const footerBgColor = document.getElementById('customFooterBgColor').value;
-            const headerTextColor = document.getElementById('customHeaderTextColor').value;
-            const footerTextColor = document.getElementById('customFooterTextColor').value;
-            
             try {
-                // First save basic settings
-                const settingsData = {
-                    customHeaderText: headerText,
-                    customHeaderBgColor: headerBgColor,
-                    customFooterBgColor: footerBgColor,
-                    customHeaderTextColor: headerTextColor,
-                    customFooterTextColor: footerTextColor
-                };
-
-                const response = await fetch('/api/business/settings', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(settingsData)
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to save settings');
-                }
-
-                // Upload logos if provided
-                let logoResults = {};
+                showAlert('Saving premium branding...', 'info');
                 
-                // Upload header logo if selected
+                // Create FormData for everything at once
+                const formData = new FormData();
+                
+                // Add text settings
+                formData.append('customHeaderText', document.getElementById('customHeaderText').value);
+                formData.append('customHeaderBgColor', document.getElementById('customHeaderBgColor').value);
+                formData.append('customFooterBgColor', document.getElementById('customFooterBgColor').value);
+                formData.append('customHeaderTextColor', document.getElementById('customHeaderTextColor').value);
+                formData.append('customFooterTextColor', document.getElementById('customFooterTextColor').value);
+                formData.append('hideAspreeBranding', document.getElementById('hideAspreeBranding').checked);
+                
+                // Add logo files if selected
                 if (headerLogoFile) {
-                    try {
-                        showAlert('Uploading header logo...', 'info');
-                        const headerLogoResult = await uploadPremiumLogo(headerLogoFile, 'header');
-                        logoResults.headerLogo = headerLogoResult;
-                        
-                        // Update settings with header logo URL
-                        await fetch('/api/business/settings', {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                customHeaderLogoUrl: headerLogoResult.url,
-                                customHeaderLogoPublicId: headerLogoResult.publicId
-                            })
-                        });
-                    } catch (error) {
-                        console.error('Error uploading header logo:', error);
-                        showAlert('⚠️ Header logo upload failed: ' + error.message, 'warning');
-                    }
+                    formData.append('headerLogo', headerLogoFile);
+                    console.log('📤 Adding header logo to form:', headerLogoFile.name);
                 }
-
-                // Upload footer logo if selected
                 if (footerLogoFile) {
-                    try {
-                        showAlert('Uploading footer logo...', 'info');
-                        const footerLogoResult = await uploadPremiumLogo(footerLogoFile, 'footer');
-                        logoResults.footerLogo = footerLogoResult;
-                        
-                        // Update settings with footer logo URL
-                        await fetch('/api/business/settings', {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                customFooterLogoUrl: footerLogoResult.url,
-                                customFooterLogoPublicId: footerLogoResult.publicId
-                            })
-                        });
-                    } catch (error) {
-                        console.error('Error uploading footer logo:', error);
-                        showAlert('⚠️ Footer logo upload failed: ' + error.message, 'warning');
-                    }
+                    formData.append('footerLogo', footerLogoFile);
+                    console.log('📤 Adding footer logo to form:', footerLogoFile.name);
                 }
-
-                showAlert('✅ Premium branding settings saved successfully!', 'success');
-                currentPremiumSettings = { ...currentPremiumSettings, ...settingsData, ...logoResults };
+                
+                // Single API call to save everything
+                const response = await fetch('/api/save-premium-branding', {
+                    method: 'POST',
+                    headers: getAuthHeadersForFormData(), // No Content-Type for FormData
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to save premium branding');
+                }
+                
+                const result = await response.json();
+                showAlert('✅ Premium branding saved successfully!', 'success');
+                
+                // Refresh preview
+                updateBrandingPreview();
+                
+                // Clear file inputs
+                headerLogoFile = null;
+                footerLogoFile = null;
+                document.getElementById('headerLogoInput').value = '';
+                document.getElementById('footerLogoInput').value = '';
                 
             } catch (error) {
                 console.error('Error saving premium branding:', error);
-                showAlert('❌ Failed to save premium branding settings', 'error');
+                showAlert('❌ Failed to save premium branding: ' + error.message, 'error');
             }
         }
 
