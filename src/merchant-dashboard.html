@@ -3947,6 +3947,59 @@
             }
         }
 
+        // DATA TRANSFORMATION FUNCTIONS
+        // Transform flat database invoice to nested structure for template
+        function transformInvoiceForTemplate(flatInvoice) {
+            console.log('🔄 Transforming flat invoice data to nested structure:', flatInvoice);
+            
+            // Parse items_json if it's a string
+            let items = [];
+            try {
+                if (Array.isArray(flatInvoice.items_json)) {
+                    items = flatInvoice.items_json;
+                } else if (typeof flatInvoice.items_json === 'string') {
+                    items = JSON.parse(flatInvoice.items_json);
+                } else {
+                    console.warn('⚠️ No valid items data found');
+                    items = [];
+                }
+            } catch (error) {
+                console.error('❌ Error parsing items_json:', error);
+                items = [];
+            }
+            
+            // Transform to nested structure expected by template
+            const transformed = {
+                invoice: {
+                    header: {
+                        invoiceNumber: flatInvoice.invoice_number,
+                        invoiceDate: flatInvoice.invoice_date,
+                        dueDate: flatInvoice.due_date
+                    },
+                    customer: {
+                        name: flatInvoice.customer_name,
+                        address: flatInvoice.customer_address,
+                        phone: flatInvoice.customer_phone,
+                        email: flatInvoice.customer_email
+                    },
+                    items: items,
+                    totals: {
+                        subtotal: flatInvoice.subtotal,
+                        tax: flatInvoice.tax_amount,
+                        total: flatInvoice.total_amount,
+                        discount: flatInvoice.discount || 0
+                    },
+                    // Additional fields that might be used
+                    notes: flatInvoice.notes,
+                    status: flatInvoice.status,
+                    payment_stage: flatInvoice.payment_stage
+                }
+            };
+            
+            console.log('✅ Transformed invoice structure:', transformed);
+            return transformed;
+        }
+
         // Load business data from API and sync with localStorage for invoice generation
         async function loadBusinessDataFromAPI() {
             try {
@@ -6799,8 +6852,11 @@ Terima kasih! 🙏`;
                 // Load business profile for logos and branding
                 await loadBusinessDataFromAPI();
                 
+                // Transform flat invoice data to nested structure expected by template
+                const transformedInvoice = transformInvoiceForTemplate(invoice);
+                
                 // Generate the unified invoice template for print context
-                const printableHTML = generateUnifiedInvoiceTemplate({ invoice }, 'print');
+                const printableHTML = generateUnifiedInvoiceTemplate(transformedInvoice, 'print');
                 
                 // Create new window and print immediately (like faktur preview)
                 const printWindow = window.open('', '_blank', 'width=1000,height=800,scrollbars=yes');
