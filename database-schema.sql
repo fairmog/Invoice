@@ -23,6 +23,18 @@ CREATE TABLE business_settings (
   logo_url TEXT,
   logo_public_id TEXT,
   logo_filename TEXT,
+  -- Premium branding fields
+  premium_active BOOLEAN DEFAULT false,
+  custom_header_text TEXT,
+  custom_header_logo_url TEXT,
+  custom_header_logo_public_id TEXT,
+  custom_footer_logo_url TEXT,
+  custom_footer_logo_public_id TEXT,
+  custom_header_bg_color TEXT DEFAULT '#311d6b',
+  custom_footer_bg_color TEXT DEFAULT '#311d6b',
+  custom_header_text_color TEXT DEFAULT '#ffffff',
+  custom_footer_text_color TEXT DEFAULT '#ffffff',
+  hide_aspree_branding BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
