@@ -4038,6 +4038,17 @@
                 items = [];
             }
             
+            // Get business profile for merchant data
+            let businessProfile = null;
+            try {
+                const savedProfile = localStorage.getItem('businessProfile');
+                if (savedProfile) {
+                    businessProfile = JSON.parse(savedProfile);
+                }
+            } catch (error) {
+                console.warn('⚠️ Error parsing business profile:', error);
+            }
+            
             // Transform to nested structure expected by template
             const transformed = {
                 invoice: {
@@ -4051,6 +4062,12 @@
                         address: flatInvoice.customer_address,
                         phone: flatInvoice.customer_phone,
                         email: flatInvoice.customer_email
+                    },
+                    merchant: {
+                        businessName: businessProfile?.name || businessProfile?.businessName || 'Your Business Name',
+                        address: businessProfile?.address || 'Your Business Address',
+                        phone: businessProfile?.phone || '',
+                        email: businessProfile?.email || ''
                     },
                     items: items,
                     totals: {
