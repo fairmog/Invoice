@@ -6911,7 +6911,7 @@ Terima kasih! 🙏`;
             document.getElementById(`share-menu-${invoiceId}`).classList.remove('show');
         }
 
-        // Direct Print Function - Generate unified invoice template and print immediately like faktur preview
+        // Direct Print Function - Simple approach that works with flat invoice data
         async function printInvoice(invoiceNumber) {
             console.log('🖨️ Print function called for invoice:', invoiceNumber);
             
@@ -6937,15 +6937,16 @@ Terima kasih! 🙏`;
                 console.log('🔍 Found invoice for printing:', invoice);
                 
                 // Load business profile for logos and branding
+                console.log('🏢 Loading business data...');
                 await loadBusinessDataFromAPI();
+                console.log('✅ Business data loaded');
                 
-                // Transform flat invoice data to nested structure expected by template
-                const transformedInvoice = transformInvoiceForTemplate(invoice);
+                // Generate simple printable HTML directly from flat data
+                console.log('🎨 Generating simple printable HTML...');
+                const printableHTML = generateSimplePrintableInvoice(invoice);
+                console.log('✅ Printable HTML generated');
                 
-                // Generate the unified invoice template for print context
-                const printableHTML = generateUnifiedInvoiceTemplate(transformedInvoice, 'print');
-                
-                // Create new window and print immediately (like faktur preview)
+                // Create new window and print immediately
                 const printWindow = window.open('', '_blank', 'width=1000,height=800,scrollbars=yes');
                 if (!printWindow) {
                     alert('Popup blocked. Please allow popups for this site and try again.');
@@ -6965,9 +6966,267 @@ Terima kasih! 🙏`;
                 };
                 
             } catch (error) {
-                console.error('Error loading invoice for printing:', error);
+                console.error('❌ Error loading invoice for printing:', error);
+                console.error('❌ Error stack:', error.stack);
                 alert('Error loading invoice for printing: ' + error.message);
             }
+        }
+
+        // Generate simple printable invoice HTML directly from flat database data
+        function generateSimplePrintableInvoice(invoice) {
+            // Get business profile from localStorage
+            let businessProfile = null;
+            try {
+                const savedProfile = localStorage.getItem('businessProfile');
+                if (savedProfile) {
+                    businessProfile = JSON.parse(savedProfile);
+                }
+            } catch (error) {
+                console.warn('⚠️ Error parsing business profile:', error);
+            }
+            
+            // Parse items similar to showInvoiceModal
+            let items = [];
+            try {
+                if (Array.isArray(invoice.items_json)) {
+                    items = invoice.items_json;
+                } else if (typeof invoice.items_json === 'string') {
+                    items = JSON.parse(invoice.items_json);
+                } else if (invoice.items_json && typeof invoice.items_json === 'object') {
+                    items = [invoice.items_json];
+                } else if (invoice.items && Array.isArray(invoice.items)) {
+                    items = invoice.items;
+                }
+                
+                // Validate and fix items structure
+                if (Array.isArray(items)) {
+                    items = items.map((item, index) => {
+                        return {
+                            productName: item.productName || item.product_name || item.name || `Product ${index + 1}`,
+                            quantity: parseInt(item.quantity || item.qty || 1),
+                            unitPrice: parseFloat(item.unitPrice || item.unit_price || item.price || 0),
+                            lineTotal: parseFloat(item.lineTotal || item.line_total || item.total || (item.quantity || 1) * (item.unitPrice || item.unit_price || item.price || 0)),
+                            description: item.description || item.desc || ''
+                        };
+                    });
+                }
+            } catch (e) {
+                console.error('❌ Error parsing items for print:', e);
+                items = [{
+                    productName: 'Error: Items parsing failed',
+                    quantity: 1,
+                    unitPrice: 0,
+                    lineTotal: 0,
+                    description: e.message
+                }];
+            }
+            
+            // Generate items HTML
+            const itemsHTML = items.map(item => `
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.productName}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${formatCurrency(item.unitPrice)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${formatCurrency(item.lineTotal)}</td>
+                </tr>
+            `).join('');
+            
+            // Get business information
+            const businessName = businessProfile?.name || businessProfile?.businessName || 'Your Business Name';
+            const businessAddress = businessProfile?.address || 'Your Business Address';
+            const businessPhone = businessProfile?.phone || '';
+            const businessEmail = businessProfile?.email || '';
+            const businessLogo = businessProfile?.logo || businessProfile?.logoUrl || '';
+            
+            return `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Invoice - ${invoice.invoice_number}</title>
+                    <style>
+                        body {
+                            font-family: 'Arial', sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                            color: #333;
+                            line-height: 1.4;
+                        }
+                        .invoice-container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            background: white;
+                            padding: 30px;
+                            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                        }
+                        .header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-start;
+                            margin-bottom: 30px;
+                            border-bottom: 2px solid #eee;
+                            padding-bottom: 20px;
+                        }
+                        .business-info {
+                            flex: 1;
+                        }
+                        .business-logo {
+                            max-height: 80px;
+                            max-width: 200px;
+                            margin-bottom: 10px;
+                        }
+                        .invoice-title {
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #2c3e50;
+                            margin: 0;
+                        }
+                        .invoice-meta {
+                            text-align: right;
+                        }
+                        .parties {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 30px;
+                        }
+                        .party {
+                            flex: 1;
+                            margin-right: 20px;
+                        }
+                        .party:last-child {
+                            margin-right: 0;
+                        }
+                        .party h3 {
+                            margin: 0 0 10px 0;
+                            color: #2c3e50;
+                            font-size: 14px;
+                            text-transform: uppercase;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+                        th {
+                            background: #f8f9fa;
+                            padding: 12px 8px;
+                            text-align: left;
+                            border-bottom: 2px solid #ddd;
+                            font-weight: bold;
+                        }
+                        .totals {
+                            text-align: right;
+                            margin-top: 20px;
+                        }
+                        .totals table {
+                            margin-left: auto;
+                            width: 300px;
+                        }
+                        .totals td {
+                            padding: 5px 10px;
+                            border: none;
+                        }
+                        .total-row {
+                            font-weight: bold;
+                            font-size: 16px;
+                            border-top: 2px solid #333 !important;
+                        }
+                        @media print {
+                            body { margin: 0; padding: 0; }
+                            .invoice-container { box-shadow: none; padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-container">
+                        <div class="header">
+                            <div class="business-info">
+                                ${businessLogo ? `<img src="${businessLogo}" alt="Logo" class="business-logo">` : ''}
+                                <h2>${businessName}</h2>
+                                <p>${businessAddress}<br>
+                                ${businessPhone}<br>
+                                ${businessEmail}</p>
+                            </div>
+                            <div class="invoice-meta">
+                                <h1 class="invoice-title">FAKTUR</h1>
+                                <p><strong>No:</strong> ${invoice.invoice_number}</p>
+                                <p><strong>Tanggal:</strong> ${formatDate(invoice.invoice_date)}</p>
+                                <p><strong>Jatuh Tempo:</strong> ${formatDate(invoice.due_date)}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="parties">
+                            <div class="party">
+                                <h3>DARI</h3>
+                                <strong>${businessName}</strong><br>
+                                ${businessAddress}<br>
+                                ${businessPhone}<br>
+                                ${businessEmail}
+                            </div>
+                            <div class="party">
+                                <h3>KEPADA</h3>
+                                <strong>${invoice.customer_name}</strong><br>
+                                ${invoice.customer_address || ''}<br>
+                                ${invoice.customer_phone || ''}<br>
+                                ${invoice.customer_email || ''}
+                            </div>
+                        </div>
+                        
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produk/Layanan</th>
+                                    <th style="text-align: center; width: 80px;">Qty</th>
+                                    <th style="text-align: right; width: 120px;">Harga</th>
+                                    <th style="text-align: right; width: 120px;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHTML}
+                            </tbody>
+                        </table>
+                        
+                        <div class="totals">
+                            <table>
+                                <tr>
+                                    <td>Subtotal:</td>
+                                    <td style="text-align: right;">${formatCurrency(invoice.subtotal || 0)}</td>
+                                </tr>
+                                ${invoice.tax_amount > 0 ? `
+                                <tr>
+                                    <td>Pajak:</td>
+                                    <td style="text-align: right;">${formatCurrency(invoice.tax_amount)}</td>
+                                </tr>
+                                ` : ''}
+                                ${invoice.shipping_cost > 0 ? `
+                                <tr>
+                                    <td>Ongkir:</td>
+                                    <td style="text-align: right;">${formatCurrency(invoice.shipping_cost)}</td>
+                                </tr>
+                                ` : ''}
+                                ${invoice.discount > 0 ? `
+                                <tr>
+                                    <td>Diskon:</td>
+                                    <td style="text-align: right;">-${formatCurrency(invoice.discount)}</td>
+                                </tr>
+                                ` : ''}
+                                <tr class="total-row">
+                                    <td><strong>TOTAL:</strong></td>
+                                    <td style="text-align: right;"><strong>${formatCurrency(invoice.total_amount || invoice.grand_total || 0)}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        ${invoice.notes ? `
+                        <div style="margin-top: 30px;">
+                            <h3>Catatan:</h3>
+                            <p>${invoice.notes}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                </body>
+                </html>
+            `;
         }
 
         // DEPRECATED: Direct print function that generates unified invoice template
