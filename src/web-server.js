@@ -6884,6 +6884,91 @@ app.delete('/api/remove-premium-logo/:type', authMiddleware.authenticateMerchant
   }
 });
 
+// Unified Premium Branding Save Endpoint
+app.post('/api/save-premium-branding', authMiddleware.authenticateMerchant, upload.fields([
+  { name: 'headerLogo', maxCount: 1 },
+  { name: 'footerLogo', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    console.log('💎 Saving premium branding for merchant:', merchantId);
+    console.log('📋 Form data received:', {
+      customHeaderText: req.body.customHeaderText,
+      hasHeaderLogo: !!(req.files && req.files.headerLogo),
+      hasFooterLogo: !!(req.files && req.files.footerLogo),
+      hideAspreeBranding: req.body.hideAspreeBranding
+    });
+    
+    // Prepare settings data
+    const settingsData = {
+      customHeaderText: req.body.customHeaderText || '',
+      customHeaderBgColor: req.body.customHeaderBgColor || '#311d6b',
+      customFooterBgColor: req.body.customFooterBgColor || '#311d6b',
+      customHeaderTextColor: req.body.customHeaderTextColor || '#ffffff',
+      customFooterTextColor: req.body.customFooterTextColor || '#ffffff',
+      hideAspreeBranding: req.body.hideAspreeBranding === 'true'
+    };
+    
+    // Upload logos if provided
+    if (req.files && req.files.headerLogo) {
+      console.log('📤 Uploading header logo...');
+      const headerResult = await uploadToCloudinary(req.files.headerLogo[0], 'header', merchantId);
+      settingsData.customHeaderLogoUrl = headerResult.secure_url;
+      settingsData.customHeaderLogoPublicId = headerResult.public_id;
+    }
+    
+    if (req.files && req.files.footerLogo) {
+      console.log('📤 Uploading footer logo...');
+      const footerResult = await uploadToCloudinary(req.files.footerLogo[0], 'footer', merchantId);
+      settingsData.customFooterLogoUrl = footerResult.secure_url;
+      settingsData.customFooterLogoPublicId = footerResult.public_id;
+    }
+    
+    // Save everything at once
+    await database.updateBusinessSettings(settingsData, merchantId);
+    
+    console.log('✅ Premium branding saved successfully for merchant:', merchantId);
+    res.json({
+      success: true,
+      message: 'Premium branding saved successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error saving premium branding:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to save premium branding'
+    });
+  }
+});
+
+// Helper function for Cloudinary upload
+async function uploadToCloudinary(file, type, merchantId) {
+  return new Promise((resolve, reject) => {
+    const uploadOptions = {
+      folder: `ai-invoice-generator/premium-logos/${type}/merchant_${merchantId}`,
+      public_id: `merchant_${merchantId}_${type}_logo_${Date.now()}`,
+      transformation: [
+        { width: type === 'header' ? 400 : 200, height: type === 'header' ? 200 : 100, crop: 'limit' },
+        { quality: 'auto:good' },
+        { format: 'auto' }
+      ]
+    };
+
+    const uploadStream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
+      if (error) {
+        console.error(`❌ Cloudinary upload error for ${type}:`, error);
+        reject(error);
+      } else {
+        console.log(`✅ ${type} logo uploaded:`, result.secure_url);
+        resolve(result);
+      }
+    });
+
+    uploadStream.end(file.buffer);
+  });
+}
+
 // Start the server
 async function startServer() {
   // Print configuration summary
