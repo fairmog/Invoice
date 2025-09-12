@@ -1734,6 +1734,13 @@
                             shipping_cost: invoice.shipping_cost,
                             grand_total: invoice.grand_total
                         });
+                        console.log('💰 Raw invoice totals types:', {
+                            subtotal: typeof invoice.subtotal,
+                            discount: typeof invoice.discount,
+                            tax_amount: typeof invoice.tax_amount,
+                            shipping_cost: typeof invoice.shipping_cost,
+                            grand_total: typeof invoice.grand_total
+                        });
                         
                         // Calculate subtotal from items if not provided
                         let calculatedSubtotal = parseFloat(invoice.subtotal || 0);
@@ -1769,7 +1776,7 @@
                             <div class="summary-label">Subtotal</div>
                             <div class="summary-value">${formatCurrency(totals.subtotal)}</div>
                             
-                            ${totals.discount > 0 ? `
+                            ${totals.discount !== undefined && totals.discount !== null ? `
                             <div class="summary-label">${(() => {
                                 const discountType = invoice.calculations?.discountType;
                                 const discountValue = invoice.calculations?.discountValue;
@@ -1782,15 +1789,11 @@
                             <div class="summary-value">-${formatCurrency(totals.discount)}</div>
                             ` : ''}
                             
-                            ${totals.taxAmount > 0 ? `
                             <div class="summary-label">Pajak</div>
                             <div class="summary-value">${formatCurrency(totals.taxAmount)}</div>
-                            ` : ''}
                             
-                            ${totals.shippingCost > 0 ? `
                             <div class="summary-label">Biaya Kirim</div>
                             <div class="summary-value">${formatCurrency(totals.shippingCost)}</div>
-                            ` : ''}
                             
                             <div class="summary-label total-label">TOTAL</div>
                             <div class="summary-value total-value">${formatCurrency(totals.grandTotal)}</div>
