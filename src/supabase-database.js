@@ -1003,6 +1003,8 @@ class SupabaseDatabase {
           customFooterLogoPublicId: data.custom_footer_logo_public_id,
           customHeaderBgColor: data.custom_header_bg_color,
           customFooterBgColor: data.custom_footer_bg_color,
+          customHeaderTextColor: data.custom_header_text_color,
+          customFooterTextColor: data.custom_footer_text_color,
           hideAspreeBranding: data.hide_aspree_branding
         };
       }
@@ -1088,6 +1090,12 @@ class SupabaseDatabase {
       }
       if (settings.customFooterBgColor !== undefined || settings.custom_footer_bg_color !== undefined) {
         mappedSettings.custom_footer_bg_color = settings.customFooterBgColor || settings.custom_footer_bg_color || '#311d6b';
+      }
+      if (settings.customHeaderTextColor !== undefined || settings.custom_header_text_color !== undefined) {
+        mappedSettings.custom_header_text_color = settings.customHeaderTextColor || settings.custom_header_text_color || '#ffffff';
+      }
+      if (settings.customFooterTextColor !== undefined || settings.custom_footer_text_color !== undefined) {
+        mappedSettings.custom_footer_text_color = settings.customFooterTextColor || settings.custom_footer_text_color || '#ffffff';
       }
       if (settings.hideAspreeBranding !== undefined || settings.hide_aspree_branding !== undefined) {
         mappedSettings.hide_aspree_branding = settings.hideAspreeBranding !== undefined ? settings.hideAspreeBranding : settings.hide_aspree_branding;
@@ -1191,6 +1199,8 @@ class SupabaseDatabase {
       customFooterLogoPublicId: data.custom_footer_logo_public_id,
       customHeaderBgColor: data.custom_header_bg_color,
       customFooterBgColor: data.custom_footer_bg_color,
+      customHeaderTextColor: data.custom_header_text_color,
+      customFooterTextColor: data.custom_footer_text_color,
       hideAspreeBranding: data.hide_aspree_branding,
       createdAt: data.created_at,
       updatedAt: data.updated_at
@@ -2147,6 +2157,8 @@ class SupabaseDatabase {
         customFooterLogoUrl: businessSettings.customFooterLogoUrl,
         customHeaderBgColor: businessSettings.customHeaderBgColor || '#311d6b',
         customFooterBgColor: businessSettings.customFooterBgColor || '#311d6b',
+        customHeaderTextColor: businessSettings.customHeaderTextColor || '#ffffff',
+        customFooterTextColor: businessSettings.customFooterTextColor || '#ffffff',
         hideAspreeBranding: businessSettings.hideAspreeBranding === true
       };
     } catch (error) {
