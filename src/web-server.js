@@ -1859,7 +1859,7 @@ app.post('/api/xendit/webhook', async (req, res) => {
     
     // Update invoice status based on Xendit event
     if (event.status === 'PAID') {
-      await database.updateInvoiceStatus(invoice.id, 'paid');
+      await database.updateInvoiceStatus(invoice.id, 'paid', invoice.merchant_id);
       console.log(`✅ Invoice ${invoice.invoice_number} marked as paid via Xendit`);
       
       // You could add additional logic here:
@@ -4572,7 +4572,7 @@ app.put('/api/orders/bulk/status', authMiddleware.authenticateMerchant, async (r
 
 app.delete('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.deleteOrder(parseInt(req.params.id));
+    const result = await database.deleteOrder(parseInt(req.params.id), req.user.id);
     
     if (result.changes === 0) {
       return res.status(404).json({
@@ -5040,7 +5040,7 @@ app.post('/api/payments/webhook', async (req, res) => {
     
     // Update invoice status based on transaction status
     if (transaction_status === 'capture' || transaction_status === 'settlement') {
-      await database.updateInvoiceStatus(invoice.id, 'paid');
+      await database.updateInvoiceStatus(invoice.id, 'paid', invoice.merchant_id);
       console.log('✅ Payment confirmed for invoice:', invoiceNumber);
     }
     
@@ -5063,14 +5063,19 @@ app.post('/api/payments/success', async (req, res) => {
   try {
     const { invoice_id, transaction_id, payment_method } = req.body;
     
+    // Get invoice to get merchant_id
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({ success: false, error: 'Invoice not found' });
+    }
+    
     // Update invoice status to paid
-    await database.updateInvoiceStatus(invoice_id, 'paid');
+    await database.updateInvoiceStatus(invoice_id, 'paid', invoice.merchant_id);
     
     console.log('✅ Payment successful for invoice ID:', invoice_id);
     
     // Send payment confirmation email
     try {
-      const invoice = await database.getInvoice(invoice_id);
       if (invoice && invoice.customer_email) {
         const paymentDetails = {
           amount: invoice.grand_total,
