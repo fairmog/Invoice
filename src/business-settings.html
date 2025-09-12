@@ -1453,16 +1453,22 @@
         }
 
         function updateBrandingPreview() {
-            const headerText = document.getElementById('customHeaderText').value || 'Powered by Aspree Invoice Generator';
-            const headerBgColor = document.getElementById('customHeaderBgColor').value;
-            const footerBgColor = document.getElementById('customFooterBgColor').value;
-            const headerTextColor = document.getElementById('customHeaderTextColor').value;
-            const footerTextColor = document.getElementById('customFooterTextColor').value;
-            
-            const previewHeader = document.getElementById('previewHeader');
-            const previewHeaderText = document.getElementById('previewHeaderText');
-            const previewFooter = document.getElementById('previewFooter');
-            const previewFooterLogo = document.getElementById('previewFooterLogo');
+            try {
+                const headerText = document.getElementById('customHeaderText').value || 'Powered by Aspree Invoice Generator';
+                const headerBgColor = document.getElementById('customHeaderBgColor').value;
+                const footerBgColor = document.getElementById('customFooterBgColor').value;
+                const headerTextColor = document.getElementById('customHeaderTextColor').value;
+                const footerTextColor = document.getElementById('customFooterTextColor').value;
+                
+                const previewHeader = document.getElementById('previewHeader');
+                const previewHeaderText = document.getElementById('previewHeaderText');
+                const previewFooter = document.getElementById('previewFooter');
+                const previewFooterLogo = document.getElementById('previewFooterLogo');
+
+                if (!previewHeader || !previewHeaderText || !previewFooter || !previewFooterLogo) {
+                    console.error('Missing preview elements');
+                    return;
+                }
             
             // Update colors and text
             previewHeader.style.background = `linear-gradient(135deg, ${headerBgColor}, ${adjustBrightness(headerBgColor, 20)})`;
@@ -1480,25 +1486,47 @@
                 previewHeaderText.parentNode.insertBefore(headerLogoContainer, previewHeaderText);
             }
             
-            // Show header logo if uploaded, otherwise hide
-            if (headerLogoFile || (currentPremiumSettings && currentPremiumSettings.customHeaderLogoUrl)) {
-                const logoUrl = headerLogoFile ? URL.createObjectURL(headerLogoFile) : currentPremiumSettings.customHeaderLogoUrl;
-                headerLogoContainer.innerHTML = `<img src="${logoUrl}" alt="Header Logo" style="height: 20px; width: auto; vertical-align: middle;">`;
-                headerLogoContainer.style.display = 'inline-block';
-            } else {
-                headerLogoContainer.style.display = 'none';
-            }
+                // Show header logo if uploaded, otherwise hide
+                if (headerLogoFile || (currentPremiumSettings && currentPremiumSettings.customHeaderLogoUrl)) {
+                    try {
+                        const logoUrl = headerLogoFile ? URL.createObjectURL(headerLogoFile) : currentPremiumSettings.customHeaderLogoUrl;
+                        headerLogoContainer.innerHTML = `<img src="${logoUrl}" alt="Header Logo" style="height: 20px; width: auto; vertical-align: middle;" onerror="this.style.display='none'; console.error('Failed to load header logo:', '${logoUrl}');">`;
+                        headerLogoContainer.style.display = 'inline-block';
+                    } catch (error) {
+                        console.error('Error creating header logo URL:', error);
+                        headerLogoContainer.style.display = 'none';
+                    }
+                } else {
+                    headerLogoContainer.style.display = 'none';
+                }
             
-            // Update footer logo
-            const footerImg = previewFooterLogo.querySelector('img');
-            if (footerLogoFile || (currentPremiumSettings && currentPremiumSettings.customFooterLogoUrl)) {
-                const logoUrl = footerLogoFile ? URL.createObjectURL(footerLogoFile) : currentPremiumSettings.customFooterLogoUrl;
-                footerImg.src = logoUrl;
-                footerImg.alt = 'Custom Footer Logo';
-            } else {
-                // Revert to default Aspree logo
-                footerImg.src = '/assets/aspri-logo.png';
-                footerImg.alt = 'Aspree';
+                // Update footer logo
+                const footerImg = previewFooterLogo.querySelector('img');
+                if (footerImg) {
+                    if (footerLogoFile || (currentPremiumSettings && currentPremiumSettings.customFooterLogoUrl)) {
+                        try {
+                            const logoUrl = footerLogoFile ? URL.createObjectURL(footerLogoFile) : currentPremiumSettings.customFooterLogoUrl;
+                            footerImg.src = logoUrl;
+                            footerImg.alt = 'Custom Footer Logo';
+                            footerImg.onerror = function() {
+                                console.error('Failed to load footer logo:', logoUrl);
+                                // Fallback to default logo
+                                this.src = '/assets/aspri-logo.png';
+                                this.alt = 'Aspree';
+                            };
+                        } catch (error) {
+                            console.error('Error creating footer logo URL:', error);
+                            footerImg.src = '/assets/aspri-logo.png';
+                            footerImg.alt = 'Aspree';
+                        }
+                    } else {
+                        // Revert to default Aspree logo
+                        footerImg.src = '/assets/aspri-logo.png';
+                        footerImg.alt = 'Aspree';
+                    }
+                }
+            } catch (error) {
+                console.error('Error in updateBrandingPreview:', error);
             }
         }
 
