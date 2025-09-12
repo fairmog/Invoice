@@ -1557,13 +1557,13 @@
                     ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
                     <div style="background: ${businessProfile?.premiumActive && businessProfile.customHeaderBgColor ? 
                         `linear-gradient(135deg, ${businessProfile.customHeaderBgColor}, ${adjustBrightness(businessProfile.customHeaderBgColor, 20)})` : 
-                        'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: white; padding: 12px 0; text-align: center;">
+                        'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile?.premiumActive && businessProfile.customHeaderTextColor ? businessProfile.customHeaderTextColor : 'white'}; padding: 12px 0; text-align: center;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
                             ${businessProfile?.premiumActive && businessProfile.customHeaderLogoUrl ? 
                                 `<img src="${businessProfile.customHeaderLogoUrl}" alt="Header Logo" style="height: 32px; width: auto;">` :
                                 `<img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">`
                             }
-                            <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: ${businessProfile?.premiumActive && businessProfile.customHeaderTextColor ? businessProfile.customHeaderTextColor : 'white'};">
                                 ${businessProfile?.premiumActive && businessProfile.customHeaderText ? 
                                     businessProfile.customHeaderText : 
                                     'Powered by Aspree Invoice Generator'
