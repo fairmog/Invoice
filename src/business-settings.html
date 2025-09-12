@@ -1386,6 +1386,9 @@
                     const img = document.getElementById('headerLogoImg');
                     img.src = e.target.result;
                     preview.style.display = 'block';
+                    
+                    // Update the live preview immediately
+                    updateBrandingPreview();
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -1400,6 +1403,9 @@
                     const img = document.getElementById('footerLogoImg');
                     img.src = e.target.result;
                     preview.style.display = 'block';
+                    
+                    // Update the live preview immediately
+                    updateBrandingPreview();
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -1420,8 +1426,15 @@
 
             console.log(`📤 Uploading ${logoType} logo to ${endpoint}`);
 
+            // Get authentication headers 
+            const authHeaders = getAuthHeaders();
+
             const response = await fetch(endpoint, {
                 method: 'POST',
+                headers: {
+                    ...authHeaders
+                    // Note: Don't set Content-Type for FormData - browser will set it with boundary
+                },
                 body: formData
             });
 
@@ -1449,12 +1462,44 @@
             const previewHeader = document.getElementById('previewHeader');
             const previewHeaderText = document.getElementById('previewHeaderText');
             const previewFooter = document.getElementById('previewFooter');
+            const previewFooterLogo = document.getElementById('previewFooterLogo');
             
+            // Update colors and text
             previewHeader.style.background = `linear-gradient(135deg, ${headerBgColor}, ${adjustBrightness(headerBgColor, 20)})`;
             previewHeaderText.textContent = headerText;
             previewHeaderText.style.color = headerTextColor;
             previewFooter.style.background = `linear-gradient(135deg, ${footerBgColor}, ${adjustBrightness(footerBgColor, 20)})`;
             previewFooter.style.color = footerTextColor;
+            
+            // Update header logo (add if not exists, update if exists)
+            let headerLogoContainer = previewHeader.querySelector('.preview-header-logo');
+            if (!headerLogoContainer) {
+                headerLogoContainer = document.createElement('div');
+                headerLogoContainer.className = 'preview-header-logo';
+                headerLogoContainer.style.cssText = 'display: inline-block; margin-right: 8px; vertical-align: middle;';
+                previewHeaderText.parentNode.insertBefore(headerLogoContainer, previewHeaderText);
+            }
+            
+            // Show header logo if uploaded, otherwise hide
+            if (headerLogoFile || (currentPremiumSettings && currentPremiumSettings.customHeaderLogoUrl)) {
+                const logoUrl = headerLogoFile ? URL.createObjectURL(headerLogoFile) : currentPremiumSettings.customHeaderLogoUrl;
+                headerLogoContainer.innerHTML = `<img src="${logoUrl}" alt="Header Logo" style="height: 20px; width: auto; vertical-align: middle;">`;
+                headerLogoContainer.style.display = 'inline-block';
+            } else {
+                headerLogoContainer.style.display = 'none';
+            }
+            
+            // Update footer logo
+            const footerImg = previewFooterLogo.querySelector('img');
+            if (footerLogoFile || (currentPremiumSettings && currentPremiumSettings.customFooterLogoUrl)) {
+                const logoUrl = footerLogoFile ? URL.createObjectURL(footerLogoFile) : currentPremiumSettings.customFooterLogoUrl;
+                footerImg.src = logoUrl;
+                footerImg.alt = 'Custom Footer Logo';
+            } else {
+                // Revert to default Aspree logo
+                footerImg.src = '/assets/aspri-logo.png';
+                footerImg.alt = 'Aspree';
+            }
         }
 
         function adjustBrightness(hex, percent) {
