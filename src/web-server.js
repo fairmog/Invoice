@@ -3950,9 +3950,16 @@ app.put('/api/invoices/:id/payment-confirmations/reject', async (req, res) => {
   }
 });
 
-app.get('/api/invoices/number/:invoiceNumber', async (req, res) => {
+app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const invoice = await database.getInvoiceByNumber(req.params.invoiceNumber);
+    const merchantId = req.merchant.id;
+    const invoiceNumber = req.params.invoiceNumber;
+    
+    console.log(`🔍 Fetching invoice ${invoiceNumber} for merchant ${merchantId}`);
+    
+    // Get invoice with merchant isolation
+    const invoice = await database.getInvoiceByNumber(invoiceNumber, merchantId);
+    
     if (!invoice) {
       return res.status(404).json({
         success: false,
@@ -3965,10 +3972,10 @@ app.get('/api/invoices/number/:invoiceNumber', async (req, res) => {
       invoice
     });
   } catch (error) {
-    console.error('Error fetching invoice:', error);
+    console.error('❌ Error fetching invoice by number:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch invoice'
+      error: 'Failed to fetch invoice: ' + error.message
     });
   }
 });
