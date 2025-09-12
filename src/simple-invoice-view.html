@@ -1776,24 +1776,30 @@
                             <div class="summary-label">Subtotal</div>
                             <div class="summary-value">${formatCurrency(totals.subtotal)}</div>
                             
-                            ${totals.discount !== undefined && totals.discount !== null ? `
+                            ${totals.discount !== undefined && totals.discount !== null && totals.discount > 0 ? `
                             <div class="summary-label">${(() => {
-                                const discountType = invoice.calculations?.discountType;
-                                const discountValue = invoice.calculations?.discountValue;
-                                if (discountType === 'percentage') {
+                                const discountType = invoice.calculations?.discountType || invoice.discount_type;
+                                const discountValue = invoice.calculations?.discountValue || invoice.discount_value;
+                                if (discountType === 'percentage' && discountValue) {
                                     return `Diskon (${discountValue}%)`;
-                                } else {
+                                } else if (discountType === 'fixed' || discountType === 'amount') {
                                     return 'Diskon (Jumlah Tetap)';
+                                } else {
+                                    return 'Diskon';
                                 }
                             })()}</div>
                             <div class="summary-value">-${formatCurrency(totals.discount)}</div>
                             ` : ''}
                             
+                            ${totals.taxAmount > 0 ? `
                             <div class="summary-label">Pajak</div>
                             <div class="summary-value">${formatCurrency(totals.taxAmount)}</div>
+                            ` : ''}
                             
+                            ${totals.shippingCost > 0 ? `
                             <div class="summary-label">Biaya Kirim</div>
                             <div class="summary-value">${formatCurrency(totals.shippingCost)}</div>
+                            ` : ''}
                             
                             <div class="summary-label total-label">TOTAL</div>
                             <div class="summary-value total-value">${formatCurrency(totals.grandTotal)}</div>
