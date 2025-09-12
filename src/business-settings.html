@@ -1,0 +1,2612 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Business Settings - AI Invoice Generator</title>
+    <style>
+        /* Modern Purple Design System */
+        :root {
+            /* Primary Purple Palette */
+            --primary-purple: #8B5FFF;
+            --primary-dark: #6D46D6;
+            --primary-light: #A78BFF;
+            
+            /* Secondary/Accent Colors */
+            --accent-purple: #9966FF;
+            --light-accent: #B794F6;
+            --deep-purple: #553C9A;
+            
+            /* Neutral Colors */
+            --background: #FAFAFA;
+            --card-background: #FFFFFF;
+            --text-primary: #2D3748;
+            --text-secondary: #718096;
+            --border-color: #E2E8F0;
+            
+            /* Status Colors */
+            --success: #48BB78;
+            --warning: #ED8936;
+            --error: #F56565;
+            --info: #4299E1;
+            
+            /* Component Specific */
+            --shadow-soft: 0 4px 6px rgba(139, 95, 255, 0.05);
+            --shadow-medium: 0 10px 25px rgba(139, 95, 255, 0.1);
+            --shadow-strong: 0 20px 40px rgba(139, 95, 255, 0.15);
+            --gradient-primary: linear-gradient(135deg, var(--primary-purple) 0%, var(--accent-purple) 100%);
+            --gradient-card: linear-gradient(145deg, #FFFFFF 0%, #F8F9FF 100%);
+            --border-radius: 12px;
+            --border-radius-large: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 30px;
+            border-radius: var(--border-radius-large);
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .nav-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: var(--card-background);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: var(--primary-purple);
+            color: white;
+            border-color: var(--primary-purple);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .settings-section {
+            background: var(--card-background);
+            border-radius: var(--border-radius-large);
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-icon {
+            font-size: 2em;
+            color: var(--primary-purple);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px rgba(139, 95, 255, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-row-three {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-secondary {
+            background: var(--card-background);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38A169;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #DD6B20;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-connected {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--success);
+        }
+
+        .status-disconnected {
+            background: rgba(245, 101, 101, 0.1);
+            color: var(--error);
+        }
+
+        .status-mock {
+            background: rgba(237, 137, 54, 0.1);
+            color: var(--warning);
+        }
+
+        .help-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* Tax Configuration Styles */
+        .tax-config-container {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            background: linear-gradient(145deg, #FFFFFF 0%, #FAFBFF 100%);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+            accent-color: var(--primary-purple);
+        }
+
+        .tax-settings {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .email-test-section {
+            background: rgba(139, 95, 255, 0.05);
+            border: 1px solid rgba(139, 95, 255, 0.2);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-info {
+            background: rgba(66, 153, 225, 0.1);
+            color: var(--info);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+        }
+
+        .alert-success {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(72, 187, 120, 0.2);
+        }
+
+        .alert-warning {
+            background: rgba(237, 137, 54, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(237, 137, 54, 0.2);
+        }
+
+        .alert-error {
+            background: rgba(245, 101, 101, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(245, 101, 101, 0.2);
+        }
+
+        /* Tab Navigation Styles */
+        .tabs-container {
+            background: var(--card-background);
+            border-radius: var(--border-radius-large);
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .tabs-nav {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            overflow-x: auto;
+            padding: 0 10px;
+        }
+
+        .tab-button {
+            padding: 20px 25px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: fit-content;
+        }
+
+        .tab-button:hover {
+            color: var(--primary-purple);
+            background: rgba(139, 95, 255, 0.05);
+        }
+
+        .tab-button.active {
+            color: var(--primary-purple);
+            border-bottom-color: var(--primary-purple);
+            background: rgba(139, 95, 255, 0.08);
+        }
+
+        .tab-content {
+            padding: 30px;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .tab-panel h2 {
+            color: var(--text-primary);
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row,
+            .form-row-three {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-bar {
+                flex-direction: column;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            .tabs-nav {
+                padding: 0;
+            }
+
+            .tab-button {
+                padding: 15px 20px;
+                font-size: 14px;
+            }
+
+            .tab-content {
+                padding: 20px;
+            }
+            
+            /* Logo Upload Styling */
+            .logo-upload-container {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                margin-top: 12px;
+            }
+
+            .logo-preview {
+                width: 100px;
+                height: 100px;
+                border: 2px dashed var(--border-color);
+                border-radius: var(--border-radius);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--background);
+                cursor: pointer;
+                transition: var(--transition);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .logo-preview:hover {
+                border-color: var(--primary-purple);
+                background: rgba(139, 95, 255, 0.05);
+            }
+
+            .logo-placeholder {
+                text-align: center;
+                color: var(--text-secondary);
+                font-size: 12px;
+                font-weight: 500;
+                pointer-events: none;
+            }
+
+            .logo-controls {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                flex: 1;
+            }
+
+            .logo-controls .btn {
+                width: fit-content;
+                min-width: 140px;
+            }
+
+            #current-business-logo {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: calc(var(--border-radius) - 2px);
+            }
+
+            @media (max-width: 768px) {
+                .logo-upload-container {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .logo-preview {
+                    width: 80px;
+                    height: 80px;
+                }
+                
+                .logo-controls {
+                    width: 100%;
+                }
+                
+                .logo-controls .btn {
+                    width: 100%;
+                    min-width: auto;
+                }
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Business Settings</h1>
+            <p>Configure your business information and email settings</p>
+        </div>
+
+        <div class="nav-bar">
+            <a href="/generator" class="nav-btn">🏠 Home</a>
+            <a href="/merchant-dashboard.html" class="nav-btn">← Back to Dashboard</a>
+            <a href="/business-settings" class="nav-btn active">⚙️ Settings</a>
+        </div>
+
+        <!-- Tabbed Interface -->
+        <div class="tabs-container">
+            <div class="tabs-nav">
+                <button class="tab-button active" data-tab="business-info">
+                    🏢 Business Info
+                </button>
+                <button class="tab-button" data-tab="payment-methods">
+                    💳 Payment Methods
+                </button>
+                <button class="tab-button" data-tab="account-settings">
+                    👤 Account Settings
+                </button>
+                <button class="tab-button" data-tab="invoice-design">
+                    🎨 Invoice Design
+                </button>
+                <button class="tab-button" data-tab="email-setup">
+                    📧 Email & Setup
+                </button>
+            </div>
+
+            <div class="tab-content">
+                <!-- Business Information Tab -->
+                <div class="tab-panel active" id="business-info">
+                    <h2>🏢 Business Information</h2>
+
+            <form id="businessInfoForm">
+                <!-- Business Logo Upload -->
+                <div class="form-group">
+                    <label class="form-label">Business Logo</label>
+                    <div class="help-text">Upload your business logo to appear on invoices and documents</div>
+                    <div class="logo-upload-container">
+                        <div class="logo-preview" id="logo-preview" onclick="document.getElementById('business-logo-upload').click()">
+                            <img id="current-business-logo" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                            <div class="logo-placeholder" id="logo-placeholder">
+                                <div style="font-size: 32px; margin-bottom: 8px;">🏢</div>
+                                <div>Click to upload logo</div>
+                            </div>
+                        </div>
+                        <div class="logo-controls">
+                            <input type="file" id="business-logo-upload" accept="image/*" style="display: none;" onchange="previewBusinessLogo(event)">
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('business-logo-upload').click()">
+                                📁 Choose Logo
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="removeBusinessLogo()" id="remove-logo-btn" style="display: none;">
+                                🗑️ Remove Logo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hide Business Name Toggle -->
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="hideBusinessName">
+                        Hide business name in invoices
+                    </label>
+                    <div class="help-text">Enable this if your logo already contains your business name to avoid redundancy</div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Business Name</label>
+                        <input type="text" class="form-input" id="businessName" placeholder="Your Business Name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Business Email</label>
+                        <input type="email" class="form-input" id="businessEmail" placeholder="billing@yourbusiness.com">
+                        <div class="help-text">This will be used as the sender email for invoices</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Business Address</label>
+                    <input type="text" class="form-input" id="businessAddress" placeholder="Full business address">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-input" id="businessPhone" placeholder="+62 21 1234 5678">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Website</label>
+                        <input type="url" class="form-input" id="businessWebsite" placeholder="https://yourbusiness.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tax ID / NPWP</label>
+                    <input type="text" class="form-input" id="businessTaxId" placeholder="01.123.456.7-123.000">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tax Configuration</label>
+                    <div class="tax-config-container">
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="taxEnabled" onchange="toggleTaxSettings()">
+                                    <span class="checkmark"></span>
+                                    Enable tax on invoices
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="taxSettings" class="tax-settings" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Tax Rate (%)</label>
+                                    <input type="number" class="form-input" id="businessTaxRate" min="0" max="100" step="0.1" placeholder="e.g., 11 for 11% PPN">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Tax Name</label>
+                                    <input type="text" class="form-input" id="businessTaxName" placeholder="e.g., PPN, VAT, Sales Tax">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Tax Description</label>
+                                <input type="text" class="form-input" id="businessTaxDescription" placeholder="e.g., Pajak Pertambahan Nilai 11%">
+                                <div class="help-text">This will appear on invoices to explain the tax charge</div>
+                            </div>
+                        </div>
+                        
+                        <div class="help-text">
+                            <strong>Tax Options:</strong><br>
+                            • <strong>Disabled:</strong> No tax will be applied to any invoices<br>
+                            • <strong>Enabled:</strong> Default tax rate will be applied to all invoices<br>
+                            • You can override tax settings per invoice if needed
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms & Conditions Section -->
+                <div class="form-group">
+                    <label class="form-label">📋 Terms & Conditions</label>
+                    <textarea class="form-input" id="businessTerms" rows="4" placeholder="e.g., Pembayaran dalam 30 hari, barang yang sudah dibeli tidak dapat dikembalikan"></textarea>
+                    <div class="help-text">
+                        This text will appear in the "Syarat & Ketentuan" section of your invoices. Leave empty to use default: "Pembayaran dalam 30 hari"
+                    </div>
+                </div>
+
+                    <button type="submit" class="btn btn-primary">💾 Save Business Information</button>
+                </form>
+                </div>
+
+                <!-- Payment Methods Tab -->
+                <div class="tab-panel" id="payment-methods">
+                    <h2>💳 Payment Methods</h2>
+
+            <form id="paymentMethodsForm">
+                <div class="alert alert-info">
+                    <strong>💡 Payment Methods:</strong><br>
+                    Configure which payment methods are available to your customers. Only enabled methods will be shown on invoices.
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="enableBankTransfer" onchange="toggleBankTransferSettings()">
+                        <span class="checkmark"></span>
+                        Enable Bank Transfer
+                    </label>
+                    <div class="help-text">Allow customers to pay via bank transfer</div>
+                </div>
+                
+                <div id="bankTransferSettings" class="tax-settings" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Bank Name</label>
+                            <input type="text" class="form-input" id="bankName" placeholder="e.g., Bank BCA, Bank Mandiri">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Account Number</label>
+                            <input type="text" class="form-input" id="accountNumber" placeholder="1234567890">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Account Holder Name</label>
+                            <input type="text" class="form-input" id="accountHolderName" placeholder="Business Name or Owner Name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Bank Branch</label>
+                            <input type="text" class="form-input" id="bankBranch" placeholder="e.g., Jakarta Pusat (Optional)">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Transfer Instructions</label>
+                        <textarea class="form-input" id="transferInstructions" rows="3" placeholder="Additional instructions for customers (e.g., Please include invoice number in transfer description)"></textarea>
+                        <div class="help-text">These instructions will be shown to customers when they select bank transfer</div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="enableCreditCard" disabled>
+                        <span class="checkmark"></span>
+                        Enable Credit Card (Coming Soon)
+                    </label>
+                    <div class="help-text">Credit card integration will be available in future updates</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="enableXendit" onchange="toggleXenditSettings()">
+                        <span class="checkmark"></span>
+                        Enable Xendit Payment Gateway
+                    </label>
+                    <div class="help-text">Accept payments via Xendit (bank transfer, e-wallets, retail outlets)</div>
+                </div>
+
+                <div id="xenditSettings" class="tax-settings" style="display: none;">
+                    <div class="alert alert-info">
+                        <strong>🔐 Xendit Configuration:</strong><br>
+                        Use your own Xendit account credentials. Transactions will be processed directly through your Xendit account.
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Environment</label>
+                            <select class="form-input" id="xenditEnvironment">
+                                <option value="sandbox">Sandbox (Testing)</option>
+                                <option value="production">Production (Live)</option>
+                            </select>
+                            <div class="help-text">Start with sandbox for testing, switch to production when ready</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Xendit Secret Key</label>
+                            <input type="password" class="form-input" id="xenditSecretKey" placeholder="xnd_development_... or xnd_production_...">
+                            <div class="help-text">Your Xendit secret API key (will be encrypted)</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Xendit Public Key</label>
+                            <input type="text" class="form-input" id="xenditPublicKey" placeholder="xnd_public_...">
+                            <div class="help-text">Your Xendit public key for frontend operations</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Webhook Verification Token</label>
+                            <input type="password" class="form-input" id="xenditWebhookToken" placeholder="Your webhook verification token">
+                            <div class="help-text">For securing webhook communications (optional but recommended)</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Supported Payment Methods</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="xenditBankTransfer" checked>
+                                Bank Transfer
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="xenditEWallet" checked>
+                                E-Wallets (OVO, DANA, LinkAja)
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="xenditRetailOutlet" checked>
+                                Retail Outlets (Alfamart, Indomaret)
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="xenditCreditCard" checked>
+                                Credit/Debit Cards
+                            </label>
+                        </div>
+                        <div class="help-text">Select which payment methods to offer your customers</div>
+                    </div>
+
+                    <div class="email-test-section">
+                        <h4 style="margin-bottom: 15px;">🧪 Test Xendit Connection</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Test Amount (IDR)</label>
+                                <input type="number" class="form-input" id="xenditTestAmount" value="10000" min="10000">
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: end;">
+                                <button type="button" class="btn btn-secondary" onclick="testXenditConnection()">
+                                    🧪 Test Connection
+                                </button>
+                            </div>
+                        </div>
+                        <div id="xenditTestResult" style="margin-top: 10px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Webhook URL</label>
+                        <input type="text" class="form-input" id="xenditWebhookUrl" readonly>
+                        <div class="help-text">Add this URL to your Xendit dashboard webhook settings</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="enableEWallet" disabled>
+                        <span class="checkmark"></span>
+                        Enable E-Wallet (Coming Soon)
+                    </label>
+                    <div class="help-text">E-wallet integration (OVO, GoPay, DANA) will be available in future updates</div>
+                </div>
+
+                    <button type="submit" class="btn btn-primary">💾 Save Payment Methods</button>
+                </form>
+                </div>
+
+                <!-- Account Settings Tab -->
+                <div class="tab-panel" id="account-settings">
+                    <h2>👤 Account Settings</h2>
+
+                    <form id="accountInfoForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-input" id="accountName" placeholder="Your Full Name">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-input" id="accountEmail" placeholder="your.email@example.com">
+                                <div class="help-text">This is your login email and where account notifications are sent</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="form-input" id="accountPhone" placeholder="+62 812 3456 7890">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Time Zone</label>
+                                <select class="form-input" id="accountTimezone">
+                                    <option value="Asia/Jakarta">Jakarta (UTC+7)</option>
+                                    <option value="Asia/Makassar">Makassar (UTC+8)</option>
+                                    <option value="Asia/Jayapura">Jayapura (UTC+9)</option>
+                                    <option value="UTC">UTC (GMT+0)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">💾 Save Account Information</button>
+                    </form>
+
+                    <!-- Current Plan Information -->
+                    <h3 style="margin: 40px 0 20px; color: var(--text-primary);">📊 Current Plan & Usage</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                        <!-- Dynamic Plan Card -->
+                        <div id="currentPlanCard">
+                            <!-- Free Plan Card -->
+                            <div id="freePlanCard" style="border: 2px solid var(--success); border-radius: var(--border-radius-large); padding: 25px; background: rgba(72, 187, 120, 0.05); display: block;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                                    <span style="font-size: 2em;">🆓</span>
+                                    <div>
+                                        <h4 style="margin: 0; color: var(--success); font-size: 1.3em;">Free Plan</h4>
+                                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.9em;">Perfect for getting started</p>
+                                    </div>
+                                </div>
+                                <div style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px;">
+                                    <div>✅ Unlimited invoices</div>
+                                    <div>✅ Up to 100 customers</div>
+                                    <div>✅ Basic payment methods</div>
+                                    <div>✅ Email support</div>
+                                    <div>✅ Standard templates</div>
+                                </div>
+                                <button type="button" class="btn" onclick="changePlan('premium')" style="background: linear-gradient(135deg, #9F7AEA, #805AD5); color: white; border: none; padding: 10px 20px; font-weight: 600; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <span>👑</span> Upgrade to Premium
+                                </button>
+                            </div>
+
+                            <!-- Premium Plan Card -->
+                            <div id="premiumPlanCard" style="border: 2px solid #9F7AEA; border-radius: var(--border-radius-large); padding: 25px; background: linear-gradient(135deg, rgba(159, 122, 234, 0.1), rgba(128, 90, 213, 0.05)); display: none;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                                    <span style="font-size: 2em;">👑</span>
+                                    <div>
+                                        <h4 style="margin: 0; color: #9F7AEA; font-size: 1.3em;">Premium Plan</h4>
+                                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.9em;">Professional invoicing with custom branding</p>
+                                    </div>
+                                </div>
+                                <div style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px;">
+                                    <div>✅ Everything in Free Plan</div>
+                                    <div>👑 White-label branding</div>
+                                    <div>🎨 Custom colors & logos</div>
+                                    <div>📝 Custom header text</div>
+                                    <div>🚫 Remove Aspree branding</div>
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="changePlan('free')" style="width: 100%; padding: 10px 20px; font-weight: 600;">
+                                    Downgrade to Free
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Usage Statistics -->
+                        <div style="border: 2px solid var(--border-color); border-radius: var(--border-radius-large); padding: 25px;">
+                            <h4 style="margin: 0 0 20px; color: var(--text-primary);">📈 Usage This Month</h4>
+                            <div style="space-y: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <span>📄 Invoices Created</span>
+                                    <strong id="usageInvoices">0</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <span>👥 Total Customers</span>
+                                    <strong id="usageCustomers">0</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <span>💰 Total Revenue</span>
+                                    <strong id="usageRevenue">Rp 0</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <span>📧 Emails Sent</span>
+                                    <strong id="usageEmails">0</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Account Actions -->
+                    <h3 style="margin: 40px 0 20px; color: var(--text-primary);">🔧 Account Actions</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-secondary" onclick="exportAccountData()">
+                            📥 Export Data
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="downloadBackup()">
+                            💾 Download Backup
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="resetAccountData()">
+                            🔄 Reset Account
+                        </button>
+                    </div>
+                    <div class="help-text" style="margin-top: 10px;">
+                        Export your business data, create backups, or reset your account to start fresh.
+                    </div>
+                </div>
+
+                <!-- Invoice Design Tab -->
+                <div class="tab-panel" id="invoice-design">
+                    <h2>🎨 Invoice Design & Branding</h2>
+
+                    <!-- Premium Branding Section -->
+                    <div id="premiumBrandingSection">
+                        <!-- Free User Upgrade Prompt -->
+                        <div id="premiumUpgradePrompt" style="display: none;">
+                            <div class="alert" style="background: linear-gradient(135deg, #EDF2F7, #E2E8F0); border: 2px solid #9F7AEA; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                    <span style="font-size: 2em;">👑</span>
+                                    <div>
+                                        <h3 style="margin: 0; color: #9F7AEA; font-size: 1.4em;">Premium White-Label Branding</h3>
+                                        <p style="margin: 0; color: #4A5568; font-size: 0.95em;">Remove Aspree branding and use your own custom logos and colors</p>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 16px 0;">
+                                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                                        <div style="color: #9F7AEA; font-weight: 600; margin-bottom: 4px;">🎨 Custom Branding</div>
+                                        <div style="font-size: 0.9em; color: #4A5568;">Remove "Powered by Aspree" text and logos</div>
+                                    </div>
+                                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                                        <div style="color: #9F7AEA; font-weight: 600; margin-bottom: 4px;">📝 Custom Header Text</div>
+                                        <div style="font-size: 0.9em; color: #4A5568;">Add your own company header text</div>
+                                    </div>
+                                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                                        <div style="color: #9F7AEA; font-weight: 600; margin-bottom: 4px;">🖼️ Custom Logos</div>
+                                        <div style="font-size: 0.9em; color: #4A5568;">Upload your own header and footer logos</div>
+                                    </div>
+                                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                                        <div style="color: #9F7AEA; font-weight: 600; margin-bottom: 4px;">🎨 Custom Colors</div>
+                                        <div style="font-size: 0.9em; color: #4A5568;">Match your brand colors for headers and footers</div>
+                                    </div>
+                                </div>
+
+                                <div style="text-align: center; margin-top: 20px;">
+                                    <button type="button" class="btn" onclick="upgradeToPremiumFromSettings()" style="background: linear-gradient(135deg, #9F7AEA, #805AD5); color: white; border: none; padding: 12px 24px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                                        <span>👑</span> Upgrade to Premium - $9.99/month
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Premium User Controls -->
+                        <div id="premiumControls" style="display: none;">
+                            <h3 style="margin: 40px 0 20px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                <span>👑</span> Premium Branding Controls
+                            </h3>
+
+                            <!-- Premium Status Card -->
+                            <div style="background: linear-gradient(135deg, #9F7AEA, #805AD5); color: white; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <div>
+                                        <h4 style="margin: 0 0 4px; font-size: 1.2em;">🎉 Premium Plan Active</h4>
+                                        <p style="margin: 0; opacity: 0.9; font-size: 0.9em;">Professional invoices with your branding</p>
+                                    </div>
+                                    <button type="button" onclick="toggleAspreeBranding()" id="brandingToggleBtn" class="btn" style="background: white; color: #805AD5; border: none; padding: 8px 16px; font-weight: 600;">
+                                        Hide Aspree Branding
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Custom Header Section -->
+                            <div class="section" style="margin-bottom: 30px;">
+                                <h4 style="color: var(--text-primary); margin-bottom: 15px;">📝 Custom Header</h4>
+                                <div class="form-group">
+                                    <label for="customHeaderText">Header Text (replaces "Powered by Aspree Invoice Generator")</label>
+                                    <input type="text" id="customHeaderText" placeholder="e.g., Your Company Name Professional Invoices" maxlength="100" class="form-control">
+                                    <small style="color: var(--text-secondary);">Leave blank to hide header text completely</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="customHeaderLogo">Header Logo</label>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <input type="file" id="customHeaderLogo" accept="image/*" class="form-control" style="flex: 1;" onchange="previewHeaderLogo(this)">
+                                        <div id="headerLogoPreview" style="display: none; width: 120px; height: 40px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+                                            <img id="headerLogoImg" style="width: 100%; height: 100%; object-fit: contain;" alt="Header Logo Preview">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customHeaderBgColor">Header Background Color</label>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <input type="color" id="customHeaderBgColor" value="#311d6b" class="form-control" style="width: 60px; height: 40px; padding: 0;">
+                                        <input type="text" id="customHeaderBgColorText" value="#311d6b" class="form-control" style="flex: 1;" oninput="updateColorPicker(this, 'customHeaderBgColor')">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customHeaderTextColor">Header Text Color</label>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <input type="color" id="customHeaderTextColor" value="#ffffff" class="form-control" style="width: 60px; height: 40px; padding: 0;">
+                                        <input type="text" id="customHeaderTextColorText" value="#ffffff" class="form-control" style="flex: 1;" oninput="updateColorPicker(this, 'customHeaderTextColor')">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Custom Footer Section -->
+                            <div class="section" style="margin-bottom: 30px;">
+                                <h4 style="color: var(--text-primary); margin-bottom: 15px;">🖼️ Custom Footer</h4>
+                                
+                                <div class="form-group">
+                                    <label for="customFooterLogo">Footer Logo (replaces Aspree logo)</label>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <input type="file" id="customFooterLogo" accept="image/*" class="form-control" style="flex: 1;" onchange="previewFooterLogo(this)">
+                                        <div id="footerLogoPreview" style="display: none; width: 80px; height: 80px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+                                            <img id="footerLogoImg" style="width: 100%; height: 100%; object-fit: contain;" alt="Footer Logo Preview">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customFooterBgColor">Footer Background Color</label>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <input type="color" id="customFooterBgColor" value="#311d6b" class="form-control" style="width: 60px; height: 40px; padding: 0;">
+                                        <input type="text" id="customFooterBgColorText" value="#311d6b" class="form-control" style="flex: 1;" oninput="updateColorPicker(this, 'customFooterBgColor')">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customFooterTextColor">Footer Text Color</label>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <input type="color" id="customFooterTextColor" value="#ffffff" class="form-control" style="width: 60px; height: 40px; padding: 0;">
+                                        <input type="text" id="customFooterTextColorText" value="#ffffff" class="form-control" style="flex: 1;" oninput="updateColorPicker(this, 'customFooterTextColor')">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preview Section -->
+                            <div class="section" style="margin-bottom: 30px;">
+                                <h4 style="color: var(--text-primary); margin-bottom: 15px;">👁️ Live Preview</h4>
+                                <div id="brandingPreview" style="border: 2px solid #E2E8F0; border-radius: 8px; overflow: hidden; background: white; max-width: 500px;">
+                                    <!-- Preview header -->
+                                    <div id="previewHeader" style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 8px 12px; text-align: center; font-size: 12px;">
+                                        <span id="previewHeaderText">Powered by Aspree Invoice Generator</span>
+                                    </div>
+                                    <div style="padding: 12px; font-size: 12px; text-align: center; color: #666;">
+                                        Your invoice content here...
+                                    </div>
+                                    <!-- Preview footer -->
+                                    <div id="previewFooter" style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                                        <div>Terms & Contact Info</div>
+                                        <div id="previewFooterLogo">
+                                            <img src="/assets/aspri-logo.png" alt="Aspree" style="height: 24px; width: auto; opacity: 0.9;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Save Button -->
+                            <div class="form-group" style="text-align: center;">
+                                <button type="button" class="btn btn-primary" onclick="savePremiumBranding()">
+                                    <span>💾</span> Save Premium Branding Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email & Setup Tab -->
+                <div class="tab-panel" id="email-setup">
+                    <h2>📧 Email & Setup</h2>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px;">
+                        <h3 style="margin: 0; color: var(--text-primary);">Email Configuration</h3>
+                        <span id="emailStatus" class="status-indicator status-mock">
+                            🟡 Mock Mode
+                        </span>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>💡 Email Service Options:</strong><br>
+                        • <strong>SaaS Mode:</strong> Use our reliable email service (recommended for most users)<br>
+                        • <strong>Custom SMTP:</strong> Use your own email server (Gmail, Outlook, custom server)<br>
+                        • <strong>Smart Fallback:</strong> Try custom first, fallback to SaaS if it fails
+                    </div>
+
+                    <!-- Custom SMTP Configuration -->
+                    <h3 style="margin-bottom: 20px; color: var(--text-primary);">📮 Custom SMTP Settings</h3>
+                    
+                    <form id="emailConfigForm">
+                        <div class="form-row-three">
+                            <div class="form-group">
+                                <label class="form-label">SMTP Host</label>
+                                <input type="text" class="form-input" id="smtpHost" placeholder="smtp.gmail.com">
+                                <div class="help-text">Gmail: smtp.gmail.com, Outlook: smtp-mail.outlook.com</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">SMTP Port</label>
+                                <input type="number" class="form-input" id="smtpPort" placeholder="587" value="587">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Security</label>
+                                <select class="form-input" id="smtpSecure">
+                                    <option value="false">STARTTLS (587)</option>
+                                    <option value="true">SSL/TLS (465)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-input" id="smtpUser" placeholder="your-email@gmail.com">
+                                <div class="help-text">Your email address for sending invoices</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">App Password</label>
+                                <input type="password" class="form-input" id="smtpPass" placeholder="16-character app password">
+                                <div class="help-text">For Gmail: Use App Password, not regular password</div>
+                            </div>
+                        </div>
+
+                        <div class="email-test-section">
+                            <h4 style="margin-bottom: 15px;">🧪 Test Email Configuration</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Test Email Address</label>
+                                    <input type="email" class="form-input" id="testEmailAddress" placeholder="test@example.com">
+                                </div>
+                                <div class="form-group" style="display: flex; align-items: end;">
+                                    <button type="button" class="btn btn-secondary" onclick="testEmailConfiguration()">
+                                        🧪 Test Connection
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 15px; margin-top: 20px;">
+                            <button type="submit" class="btn btn-primary">💾 Save Email Settings</button>
+                            <button type="button" class="btn btn-warning" onclick="resetEmailSettings()">🔄 Reset to Defaults</button>
+                        </div>
+                    </form>
+
+                    <!-- Setup Guides -->
+                    <h3 style="margin: 40px 0 20px; color: var(--text-primary);">📚 Setup Guides</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <div style="border: 2px solid var(--border-color); border-radius: var(--border-radius); padding: 20px;">
+                            <h4 style="color: var(--primary-purple); margin-bottom: 10px;">📬 Gmail Setup</h4>
+                            <ol style="margin-left: 20px; color: var(--text-secondary);">
+                                <li>Enable 2-Factor Authentication</li>
+                                <li>Go to Security → App passwords</li>
+                                <li>Generate app password for "Mail"</li>
+                                <li>Use app password (not regular password)</li>
+                            </ol>
+                            <button class="btn btn-secondary" style="margin-top: 15px;" onclick="window.open('https://support.google.com/accounts/answer/185833', '_blank')">
+                                📖 Detailed Guide
+                            </button>
+                        </div>
+
+                        <div style="border: 2px solid var(--border-color); border-radius: var(--border-radius); padding: 20px;">
+                            <h4 style="color: var(--primary-purple); margin-bottom: 10px;">📧 Outlook Setup</h4>
+                            <ol style="margin-left: 20px; color: var(--text-secondary);">
+                                <li>Host: smtp-mail.outlook.com</li>
+                                <li>Port: 587</li>
+                                <li>Security: STARTTLS</li>
+                                <li>Use regular email password</li>
+                            </ol>
+                            <button class="btn btn-secondary" style="margin-top: 15px;" onclick="window.open('https://support.microsoft.com/en-us/office/pop-imap-and-smtp-settings-for-outlook-com-d088b986-291d-42b8-9564-9c414e2aa040', '_blank')">
+                                📖 Outlook Guide
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Premium Branding Variables
+        let currentPremiumSettings = null;
+        let headerLogoFile = null;
+        let footerLogoFile = null;
+
+        // Premium Branding Management
+        async function loadPremiumStatus() {
+            try {
+                const response = await fetch('/api/business/settings');
+                const data = await response.json();
+                
+                if (data.success && data.settings) {
+                    currentPremiumSettings = data.settings;
+                    updatePremiumUI(data.settings.premiumActive === true);
+                    if (data.settings.premiumActive) {
+                        populatePremiumFields(data.settings);
+                    }
+                } else {
+                    updatePremiumUI(false);
+                }
+            } catch (error) {
+                console.error('Error loading premium status:', error);
+                updatePremiumUI(false);
+            }
+        }
+
+        function updatePremiumUI(isPremium) {
+            const upgradePrompt = document.getElementById('premiumUpgradePrompt');
+            const premiumControls = document.getElementById('premiumControls');
+            
+            if (isPremium) {
+                upgradePrompt.style.display = 'none';
+                premiumControls.style.display = 'block';
+            } else {
+                upgradePrompt.style.display = 'block';
+                premiumControls.style.display = 'none';
+            }
+        }
+
+        function populatePremiumFields(settings) {
+            // Populate form fields with current settings
+            document.getElementById('customHeaderText').value = settings.customHeaderText || '';
+            document.getElementById('customHeaderBgColor').value = settings.customHeaderBgColor || '#311d6b';
+            document.getElementById('customHeaderBgColorText').value = settings.customHeaderBgColor || '#311d6b';
+            document.getElementById('customFooterBgColor').value = settings.customFooterBgColor || '#311d6b';
+            document.getElementById('customFooterBgColorText').value = settings.customFooterBgColor || '#311d6b';
+            
+            // Populate text color fields
+            document.getElementById('customHeaderTextColor').value = settings.customHeaderTextColor || '#ffffff';
+            document.getElementById('customHeaderTextColorText').value = settings.customHeaderTextColor || '#ffffff';
+            document.getElementById('customFooterTextColor').value = settings.customFooterTextColor || '#ffffff';
+            document.getElementById('customFooterTextColorText').value = settings.customFooterTextColor || '#ffffff';
+            
+            // Display existing logos if available
+            if (settings.customHeaderLogoUrl) {
+                const headerPreview = document.getElementById('headerLogoPreview');
+                const headerImg = document.getElementById('headerLogoImg');
+                headerImg.src = settings.customHeaderLogoUrl;
+                headerPreview.style.display = 'block';
+            }
+            
+            if (settings.customFooterLogoUrl) {
+                const footerPreview = document.getElementById('footerLogoPreview');
+                const footerImg = document.getElementById('footerLogoImg');
+                footerImg.src = settings.customFooterLogoUrl;
+                footerPreview.style.display = 'block';
+            }
+            
+            // Update toggle button
+            const toggleBtn = document.getElementById('brandingToggleBtn');
+            if (settings.hideAspreeBranding) {
+                toggleBtn.textContent = 'Show Aspree Branding';
+            } else {
+                toggleBtn.textContent = 'Hide Aspree Branding';
+            }
+
+            // Update preview
+            updateBrandingPreview();
+        }
+
+        function upgradeToPremiumFromSettings() {
+            // For demo purposes, activate premium immediately
+            // In production, this would integrate with payment processing
+            activatePremium();
+        }
+
+        async function activatePremium() {
+            try {
+                const response = await fetch('/api/premium/activate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        premiumSettings: {
+                            premiumActive: true
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    showAlert('🎉 Premium activated! You now have access to white-label branding features.', 'success');
+                    loadPremiumStatus(); // Reload to show premium controls
+                } else {
+                    throw new Error('Failed to activate premium');
+                }
+            } catch (error) {
+                console.error('Error activating premium:', error);
+                showAlert('❌ Failed to activate premium. Please try again.', 'error');
+            }
+        }
+
+        async function toggleAspreeBranding() {
+            if (!currentPremiumSettings) return;
+            
+            const newValue = !currentPremiumSettings.hideAspreeBranding;
+            
+            try {
+                const response = await fetch('/api/business/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        hideAspreeBranding: newValue
+                    })
+                });
+
+                if (response.ok) {
+                    currentPremiumSettings.hideAspreeBranding = newValue;
+                    const toggleBtn = document.getElementById('brandingToggleBtn');
+                    toggleBtn.textContent = newValue ? 'Show Aspree Branding' : 'Hide Aspree Branding';
+                    updateBrandingPreview();
+                    showAlert(newValue ? '✅ Aspree branding hidden' : '✅ Aspree branding restored', 'success');
+                } else {
+                    throw new Error('Failed to toggle branding');
+                }
+            } catch (error) {
+                console.error('Error toggling branding:', error);
+                showAlert('❌ Failed to update branding setting', 'error');
+            }
+        }
+
+        function updateColorPicker(textInput, colorPickerId) {
+            document.getElementById(colorPickerId).value = textInput.value;
+            updateBrandingPreview();
+        }
+
+        function previewHeaderLogo(input) {
+            if (input.files && input.files[0]) {
+                headerLogoFile = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('headerLogoPreview');
+                    const img = document.getElementById('headerLogoImg');
+                    img.src = e.target.result;
+                    preview.style.display = 'block';
+                    
+                    // Update the live preview immediately
+                    updateBrandingPreview();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function previewFooterLogo(input) {
+            if (input.files && input.files[0]) {
+                footerLogoFile = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('footerLogoPreview');
+                    const img = document.getElementById('footerLogoImg');
+                    img.src = e.target.result;
+                    preview.style.display = 'block';
+                    
+                    // Update the live preview immediately
+                    updateBrandingPreview();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function uploadPremiumLogo(file, logoType) {
+            if (!file) {
+                throw new Error('No file provided');
+            }
+
+            const formData = new FormData();
+            const fieldName = logoType === 'header' ? 'headerLogo' : 'footerLogo';
+            formData.append(fieldName, file);
+
+            const endpoint = logoType === 'header' 
+                ? '/api/premium/upload/header-logo' 
+                : '/api/premium/upload/footer-logo';
+
+            console.log(`📤 Uploading ${logoType} logo to ${endpoint}`);
+
+            // Get authentication headers 
+            const authHeaders = getAuthHeaders();
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    ...authHeaders
+                    // Note: Don't set Content-Type for FormData - browser will set it with boundary
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || `Failed to upload ${logoType} logo`);
+            }
+
+            const result = await response.json();
+            console.log(`✅ ${logoType} logo uploaded:`, result);
+            
+            return {
+                url: result.url,
+                publicId: result.publicId
+            };
+        }
+
+        function updateBrandingPreview() {
+            try {
+                const headerText = document.getElementById('customHeaderText').value || 'Powered by Aspree Invoice Generator';
+                const headerBgColor = document.getElementById('customHeaderBgColor').value;
+                const footerBgColor = document.getElementById('customFooterBgColor').value;
+                const headerTextColor = document.getElementById('customHeaderTextColor').value;
+                const footerTextColor = document.getElementById('customFooterTextColor').value;
+                
+                const previewHeader = document.getElementById('previewHeader');
+                const previewHeaderText = document.getElementById('previewHeaderText');
+                const previewFooter = document.getElementById('previewFooter');
+                const previewFooterLogo = document.getElementById('previewFooterLogo');
+
+                if (!previewHeader || !previewHeaderText || !previewFooter || !previewFooterLogo) {
+                    console.error('Missing preview elements');
+                    return;
+                }
+            
+            // Update colors and text
+            previewHeader.style.background = `linear-gradient(135deg, ${headerBgColor}, ${adjustBrightness(headerBgColor, 20)})`;
+            previewHeaderText.textContent = headerText;
+            previewHeaderText.style.color = headerTextColor;
+            previewFooter.style.background = `linear-gradient(135deg, ${footerBgColor}, ${adjustBrightness(footerBgColor, 20)})`;
+            previewFooter.style.color = footerTextColor;
+            
+            // Update header logo (add if not exists, update if exists)
+            let headerLogoContainer = previewHeader.querySelector('.preview-header-logo');
+            if (!headerLogoContainer) {
+                headerLogoContainer = document.createElement('div');
+                headerLogoContainer.className = 'preview-header-logo';
+                headerLogoContainer.style.cssText = 'display: inline-block; margin-right: 8px; vertical-align: middle;';
+                previewHeaderText.parentNode.insertBefore(headerLogoContainer, previewHeaderText);
+            }
+            
+                // Show header logo if uploaded, otherwise hide
+                if (headerLogoFile || (currentPremiumSettings && currentPremiumSettings.customHeaderLogoUrl)) {
+                    try {
+                        const logoUrl = headerLogoFile ? URL.createObjectURL(headerLogoFile) : currentPremiumSettings.customHeaderLogoUrl;
+                        headerLogoContainer.innerHTML = `<img src="${logoUrl}" alt="Header Logo" style="height: 20px; width: auto; vertical-align: middle;" onerror="this.style.display='none'; console.error('Failed to load header logo:', '${logoUrl}');">`;
+                        headerLogoContainer.style.display = 'inline-block';
+                    } catch (error) {
+                        console.error('Error creating header logo URL:', error);
+                        headerLogoContainer.style.display = 'none';
+                    }
+                } else {
+                    headerLogoContainer.style.display = 'none';
+                }
+            
+                // Update footer logo
+                const footerImg = previewFooterLogo.querySelector('img');
+                if (footerImg) {
+                    if (footerLogoFile || (currentPremiumSettings && currentPremiumSettings.customFooterLogoUrl)) {
+                        try {
+                            const logoUrl = footerLogoFile ? URL.createObjectURL(footerLogoFile) : currentPremiumSettings.customFooterLogoUrl;
+                            footerImg.src = logoUrl;
+                            footerImg.alt = 'Custom Footer Logo';
+                            footerImg.onerror = function() {
+                                console.error('Failed to load footer logo:', logoUrl);
+                                // Fallback to default logo
+                                this.src = '/assets/aspri-logo.png';
+                                this.alt = 'Aspree';
+                            };
+                        } catch (error) {
+                            console.error('Error creating footer logo URL:', error);
+                            footerImg.src = '/assets/aspri-logo.png';
+                            footerImg.alt = 'Aspree';
+                        }
+                    } else {
+                        // Revert to default Aspree logo
+                        footerImg.src = '/assets/aspri-logo.png';
+                        footerImg.alt = 'Aspree';
+                    }
+                }
+            } catch (error) {
+                console.error('Error in updateBrandingPreview:', error);
+            }
+        }
+
+        function adjustBrightness(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+
+        async function savePremiumBranding() {
+            const headerText = document.getElementById('customHeaderText').value;
+            const headerBgColor = document.getElementById('customHeaderBgColor').value;
+            const footerBgColor = document.getElementById('customFooterBgColor').value;
+            const headerTextColor = document.getElementById('customHeaderTextColor').value;
+            const footerTextColor = document.getElementById('customFooterTextColor').value;
+            
+            try {
+                // First save basic settings
+                const settingsData = {
+                    customHeaderText: headerText,
+                    customHeaderBgColor: headerBgColor,
+                    customFooterBgColor: footerBgColor,
+                    customHeaderTextColor: headerTextColor,
+                    customFooterTextColor: footerTextColor
+                };
+
+                const response = await fetch('/api/business/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settingsData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save settings');
+                }
+
+                // Upload logos if provided
+                let logoResults = {};
+                
+                // Upload header logo if selected
+                if (headerLogoFile) {
+                    try {
+                        showAlert('Uploading header logo...', 'info');
+                        const headerLogoResult = await uploadPremiumLogo(headerLogoFile, 'header');
+                        logoResults.headerLogo = headerLogoResult;
+                        
+                        // Update settings with header logo URL
+                        await fetch('/api/business/settings', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                customHeaderLogoUrl: headerLogoResult.url,
+                                customHeaderLogoPublicId: headerLogoResult.publicId
+                            })
+                        });
+                    } catch (error) {
+                        console.error('Error uploading header logo:', error);
+                        showAlert('⚠️ Header logo upload failed: ' + error.message, 'warning');
+                    }
+                }
+
+                // Upload footer logo if selected
+                if (footerLogoFile) {
+                    try {
+                        showAlert('Uploading footer logo...', 'info');
+                        const footerLogoResult = await uploadPremiumLogo(footerLogoFile, 'footer');
+                        logoResults.footerLogo = footerLogoResult;
+                        
+                        // Update settings with footer logo URL
+                        await fetch('/api/business/settings', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                customFooterLogoUrl: footerLogoResult.url,
+                                customFooterLogoPublicId: footerLogoResult.publicId
+                            })
+                        });
+                    } catch (error) {
+                        console.error('Error uploading footer logo:', error);
+                        showAlert('⚠️ Footer logo upload failed: ' + error.message, 'warning');
+                    }
+                }
+
+                showAlert('✅ Premium branding settings saved successfully!', 'success');
+                currentPremiumSettings = { ...currentPremiumSettings, ...settingsData, ...logoResults };
+                
+            } catch (error) {
+                console.error('Error saving premium branding:', error);
+                showAlert('❌ Failed to save premium branding settings', 'error');
+            }
+        }
+
+        // Initialize premium branding on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPremiumStatus();
+            
+            // Add event listeners for real-time preview updates
+            document.getElementById('customHeaderText').addEventListener('input', updateBrandingPreview);
+            document.getElementById('customHeaderBgColor').addEventListener('change', function() {
+                document.getElementById('customHeaderBgColorText').value = this.value;
+                updateBrandingPreview();
+            });
+            document.getElementById('customFooterBgColor').addEventListener('change', function() {
+                document.getElementById('customFooterBgColorText').value = this.value;
+                updateBrandingPreview();
+            });
+            
+            // Add event listeners for text color inputs
+            document.getElementById('customHeaderTextColor').addEventListener('change', function() {
+                document.getElementById('customHeaderTextColorText').value = this.value;
+                updateBrandingPreview();
+            });
+            document.getElementById('customFooterTextColor').addEventListener('change', function() {
+                document.getElementById('customFooterTextColorText').value = this.value;
+                updateBrandingPreview();
+            });
+            
+            // Handle URL hash for direct navigation to premium section
+            if (window.location.hash === '#premium') {
+                // Scroll to premium section
+                setTimeout(() => {
+                    document.getElementById('premiumBrandingSection').scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+            }
+        });
+
+        // Tab Management
+        function switchTab(tabId) {
+            // Hide all tab panels
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab panel
+            document.getElementById(tabId).classList.add('active');
+            
+            // Add active class to selected tab button
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            
+            // Save active tab to localStorage
+            localStorage.setItem('activeSettingsTab', tabId);
+        }
+        
+        // Add click listeners to tab buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Restore last active tab or default to business-info
+            const activeTab = localStorage.getItem('activeSettingsTab') || 'business-info';
+            switchTab(activeTab);
+            
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Load settings for all tabs
+            loadBusinessSettings();
+            loadEmailSettings();
+            loadPaymentMethods();
+            checkEmailStatus();
+            loadAccountSettings();
+            loadUsageStatistics();
+        });
+
+        // Authentication Helper Functions
+        function getMerchantToken() {
+            // Check localStorage first, then sessionStorage
+            return localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
+        }
+
+        function getAuthHeaders() {
+            const token = getMerchantToken();
+            if (!token) {
+                console.error('❌ No merchant token found');
+                throw new Error('Authentication required. Please log in again.');
+            }
+            
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function getAuthHeadersForFormData() {
+            const token = getMerchantToken();
+            if (!token) {
+                console.error('❌ No merchant token found');
+                throw new Error('Authentication required. Please log in again.');
+            }
+            
+            // Don't set Content-Type for FormData - browser will set it with boundary
+            return {
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        function handleAuthError(error) {
+            console.error('🔐 Authentication error:', error);
+            if (error.message.includes('Authentication required') || 
+                error.message.includes('Token expired') ||
+                error.message.includes('Invalid token')) {
+                showAlert('Session expired. Please log in again.', 'error');
+                // Redirect to login after a delay
+                setTimeout(() => {
+                    window.location.href = '/auth/login';
+                }, 2000);
+                return true;
+            }
+            return false;
+        }
+
+        // Business Logo Upload Functions
+        function previewBusinessLogo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                showAlert('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
+                return;
+            }
+
+            // Validate file size (5MB max)
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showAlert('Logo file size must be less than 5MB', 'error');
+                return;
+            }
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const logoImg = document.getElementById('current-business-logo');
+                const logoPlaceholder = document.getElementById('logo-placeholder');
+                const removeBtn = document.getElementById('remove-logo-btn');
+                
+                logoImg.src = e.target.result;
+                logoImg.style.display = 'block';
+                logoPlaceholder.style.display = 'none';
+                removeBtn.style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+
+            // Upload the file immediately
+            uploadBusinessLogo(file);
+        }
+
+        async function uploadBusinessLogo(file) {
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            try {
+                console.log('📸 Uploading business logo...');
+                showAlert('Uploading logo...', 'info');
+
+                // Get authentication headers for FormData request
+                const authHeaders = getAuthHeadersForFormData();
+
+                const response = await fetch('/api/upload-business-logo', {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: formData
+                });
+
+                if (response.status === 401) {
+                    throw new Error('Authentication required. Please log in again.');
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('Logo uploaded successfully!', 'success');
+                    console.log('✅ Logo uploaded:', result.logoUrl);
+                    
+                    // Update the logo display immediately after successful upload with forced refresh
+                    const logoImg = document.getElementById('current-business-logo');
+                    logoImg.onload = () => console.log('🖼️ New logo loaded successfully');
+                    displayCurrentLogo(result.logoUrl);
+                    console.log('🖼️ Logo preview updated in UI with cache-busting');
+                } else {
+                    throw new Error(result.error || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('❌ Logo upload failed:', error);
+                
+                // Handle authentication errors specially
+                if (handleAuthError(error)) {
+                    return;
+                }
+                
+                showAlert('Failed to upload logo: ' + error.message, 'error');
+                
+                // Reset preview on error
+                resetLogoPreview();
+            }
+        }
+
+        async function removeBusinessLogo() {
+            try {
+                console.log('🗑️ Removing business logo...');
+                showAlert('Removing logo...', 'info');
+
+                const authHeaders = getAuthHeaders();
+
+                const response = await fetch('/api/remove-business-logo', {
+                    method: 'DELETE',
+                    headers: authHeaders
+                });
+
+                if (response.status === 401) {
+                    throw new Error('Authentication required. Please log in again.');
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('Logo removed successfully!', 'success');
+                    console.log('✅ Logo removed');
+                    resetLogoPreview();
+                } else {
+                    throw new Error(result.error || 'Remove failed');
+                }
+            } catch (error) {
+                console.error('❌ Logo removal failed:', error);
+                
+                // Handle authentication errors specially
+                if (handleAuthError(error)) {
+                    return;
+                }
+                
+                showAlert('Failed to remove logo: ' + error.message, 'error');
+            }
+        }
+
+        function resetLogoPreview() {
+            const logoImg = document.getElementById('current-business-logo');
+            const logoPlaceholder = document.getElementById('logo-placeholder');
+            const removeBtn = document.getElementById('remove-logo-btn');
+            const fileInput = document.getElementById('business-logo-upload');
+            
+            logoImg.style.display = 'none';
+            logoImg.src = '';
+            logoPlaceholder.style.display = 'block';
+            removeBtn.style.display = 'none';
+            fileInput.value = '';
+        }
+
+        function displayCurrentLogo(logoUrl) {
+            if (logoUrl) {
+                const logoImg = document.getElementById('current-business-logo');
+                const logoPlaceholder = document.getElementById('logo-placeholder');
+                const removeBtn = document.getElementById('remove-logo-btn');
+                
+                // Add cache-busting parameter if not already present
+                const cacheBustedUrl = logoUrl.includes('?v=') ? logoUrl : `${logoUrl}?v=${Date.now()}`;
+                
+                logoImg.src = cacheBustedUrl;
+                logoImg.style.display = 'block';
+                logoPlaceholder.style.display = 'none';
+                removeBtn.style.display = 'inline-block';
+            } else {
+                resetLogoPreview();
+            }
+        }
+
+        async function loadBusinessSettings() {
+            try {
+                const authHeaders = getAuthHeaders();
+                
+                const response = await fetch('/api/business-settings', {
+                    headers: authHeaders
+                });
+                
+                if (response.status === 401) {
+                    throw new Error('Authentication required. Please log in again.');
+                }
+                
+                const settings = await response.json();
+                console.log('🔍 Loaded business settings:', settings);
+                console.log('🔍 Logo fields in settings:', {
+                    logoUrl: settings.logoUrl,
+                    logo_url: settings.logo_url,
+                    logoPublicId: settings.logoPublicId,
+                    logo_public_id: settings.logo_public_id
+                });
+                
+                if (settings) {
+                    document.getElementById('businessName').value = settings.name || '';
+                    document.getElementById('businessEmail').value = settings.email || '';
+                    document.getElementById('businessAddress').value = settings.address || '';
+                    document.getElementById('businessPhone').value = settings.phone || '';
+                    document.getElementById('businessWebsite').value = settings.website || '';
+                    document.getElementById('businessTaxId').value = settings.taxId || settings.tax_id || '';
+                    document.getElementById('businessTaxRate').value = settings.taxRate || settings.tax_rate || 0;
+                    document.getElementById('businessTaxName').value = settings.taxName || settings.tax_name || 'PPN';
+                    document.getElementById('businessTaxDescription').value = settings.taxDescription || settings.tax_description || '';
+                    document.getElementById('hideBusinessName').checked = settings.hideBusinessName || settings.hide_business_name || false;
+                    document.getElementById('businessTerms').value = settings.termsAndConditions || settings.terms_conditions || '';
+                    
+                    // Handle tax enabled state
+                    const taxRate = settings.taxRate || settings.tax_rate || 0;
+                    const taxEnabled = settings.taxEnabled || settings.tax_enabled || (taxRate > 0);
+                    document.getElementById('taxEnabled').checked = taxEnabled;
+                    toggleTaxSettings(); // Show/hide tax settings based on state
+                    
+                    // Display current logo if exists
+                    const logoUrl = settings.logoUrl || settings.logo_url || '';
+                    displayCurrentLogo(logoUrl);
+                }
+            } catch (error) {
+                console.error('Error loading business settings:', error);
+                
+                // Handle authentication errors specially
+                if (handleAuthError(error)) {
+                    return;
+                }
+                
+                showAlert('Failed to load business settings: ' + error.message, 'error');
+            }
+        }
+
+        async function loadEmailSettings() {
+            try {
+                const response = await fetch('/api/email-settings');
+                const settings = await response.json();
+                
+                if (settings) {
+                    document.getElementById('smtpHost').value = settings.host || 'smtp.gmail.com';
+                    document.getElementById('smtpPort').value = settings.port || 587;
+                    document.getElementById('smtpSecure').value = settings.secure || 'false';
+                    document.getElementById('smtpUser').value = settings.user || '';
+                    // Don't load password for security
+                }
+            } catch (error) {
+                console.error('Error loading email settings:', error);
+            }
+        }
+
+        async function checkEmailStatus() {
+            try {
+                const response = await fetch('/api/email-status');
+                const status = await response.json();
+                
+                const statusElement = document.getElementById('emailStatus');
+                
+                if (status.saasConfigured && status.customConfigured) {
+                    statusElement.className = 'status-indicator status-connected';
+                    statusElement.innerHTML = '🟢 SaaS + Custom';
+                } else if (status.saasConfigured) {
+                    statusElement.className = 'status-indicator status-connected';
+                    statusElement.innerHTML = '🟢 SaaS Only';
+                } else if (status.customConfigured) {
+                    statusElement.className = 'status-indicator status-connected';
+                    statusElement.innerHTML = '🟢 Custom Only';
+                } else {
+                    statusElement.className = 'status-indicator status-mock';
+                    statusElement.innerHTML = '🟡 Mock Mode';
+                }
+            } catch (error) {
+                console.error('Error checking email status:', error);
+            }
+        }
+
+        // Business Information Form
+        document.getElementById('businessInfoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // First, get existing business settings to merge with new data (same logic as working modal)
+            console.log('📥 Getting existing business settings to merge...');
+            let existingSettings = {};
+            try {
+                const existingResponse = await fetch('/api/business-settings');
+                if (existingResponse.ok) {
+                    const existingData = await existingResponse.json();
+                    existingSettings = existingData.settings || {};
+                    console.log('✅ Existing settings loaded for dashboard:', existingSettings);
+                }
+            } catch (error) {
+                console.warn('⚠️  Could not load existing settings, proceeding with new data only:', error);
+            }
+
+            // Merge with existing settings to avoid data loss (same logic as working modal)
+            const settings = {
+                // Preserve existing fields that might not be in the dashboard form
+                ...existingSettings,
+                
+                // Update with form data
+                name: document.getElementById('businessName').value,
+                email: document.getElementById('businessEmail').value,
+                address: document.getElementById('businessAddress').value,
+                phone: document.getElementById('businessPhone').value,
+                website: document.getElementById('businessWebsite').value,
+                taxId: document.getElementById('businessTaxId').value,
+                taxEnabled: document.getElementById('taxEnabled').checked,
+                taxRate: parseFloat(document.getElementById('businessTaxRate').value) || 0,
+                taxName: document.getElementById('businessTaxName').value || 'PPN',
+                taxDescription: document.getElementById('businessTaxDescription').value || '',
+                hideBusinessName: document.getElementById('hideBusinessName').checked,
+                termsAndConditions: document.getElementById('businessTerms').value || '',
+                
+                // Preserve important fields from existing settings - only include if they have values
+                ...(existingSettings.logoUrl || existingSettings.logo_url ? { logoUrl: existingSettings.logoUrl || existingSettings.logo_url } : {}),
+                ...(existingSettings.logoPublicId || existingSettings.logo_public_id ? { logoPublicId: existingSettings.logoPublicId || existingSettings.logo_public_id } : {}),
+                ...(existingSettings.logoFilename || existingSettings.logo_filename ? { logoFilename: existingSettings.logoFilename || existingSettings.logo_filename } : {})
+            };
+            
+            console.log('💾 Saving merged business settings from dashboard:', settings);
+
+            try {
+                const response = await fetch('/api/business-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    showAlert('Business information saved successfully!', 'success');
+                    
+                    // Notify main page to refresh business data if it's open
+                    try {
+                        // Try to access the main page if opened from there
+                        if (window.opener && !window.opener.closed) {
+                            // Check if the main page has our reload function
+                            if (typeof window.opener.loadBusinessDataFromAPI === 'function') {
+                                console.log('🔄 Refreshing main page business data...');
+                                window.opener.loadBusinessDataFromAPI();
+                            }
+                        }
+                        
+                        // Also broadcast to other windows/tabs using BroadcastChannel
+                        const channel = new BroadcastChannel('business-settings-updates');
+                        channel.postMessage({ type: 'business-data-updated', data: settings });
+                        channel.close();
+                    } catch (error) {
+                        // Ignore errors if cross-page communication fails
+                        console.log('Cross-page update attempted but not available');
+                    }
+                } else {
+                    showAlert('Failed to save business information', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving business settings:', error);
+                showAlert('Error saving business information', 'error');
+            }
+        });
+
+        // Email Configuration Form
+        document.getElementById('emailConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const settings = {
+                host: document.getElementById('smtpHost').value,
+                port: parseInt(document.getElementById('smtpPort').value),
+                secure: document.getElementById('smtpSecure').value === 'true',
+                user: document.getElementById('smtpUser').value,
+                pass: document.getElementById('smtpPass').value
+            };
+
+            try {
+                const response = await fetch('/api/email-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    showAlert('Email settings saved successfully! Restarting email service...', 'success');
+                    setTimeout(() => {
+                        checkEmailStatus();
+                    }, 2000);
+                } else {
+                    showAlert('Failed to save email settings', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving email settings:', error);
+                showAlert('Error saving email settings', 'error');
+            }
+        });
+
+        async function testEmailConfiguration() {
+            const testEmail = document.getElementById('testEmailAddress').value;
+            
+            if (!testEmail) {
+                showAlert('Please enter a test email address', 'warning');
+                return;
+            }
+
+            try {
+                showAlert('Testing email configuration...', 'info');
+                
+                const response = await fetch('/api/test-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        testEmail: testEmail,
+                        settings: {
+                            host: document.getElementById('smtpHost').value,
+                            port: parseInt(document.getElementById('smtpPort').value),
+                            secure: document.getElementById('smtpSecure').value === 'true',
+                            user: document.getElementById('smtpUser').value,
+                            pass: document.getElementById('smtpPass').value
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(`Test email sent successfully! Check ${testEmail} for the test message.`, 'success');
+                } else {
+                    showAlert(`Test failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error testing email:', error);
+                showAlert('Error testing email configuration', 'error');
+            }
+        }
+
+        function resetEmailSettings() {
+            if (confirm('Reset email settings to defaults?')) {
+                document.getElementById('smtpHost').value = 'smtp.gmail.com';
+                document.getElementById('smtpPort').value = '587';
+                document.getElementById('smtpSecure').value = 'false';
+                document.getElementById('smtpUser').value = '';
+                document.getElementById('smtpPass').value = '';
+                showAlert('Email settings reset to defaults', 'info');
+            }
+        }
+
+        // Toggle tax settings visibility
+        function toggleTaxSettings() {
+            const taxEnabled = document.getElementById('taxEnabled').checked;
+            const taxSettings = document.getElementById('taxSettings');
+            
+            if (taxEnabled) {
+                taxSettings.style.display = 'block';
+            } else {
+                taxSettings.style.display = 'none';
+                // Clear tax fields when disabled
+                document.getElementById('businessTaxRate').value = '0';
+            }
+        }
+
+        // Payment Methods Functions
+        async function loadPaymentMethods() {
+            try {
+                const response = await fetch('/api/payment-methods');
+                const methods = await response.json();
+                
+                if (methods) {
+                    // Handle API response structure (methods.paymentMethods or methods)
+                    const paymentData = methods.paymentMethods || methods;
+                    
+                    // Bank Transfer settings - handle both snake_case and camelCase
+                    const bankTransfer = paymentData.bankTransfer || paymentData.bank_transfer || {};
+                    document.getElementById('enableBankTransfer').checked = bankTransfer.enabled || false;
+                    document.getElementById('bankName').value = bankTransfer.bankName || bankTransfer.bank_name || '';
+                    document.getElementById('accountNumber').value = bankTransfer.accountNumber || bankTransfer.account_number || '';
+                    document.getElementById('accountHolderName').value = bankTransfer.accountHolderName || bankTransfer.account_holder_name || '';
+                    document.getElementById('bankBranch').value = bankTransfer.bankBranch || bankTransfer.bank_branch || '';
+                    document.getElementById('transferInstructions').value = bankTransfer.instructions || '';
+                    
+                    // Xendit settings
+                    const xendit = paymentData.xendit || {};
+                    document.getElementById('enableXendit').checked = xendit.enabled || false;
+                    document.getElementById('xenditEnvironment').value = xendit.environment || 'sandbox';
+                    document.getElementById('xenditPublicKey').value = xendit.publicKey || xendit.public_key || '';
+                    // Don't load secret keys for security
+                    const xenditMethods = xendit.paymentMethods || xendit.payment_methods || {};
+                    document.getElementById('xenditBankTransfer').checked = xenditMethods.bankTransfer !== false && xenditMethods.bank_transfer !== false;
+                    document.getElementById('xenditEWallet').checked = xenditMethods.ewallet !== false;
+                    document.getElementById('xenditRetailOutlet').checked = xenditMethods.retailOutlet !== false && xenditMethods.retail_outlet !== false;
+                    document.getElementById('xenditCreditCard').checked = xenditMethods.creditCard !== false && xenditMethods.credit_card !== false;
+                    
+                    // Show/hide settings based on state
+                    toggleBankTransferSettings();
+                    toggleXenditSettings();
+                }
+            } catch (error) {
+                console.error('Error loading payment methods:', error);
+            }
+        }
+
+        // Payment Methods Form
+        document.getElementById('paymentMethodsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const methods = {
+                bankTransfer: {
+                    enabled: document.getElementById('enableBankTransfer').checked,
+                    bankName: document.getElementById('bankName').value,
+                    accountNumber: document.getElementById('accountNumber').value,
+                    accountHolderName: document.getElementById('accountHolderName').value,
+                    bankBranch: document.getElementById('bankBranch').value,
+                    instructions: document.getElementById('transferInstructions').value
+                },
+                xendit: {
+                    enabled: document.getElementById('enableXendit').checked,
+                    environment: document.getElementById('xenditEnvironment').value,
+                    secretKey: document.getElementById('xenditSecretKey').value,
+                    publicKey: document.getElementById('xenditPublicKey').value,
+                    webhookToken: document.getElementById('xenditWebhookToken').value,
+                    paymentMethods: {
+                        bankTransfer: document.getElementById('xenditBankTransfer').checked,
+                        ewallet: document.getElementById('xenditEWallet').checked,
+                        retailOutlet: document.getElementById('xenditRetailOutlet').checked,
+                        creditCard: document.getElementById('xenditCreditCard').checked
+                    }
+                }
+            };
+
+            try {
+                const response = await fetch('/api/payment-methods', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(methods)
+                });
+
+                if (response.ok) {
+                    showAlert('Payment methods saved successfully!', 'success');
+                } else {
+                    showAlert('Failed to save payment methods', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving payment methods:', error);
+                showAlert('Error saving payment methods', 'error');
+            }
+        });
+
+        // Toggle bank transfer settings visibility
+        function toggleBankTransferSettings() {
+            const enabled = document.getElementById('enableBankTransfer').checked;
+            const settings = document.getElementById('bankTransferSettings');
+            
+            if (enabled) {
+                settings.style.display = 'block';
+            } else {
+                settings.style.display = 'none';
+            }
+        }
+
+        // Toggle Xendit settings visibility
+        function toggleXenditSettings() {
+            const enabled = document.getElementById('enableXendit').checked;
+            const settings = document.getElementById('xenditSettings');
+            const webhookUrl = document.getElementById('xenditWebhookUrl');
+            
+            if (enabled) {
+                settings.style.display = 'block';
+                // Set webhook URL based on current domain
+                webhookUrl.value = `${window.location.protocol}//${window.location.host}/api/xendit/webhook`;
+            } else {
+                settings.style.display = 'none';
+            }
+        }
+
+        // Test Xendit connection
+        async function testXenditConnection() {
+            const secretKey = document.getElementById('xenditSecretKey').value;
+            const environment = document.getElementById('xenditEnvironment').value;
+            const amount = document.getElementById('xenditTestAmount').value;
+            const resultDiv = document.getElementById('xenditTestResult');
+            
+            if (!secretKey) {
+                showXenditTestResult('Please enter your Xendit Secret Key first', 'error');
+                return;
+            }
+
+            try {
+                showXenditTestResult('Testing Xendit connection...', 'info');
+                
+                const response = await fetch('/api/xendit/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        secretKey: secretKey,
+                        environment: environment,
+                        amount: parseInt(amount)
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showXenditTestResult(`✅ Connection successful! Test invoice created: ${result.invoiceId}`, 'success');
+                } else {
+                    showXenditTestResult(`❌ Test failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error testing Xendit:', error);
+                showXenditTestResult('❌ Error testing Xendit connection', 'error');
+            }
+        }
+
+        function showXenditTestResult(message, type) {
+            const resultDiv = document.getElementById('xenditTestResult');
+            const alertClass = `alert-${type}`;
+            resultDiv.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            
+            // Auto clear after 10 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    resultDiv.innerHTML = '';
+                }, 10000);
+            }
+        }
+
+        function showAlert(message, type) {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(alert, container.firstChild.nextSibling);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // Account Settings Functions
+        async function loadAccountSettings() {
+            try {
+                const response = await fetch('/api/account-settings');
+                const settings = await response.json();
+                
+                if (settings) {
+                    document.getElementById('accountName').value = settings.name || '';
+                    document.getElementById('accountEmail').value = settings.email || '';
+                    document.getElementById('accountPhone').value = settings.phone || '';
+                    document.getElementById('accountTimezone').value = settings.timezone || 'Asia/Jakarta';
+                }
+                
+                // Also load premium status for account settings
+                await loadAccountPremiumStatus();
+            } catch (error) {
+                console.error('Error loading account settings:', error);
+            }
+        }
+
+        async function loadAccountPremiumStatus() {
+            try {
+                const response = await fetch('/api/business/settings');
+                const data = await response.json();
+                
+                if (data.success && data.settings) {
+                    updateAccountPlanDisplay(data.settings.premiumActive === true);
+                } else {
+                    updateAccountPlanDisplay(false);
+                }
+            } catch (error) {
+                console.error('Error loading premium status for account settings:', error);
+                updateAccountPlanDisplay(false);
+            }
+        }
+
+        function updateAccountPlanDisplay(isPremium) {
+            const freePlanCard = document.getElementById('freePlanCard');
+            const premiumPlanCard = document.getElementById('premiumPlanCard');
+            
+            if (isPremium) {
+                freePlanCard.style.display = 'none';
+                premiumPlanCard.style.display = 'block';
+            } else {
+                freePlanCard.style.display = 'block';
+                premiumPlanCard.style.display = 'none';
+            }
+        }
+
+        async function changePlan(targetPlan) {
+            const isUpgrading = targetPlan === 'premium';
+            const confirmMessage = isUpgrading 
+                ? 'Upgrade to Premium Plan? This will activate white-label branding features.'
+                : 'Downgrade to Free Plan? This will disable premium branding features.';
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            try {
+                const endpoint = isUpgrading ? '/api/premium/activate' : '/api/premium/deactivate';
+                
+                showAlert(isUpgrading ? 'Activating premium...' : 'Deactivating premium...', 'info');
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(isUpgrading ? { premiumSettings: { premiumActive: true } } : {})
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Update both account settings and invoice design tabs
+                    updateAccountPlanDisplay(isUpgrading);
+                    updatePremiumUI(isUpgrading); // Update invoice design tab
+                    
+                    showAlert(
+                        isUpgrading 
+                            ? '🎉 Premium activated! Visit Invoice Design tab to customize your branding.' 
+                            : '✅ Downgraded to Free Plan successfully.', 
+                        'success'
+                    );
+                } else {
+                    throw new Error(`Failed to ${isUpgrading ? 'activate' : 'deactivate'} premium`);
+                }
+            } catch (error) {
+                console.error(`Error changing plan:`, error);
+                showAlert(`❌ Failed to ${isUpgrading ? 'activate' : 'deactivate'} premium. Please try again.`, 'error');
+            }
+        }
+
+        async function loadUsageStatistics() {
+            try {
+                const response = await fetch('/api/usage-stats');
+                const stats = await response.json();
+                
+                if (stats) {
+                    document.getElementById('usageInvoices').textContent = stats.invoicesCount || '0';
+                    document.getElementById('usageCustomers').textContent = stats.customersCount || '0';
+                    document.getElementById('usageRevenue').textContent = formatCurrency(stats.totalRevenue || 0);
+                    document.getElementById('usageEmails').textContent = stats.emailsSent || '0';
+                }
+            } catch (error) {
+                console.error('Error loading usage statistics:', error);
+            }
+        }
+
+        // Account Information Form
+        document.getElementById('accountInfoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const settings = {
+                name: document.getElementById('accountName').value,
+                email: document.getElementById('accountEmail').value,
+                phone: document.getElementById('accountPhone').value,
+                timezone: document.getElementById('accountTimezone').value
+            };
+
+            try {
+                const response = await fetch('/api/account-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    showAlert('Account information saved successfully!', 'success');
+                } else {
+                    showAlert('Failed to save account information', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving account settings:', error);
+                showAlert('Error saving account information', 'error');
+            }
+        });
+
+        // Account Actions
+        async function exportAccountData() {
+            try {
+                showAlert('Preparing data export...', 'info');
+                
+                const response = await fetch('/api/export-data');
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `account-data-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showAlert('Account data exported successfully!', 'success');
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                showAlert('Error exporting account data', 'error');
+            }
+        }
+
+        async function downloadBackup() {
+            try {
+                showAlert('Creating backup...', 'info');
+                
+                const response = await fetch('/api/backup-data');
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup-${new Date().toISOString().split('T')[0]}.zip`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showAlert('Backup downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('Error creating backup:', error);
+                showAlert('Error creating backup', 'error');
+            }
+        }
+
+        function resetAccountData() {
+            if (confirm('⚠️ WARNING: This will permanently delete all your data including invoices, customers, and orders. This action cannot be undone.\n\nAre you absolutely sure you want to reset your account?')) {
+                if (confirm('Last chance! This will delete EVERYTHING. Type "RESET" in the next dialog to confirm.')) {
+                    const confirmation = prompt('Type "RESET" to confirm account reset:');
+                    if (confirmation === 'RESET') {
+                        performAccountReset();
+                    } else {
+                        showAlert('Account reset cancelled', 'info');
+                    }
+                }
+            }
+        }
+
+        async function performAccountReset() {
+            try {
+                showAlert('Resetting account data...', 'info');
+                
+                const response = await fetch('/api/reset-account', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    showAlert('Account reset successfully! Redirecting to dashboard...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/merchant-dashboard.html';
+                    }, 2000);
+                } else {
+                    showAlert('Failed to reset account', 'error');
+                }
+            } catch (error) {
+                console.error('Error resetting account:', error);
+                showAlert('Error resetting account', 'error');
+            }
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount || 0);
+        }
+    </script>
+</body>
+</html>
