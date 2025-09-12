@@ -75,12 +75,28 @@ BEGIN
         RAISE NOTICE 'ℹ️ hide_aspree_branding column already exists';
     END IF;
 
+    -- Add text color columns
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='business_settings' AND column_name='custom_header_text_color') THEN
+        ALTER TABLE business_settings ADD COLUMN custom_header_text_color TEXT DEFAULT '#ffffff';
+        RAISE NOTICE '✅ Added custom_header_text_color column';
+    ELSE
+        RAISE NOTICE 'ℹ️ custom_header_text_color column already exists';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='business_settings' AND column_name='custom_footer_text_color') THEN
+        ALTER TABLE business_settings ADD COLUMN custom_footer_text_color TEXT DEFAULT '#ffffff';
+        RAISE NOTICE '✅ Added custom_footer_text_color column';
+    ELSE
+        RAISE NOTICE 'ℹ️ custom_footer_text_color column already exists';
+    END IF;
+
     RAISE NOTICE '🎉 Premium branding columns migration completed successfully!';
     RAISE NOTICE '';
     RAISE NOTICE '📋 Premium branding features added:';
     RAISE NOTICE '   • Custom header text';
     RAISE NOTICE '   • Custom header & footer logos';  
     RAISE NOTICE '   • Custom header & footer background colors';
+    RAISE NOTICE '   • Custom header & footer text colors';
     RAISE NOTICE '   • Option to hide Aspree branding';
     RAISE NOTICE '';
     RAISE NOTICE '🚀 Premium branding is now ready for implementation!';
