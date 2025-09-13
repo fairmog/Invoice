@@ -10,6 +10,7 @@ class SimpleDatabase {
   constructor() {
     this.dataFile = path.join(__dirname, '..', 'database.json');
     this.data = this.loadData();
+    this.runMigrations();
   }
 
   loadData() {
@@ -71,6 +72,7 @@ class SimpleDatabase {
           updatedAt: new Date().toISOString()
         }
       },
+      merchant_business_settings: {}, // Merchant-isolated business settings for security
       lastId: { invoices: 0, customers: 0, products: 0, invoice_items: 0, orders: 0, order_items: 0, access_logs: 0, merchants: 0 }
     };
   }
@@ -80,6 +82,24 @@ class SimpleDatabase {
       fs.writeFileSync(this.dataFile, JSON.stringify(this.data, null, 2));
     } catch (error) {
       console.error('Error saving database:', error);
+    }
+  }
+
+  runMigrations() {
+    let needsSave = false;
+    
+    // Migration 1: Add merchant_business_settings if it doesn't exist
+    if (!this.data.merchant_business_settings) {
+      console.log('🔄 Running migration: Adding merchant_business_settings');
+      this.data.merchant_business_settings = {};
+      needsSave = true;
+    }
+    
+    // Future migrations can be added here
+    
+    if (needsSave) {
+      console.log('✅ Database migration completed successfully');
+      this.saveData();
     }
   }
 
@@ -1772,29 +1792,55 @@ class SimpleDatabase {
   }
 
   // Business Settings CRUD operations
-  async getBusinessSettings() {
-    return this.data.business_settings || {};
+  async getBusinessSettings(merchantId = null) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for business settings access');
+    }
+    
+    // Initialize merchant settings if they don't exist
+    if (!this.data.merchant_business_settings[merchantId]) {
+      this.data.merchant_business_settings[merchantId] = {
+        businessName: '',
+        address: '',
+        phone: '',
+        email: '',
+        logo: '',
+        premiumActive: false,
+        hideAspreeBranding: false,
+        customColors: {
+          primary: '#6366f1',
+          secondary: '#4f46e5'
+        }
+      };
+      this.saveData();
+    }
+    
+    return this.data.merchant_business_settings[merchantId];
   }
 
-  async updateBusinessSettings(settings) {
-    if (!this.data.business_settings) {
-      this.data.business_settings = {};
+  async updateBusinessSettings(settings, merchantId = null) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for business settings update');
     }
 
+    // Get existing settings for this merchant
+    const existingSettings = await this.getBusinessSettings(merchantId);
+
     // Auto-generate business code from business name if name is provided and code is empty
-    if (settings.name && (!settings.businessCode && !this.data.business_settings.businessCode)) {
+    if (settings.name && (!settings.businessCode && !existingSettings.businessCode)) {
       settings.businessCode = this.generateBusinessCode(settings.name);
       console.log(`🏢 Auto-generated business code: ${settings.businessCode} from name: ${settings.name}`);
     }
 
-    this.data.business_settings = {
-      ...this.data.business_settings,
+    // Update merchant-specific settings
+    this.data.merchant_business_settings[merchantId] = {
+      ...existingSettings,
       ...settings,
       updatedAt: new Date().toISOString()
     };
 
     this.saveData();
-    return this.data.business_settings;
+    return this.data.merchant_business_settings[merchantId];
   }
 
   // Payment Methods CRUD operations
@@ -1926,9 +1972,12 @@ class SimpleDatabase {
   }
 
   // Premium Branding Helper Methods
-  async isPremiumActive() {
+  async isPremiumActive(merchantId = null) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for premium status check');
+    }
     try {
-      const businessSettings = await this.getBusinessSettings();
+      const businessSettings = await this.getBusinessSettings(merchantId);
       return businessSettings?.premiumActive === true;
     } catch (error) {
       console.error('Error checking premium status:', error);
@@ -1936,9 +1985,12 @@ class SimpleDatabase {
     }
   }
 
-  async getPremiumBrandingSettings() {
+  async getPremiumBrandingSettings(merchantId = null) {
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for premium branding settings');
+    }
     try {
-      const businessSettings = await this.getBusinessSettings();
+      const businessSettings = await this.getBusinessSettings(merchantId);
       if (!businessSettings?.premiumActive) {
         return null;
       }
