@@ -939,6 +939,11 @@ app.get('/merchant', authMiddleware.authenticateMerchant, (req, res) => {
   res.sendFile(path.join(__dirname, 'merchant-dashboard.html'));
 });
 
+// Backward compatibility redirect for old merchant-dashboard URL
+app.get('/merchant-dashboard', (req, res) => {
+  res.redirect('/merchant');
+});
+
 // Direct access to merchant-dashboard.html (for navigation buttons) (Protected)
 app.get('/merchant-dashboard.html', authMiddleware.authenticateMerchant, (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
