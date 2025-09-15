@@ -6991,11 +6991,537 @@ Terima kasih! 🙏`;
                 }];
             }
             
-            // Use modular template engine for better performance and maintainability
-            const hideAspreeBranding = businessProfile?.hideAspreeBranding || false;
-            const theme = hideAspreeBranding ? 'custom' : 'aspree';
+            // Use the new consistent template that matches the invoice link view
+            return generateConsistentInvoiceTemplate(invoice, items, businessProfile);
+        }
+
+        // Generate invoice template that matches the simple-invoice-view.html exactly
+        function generateConsistentInvoiceTemplate(invoice, items, businessProfile) {
+            // Helper function to format dates
+            const formatDate = (dateString) => {
+                if (!dateString) return 'N/A';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            };
             
-            return generateModularTemplate(invoice, items, businessProfile, theme);
+            // Helper function to format currency
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                }).format(amount || 0);
+            };
+            
+            // Helper function to adjust brightness for gradients
+            const adjustBrightness = (hex, percent) => {
+                const num = parseInt(hex?.replace("#",""), 16);
+                const amt = Math.round(2.55 * percent);
+                const R = (num >> 16) + amt;
+                const G = (num >> 8 & 0x00FF) + amt;
+                const B = (num & 0x0000FF) + amt;
+                return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+            };
+            
+            // Get business data
+            const businessLogo = businessProfile?.logo || businessProfile?.logoUrl || '';
+            const businessName = businessProfile?.name || businessProfile?.businessName || 'Business Name';
+            
+            // Calculate totals similar to simple-invoice-view
+            const subtotal = parseFloat(invoice.subtotal) || 0;
+            const taxAmount = parseFloat(invoice.tax_amount) || parseFloat(invoice.tax) || 0;
+            const shippingCost = parseFloat(invoice.shipping_cost) || 0;
+            const discount = parseFloat(invoice.discount_amount) || parseFloat(invoice.discount) || 0;
+            const grandTotal = parseFloat(invoice.grand_total) || parseFloat(invoice.total_amount) || 0;
+            
+            // Determine invoice title based on business category
+            const businessCategory = businessProfile?.category || 'general';
+            const getCategoryTitle = (category) => {
+                const categoryTitles = {
+                    'trade': 'FAKTUR PENJUALAN',
+                    'services': 'FAKTUR JASA',
+                    'manufacturing': 'FAKTUR PRODUKSI',
+                    'logistics': 'FAKTUR PENGIRIMAN',
+                    'digital_creative': 'FAKTUR LISENSI DIGITAL',
+                    'agriculture': 'FAKTUR PERTANIAN',
+                    'construction': 'FAKTUR KONSTRUKSI',
+                    'tourism': 'FAKTUR PERHOTELAN',
+                    'general': 'FAKTUR'
+                };
+                return categoryTitles[category] || 'FAKTUR';
+            };
+            const invoiceTitle = getCategoryTitle(businessCategory);
+            
+            return `
+                <!DOCTYPE html>
+                <html lang="id">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
+                    <title>Invoice - ${invoice.invoice_number}</title>
+                    <style>
+                        /* Clean Professional CSS Variables */
+                        :root {
+                            --text: #2D3748;
+                            --text-light: #718096;
+                            --border: #E2E8F0;
+                            --bg: #FFFFFF;
+                            --bg-light: #F7FAFC;
+                            --success: #48BB78;
+                            --error: #F56565;
+                            --info: #4299E1;
+                            --warning: #ED8936;
+                        }
+                        
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        
+                        body {
+                            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+                            font-size: 16px;
+                            line-height: 1.5;
+                            color: var(--text);
+                            background: white;
+                            margin: 0;
+                            padding: 20px;
+                        }
+                        
+                        .container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            overflow: auto;
+                            -webkit-overflow-scrolling: touch;
+                        }
+                        
+                        .paper-wrapper {
+                            width: fit-content;
+                            margin: 0 auto;
+                            transform-origin: top center;
+                            transform: scale(var(--mobile-scale-factor, 1));
+                            transition: transform 0.3s ease;
+                        }
+                        
+                        .paper {
+                            width: 210mm;
+                            min-height: 297mm;
+                            max-width: none;
+                            margin: 0;
+                            background: var(--bg);
+                            border: 1px solid var(--border);
+                            border-radius: 0;
+                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                            overflow: hidden;
+                            padding: 0;
+                            position: relative;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .inv-header {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 60px;
+                            padding: 24px 32px 16px 32px;
+                            background: var(--bg);
+                            border-bottom: 2px solid var(--border);
+                            align-items: start;
+                            border-radius: 8px 8px 0 0;
+                        }
+                        
+                        .logo-section {
+                            text-align: left;
+                        }
+                        
+                        .logo-section img {
+                            max-height: 120px;
+                            max-width: 300px;
+                            object-fit: contain;
+                            display: block;
+                            margin-bottom: 6px;
+                        }
+                        
+                        .logo-section strong {
+                            display: block;
+                            font-size: 28px;
+                            font-weight: 800;
+                            color: var(--text);
+                            margin-top: 4px;
+                            line-height: 1.1;
+                        }
+                        
+                        .invoice-meta {
+                            text-align: right;
+                        }
+                        
+                        .invoice-title {
+                            font-size: 28px;
+                            font-weight: 800;
+                            color: var(--text);
+                            margin: 0 0 20px 0;
+                            letter-spacing: 0.5px;
+                        }
+                        
+                        .invoice-details {
+                            font-size: 15px;
+                            color: var(--text-light);
+                            margin-bottom: 10px;
+                            line-height: 1.4;
+                        }
+                        
+                        .invoice-details strong {
+                            color: var(--text);
+                            font-weight: 600;
+                            min-width: 100px;
+                            display: inline-block;
+                        }
+                        
+                        .parties {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 80px;
+                            padding: 20px 32px;
+                            border-bottom: 1px solid var(--border);
+                            background: var(--bg);
+                            border-radius: 8px;
+                            margin: 0 12px;
+                        }
+                        
+                        .party-section h3 {
+                            font-size: 14px;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            font-weight: 600;
+                            color: var(--text);
+                            margin: 0 0 16px 0;
+                        }
+                        
+                        .party-section address {
+                            font-style: normal;
+                            font-size: 15px;
+                            line-height: 1.5;
+                            color: var(--text-light);
+                        }
+                        
+                        .party-section strong {
+                            color: var(--text);
+                            font-weight: 600;
+                            font-size: 16px;
+                            display: block;
+                            margin-bottom: 3px;
+                        }
+                        
+                        .items-section {
+                            padding: 20px 32px;
+                        }
+                        
+                        .items-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 0;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            overflow: hidden;
+                        }
+                        
+                        .items-table thead th {
+                            background: var(--bg-light);
+                            border-bottom: 2px solid var(--border);
+                            padding: 18px 20px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            text-transform: uppercase;
+                            letter-spacing: 0.8px;
+                            color: var(--text);
+                            text-align: left;
+                        }
+                        
+                        .items-table th:last-child,
+                        .items-table th.text-right { text-align: right; }
+                        .items-table th.text-center { text-align: center; }
+                        
+                        .items-table tbody td {
+                            padding: 20px;
+                            border-bottom: 1px solid var(--border);
+                            font-size: 15px;
+                            color: var(--text);
+                        }
+                        
+                        .items-table tbody tr:nth-child(even) {
+                            background: rgba(247, 250, 252, 0.5);
+                        }
+                        
+                        .items-table tbody tr:last-child td {
+                            border-bottom: none;
+                        }
+                        
+                        .items-table .text-right { text-align: right; font-weight: 600; }
+                        .items-table .text-center { text-align: center; }
+                        
+                        .product-name {
+                            font-weight: 500;
+                            color: var(--text);
+                            margin: 0;
+                        }
+                        
+                        .product-description {
+                            color: var(--text-light);
+                            font-size: 13px;
+                            margin: 2px 0 0 0;
+                        }
+                        
+                        .summary {
+                            padding: 20px 32px;
+                            border-top: 1px solid var(--border);
+                            background: var(--bg);
+                        }
+                        
+                        .summary-grid {
+                            display: grid;
+                            grid-template-columns: 1fr auto;
+                            gap: 12px 40px;
+                            max-width: 320px;
+                            margin-left: auto;
+                        }
+                        
+                        .summary-label {
+                            color: var(--text-light);
+                            font-size: 14px;
+                        }
+                        
+                        .summary-value {
+                            color: var(--text);
+                            font-size: 15px;
+                            font-weight: 600;
+                            text-align: right;
+                        }
+                        
+                        .total-label {
+                            color: var(--text) !important;
+                            font-weight: 700 !important;
+                            font-size: 16px !important;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            padding-top: 12px;
+                            border-top: 2px solid var(--text);
+                            margin-top: 8px;
+                        }
+                        
+                        .total-value {
+                            color: var(--text) !important;
+                            font-weight: 800 !important;
+                            font-size: 20px !important;
+                            padding-top: 12px;
+                            border-top: 2px solid var(--text);
+                            margin-top: 8px;
+                        }
+                        
+                        /* Enhanced Print optimizations */
+                        @media print {
+                            body {
+                                margin: 0;
+                                padding: 0;
+                                background: white;
+                                font-size: 12pt;
+                                color: black;
+                            }
+                            .container {
+                                max-width: none;
+                                margin: 0;
+                                padding: 0;
+                            }
+                            .paper {
+                                box-shadow: none;
+                                border: none;
+                                margin: 0;
+                                width: 100%;
+                                min-height: auto;
+                                max-width: none;
+                                page-break-inside: avoid;
+                            }
+                            .paper-wrapper {
+                                transform: none;
+                                margin: 0;
+                                width: 100%;
+                            }
+                            .inv-header {
+                                page-break-inside: avoid;
+                                border-bottom: 2px solid #333;
+                            }
+                            .parties {
+                                page-break-inside: avoid;
+                                margin: 0;
+                            }
+                            .items-table {
+                                page-break-inside: auto;
+                            }
+                            .items-table thead {
+                                display: table-header-group;
+                            }
+                            .items-table tbody tr {
+                                page-break-inside: avoid;
+                            }
+                            .summary {
+                                page-break-inside: avoid;
+                                border-top: 2px solid #333;
+                            }
+                            /* Hide elements that shouldn't be printed */
+                            .no-print {
+                                display: none !important;
+                            }
+                            /* Ensure colors are preserved in print */
+                            * {
+                                -webkit-print-color-adjust: exact;
+                                color-adjust: exact;
+                                print-color-adjust: exact;
+                            }
+                            /* Page margins */
+                            @page {
+                                margin: 0.5in;
+                                size: A4;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="paper-wrapper">
+                            <div class="paper">
+                                ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
+                                <div style="background: ${businessProfile?.premiumActive && businessProfile.customHeaderBgColor ? 
+                                    `linear-gradient(135deg, ${businessProfile.customHeaderBgColor}, ${adjustBrightness(businessProfile.customHeaderBgColor, 20)})` : 
+                                    'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile?.premiumActive && businessProfile.customHeaderTextColor ? businessProfile.customHeaderTextColor : 'white'}; padding: 12px 0; text-align: center;">
+                                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                                        ${businessProfile?.premiumActive && businessProfile.customHeaderLogoUrl ? 
+                                            `<img src="${businessProfile.customHeaderLogoUrl}" alt="Header Logo" style="height: 32px; width: auto;">` :
+                                            `<img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">`
+                                        }
+                                        <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: ${businessProfile?.premiumActive && businessProfile.customHeaderTextColor ? businessProfile.customHeaderTextColor : 'white'};">
+                                            ${businessProfile?.premiumActive && businessProfile.customHeaderText ? 
+                                                businessProfile.customHeaderText : 
+                                                'Powered by Aspree Invoice Generator'
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                                `}
+                                
+                                <div class="inv-header">
+                                    <div class="logo-section">
+                                        ${businessLogo ? 
+                                            `<img src="${businessLogo}" alt="Logo">` : 
+                                            `<div style="background: #f0f0f0; padding: 15px; border-radius: 4px; margin-bottom: 12px; font-size: 18px; color: #666; text-align: center; border: 1px solid #e0e0e0;">LOGO</div>`
+                                        }
+                                        ${businessProfile && businessProfile.hideBusinessName ? '' : `<strong>${invoice.merchant_name || businessName}</strong>`}
+                                    </div>
+                                    <div class="invoice-meta">
+                                        <h1 class="invoice-title">${invoiceTitle}</h1>
+                                        <div class="invoice-details">
+                                            <strong>No:</strong> ${invoice.invoice_number || 'INV-UNKNOWN'}
+                                        </div>
+                                        <div class="invoice-details">
+                                            <strong>Tanggal:</strong> ${formatDate(invoice.invoice_date || invoice.created_at || new Date().toISOString())}
+                                        </div>
+                                        <div class="invoice-details">
+                                            <strong>Jatuh Tempo:</strong> ${formatDate(invoice.due_date || invoice.invoice_date || new Date().toISOString())}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="parties">
+                                    <div class="party-section">
+                                        <h3>DARI</h3>
+                                        <address>
+                                            <strong>${invoice.merchant_name || businessName}</strong><br>
+                                            ${invoice.merchant_address || businessProfile?.address || ''}<br>
+                                            ${invoice.merchant_phone || businessProfile?.phone || ''}<br>
+                                            ${invoice.merchant_email || businessProfile?.email || ''}
+                                        </address>
+                                    </div>
+                                    <div class="party-section">
+                                        <h3>KEPADA</h3>
+                                        <address>
+                                            <strong>${invoice.customer_name || 'Customer Name'}</strong><br>
+                                            ${invoice.customer_address ? invoice.customer_address + '<br>' : ''}
+                                            ${invoice.customer_phone ? invoice.customer_phone + '<br>' : ''}
+                                            ${invoice.customer_email || ''}
+                                        </address>
+                                    </div>
+                                </div>
+                                
+                                <div class="items-section">
+                                    <table class="items-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Produk/Layanan</th>
+                                                <th class="text-center">Qty</th>
+                                                <th class="text-right">Harga Satuan</th>
+                                                <th class="text-right">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${items.length === 0 ? 
+                                                '<tr><td colspan="4" style="text-align: center; color: #666;">No items found</td></tr>' :
+                                                items.map(item => `
+                                                    <tr>
+                                                        <td>
+                                                            <div class="product-name">${item.productName || 'Product'}</div>
+                                                            ${item.description && item.description.trim() ? `<div class="product-description">${item.description}</div>` : ''}
+                                                        </td>
+                                                        <td class="text-center">${item.quantity || 1}</td>
+                                                        <td class="text-right">${formatCurrency(item.unitPrice || 0)}</td>
+                                                        <td class="text-right">${formatCurrency(item.lineTotal || 0)}</td>
+                                                    </tr>
+                                                `).join('')
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="summary">
+                                    <div class="summary-grid">
+                                        <div class="summary-label">Subtotal</div>
+                                        <div class="summary-value">${formatCurrency(subtotal)}</div>
+                                        
+                                        ${discount > 0 ? `
+                                        <div class="summary-label">Diskon</div>
+                                        <div class="summary-value">-${formatCurrency(discount)}</div>
+                                        ` : ''}
+                                        
+                                        ${taxAmount > 0 ? `
+                                        <div class="summary-label">Pajak</div>
+                                        <div class="summary-value">${formatCurrency(taxAmount)}</div>
+                                        ` : ''}
+                                        
+                                        ${shippingCost > 0 ? `
+                                        <div class="summary-label">Biaya Kirim</div>
+                                        <div class="summary-value">${formatCurrency(shippingCost)}</div>
+                                        ` : ''}
+                                        
+                                        <div class="summary-label total-label">TOTAL</div>
+                                        <div class="summary-value total-value">${formatCurrency(grandTotal)}</div>
+                                    </div>
+                                </div>
+                                
+                                ${invoice.notes ? `
+                                <div style="padding: 20px 32px; border-top: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
+                                    <p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;">
+                                        <strong style="color: var(--text);">Catatan:</strong> ${invoice.notes}
+                                    </p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
         }
 
         // Modular Template Engine - Reduces code duplication by 70%
