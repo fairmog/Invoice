@@ -6833,33 +6833,28 @@ app.post('/api/upload-premium-logo', authMiddleware.authenticateMerchant, upload
     const merchantId = req.merchant.id;
     console.log(`📤 Uploading ${logoType} logo for merchant:`, merchantId);
 
-    // Upload to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const uploadOptions = {
-        folder: `ai-invoice-generator/premium-logos/${logoType}/merchant_${merchantId}`,
-        public_id: `merchant_${merchantId}_${logoType}_logo_${Date.now()}`,
-        transformation: [
-          { width: logoType === 'header' ? 400 : 200, height: logoType === 'header' ? 200 : 100, crop: 'limit' },
-          { quality: 'auto:good' },
-          { format: 'auto' }
-        ]
-      };
+    // Upload to Cloudinary using CloudinaryService
+    const uploadOptions = {
+      filename: `merchant_${merchantId}_${logoType}_logo_${Date.now()}`,
+      merchantId: merchantId,
+      folder: `ai-invoice-generator/premium-logos/${logoType}`,
+      transformations: [
+        { width: logoType === 'header' ? 400 : 200, height: logoType === 'header' ? 200 : 100, crop: 'limit' },
+        { quality: 'auto:good' },
+        { format: 'auto' }
+      ]
+    };
 
-      const uploadStream = cloudinary.uploader.upload_stream(
-        uploadOptions,
-        (error, result) => {
-          if (error) {
-            console.error(`❌ Cloudinary upload error for ${logoType} logo:`, error);
-            reject(error);
-          } else {
-            console.log(`✅ ${logoType} logo uploaded successfully:`, result.secure_url);
-            resolve(result);
-          }
-        }
-      );
+    const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, uploadOptions);
 
-      uploadStream.end(req.file.buffer);
-    });
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.error || 'Failed to upload logo');
+    }
+
+    const result = {
+      secure_url: uploadResult.url,
+      public_id: uploadResult.publicId
+    };
 
     // Update business settings with new logo URL
     const updateData = {};
@@ -6913,8 +6908,12 @@ app.delete('/api/remove-premium-logo/:type', authMiddleware.authenticateMerchant
     // Remove from Cloudinary if exists
     if (publicId) {
       try {
-        await cloudinary.uploader.destroy(publicId);
-        console.log(`✅ ${logoType} logo removed from Cloudinary:`, publicId);
+        const deleteResult = await cloudinaryService.deleteImage(publicId);
+        if (deleteResult.success) {
+          console.log(`✅ ${logoType} logo removed from Cloudinary:`, publicId);
+        } else {
+          console.error(`⚠️ Error removing ${logoType} logo from Cloudinary:`, deleteResult.error);
+        }
       } catch (cloudinaryError) {
         console.error(`⚠️ Error removing ${logoType} logo from Cloudinary:`, cloudinaryError);
       }
@@ -7006,29 +7005,34 @@ app.post('/api/save-premium-branding', authMiddleware.authenticateMerchant, uplo
 
 // Helper function for Cloudinary upload
 async function uploadToCloudinary(file, type, merchantId) {
-  return new Promise((resolve, reject) => {
+  try {
     const uploadOptions = {
-      folder: `ai-invoice-generator/premium-logos/${type}/merchant_${merchantId}`,
-      public_id: `merchant_${merchantId}_${type}_logo_${Date.now()}`,
-      transformation: [
+      filename: `merchant_${merchantId}_${type}_logo_${Date.now()}`,
+      merchantId: merchantId,
+      folder: `ai-invoice-generator/premium-logos/${type}`,
+      transformations: [
         { width: type === 'header' ? 400 : 200, height: type === 'header' ? 200 : 100, crop: 'limit' },
         { quality: 'auto:good' },
         { format: 'auto' }
       ]
     };
 
-    const uploadStream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
-      if (error) {
-        console.error(`❌ Cloudinary upload error for ${type}:`, error);
-        reject(error);
-      } else {
-        console.log(`✅ ${type} logo uploaded:`, result.secure_url);
-        resolve(result);
-      }
-    });
+    console.log(`📤 Uploading ${type} logo to Cloudinary...`);
+    const result = await cloudinaryService.uploadImage(file.buffer, uploadOptions);
 
-    uploadStream.end(file.buffer);
-  });
+    if (result.success) {
+      console.log(`✅ ${type} logo uploaded:`, result.url);
+      return {
+        secure_url: result.url,
+        public_id: result.publicId
+      };
+    } else {
+      throw new Error(result.error || 'Upload failed');
+    }
+  } catch (error) {
+    console.error(`❌ Cloudinary upload error for ${type}:`, error);
+    throw error;
+  }
 }
 
 // Start the server
