@@ -7321,70 +7321,190 @@ Terima kasih! 🙏`;
                             border-top: 2px solid var(--text);
                             margin-top: 8px;
                         }
+
+                        /* Footer Band Styles */
+                        .footer-band {
+                            background: linear-gradient(135deg, #311d6b, #4a2b7a);
+                            color: white;
+                            padding: 20px;
+                            margin-bottom: 0;
+                            position: relative;
+                        }
+
+                        .footer-section {
+                            margin: 0;
+                        }
+
+                        .footer-section h4 {
+                            font-size: 14px;
+                            font-weight: 600;
+                            margin: 0 0 16px 0;
+                            opacity: 0.9;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            color: white;
+                        }
+
+                        .footer-section p {
+                            font-size: 13px;
+                            line-height: 1.6;
+                            margin: 0;
+                            opacity: 0.8;
+                            color: white;
+                        }
+
+                        .footer-section ul {
+                            font-size: 13px;
+                            line-height: 1.6;
+                            margin: 0;
+                            opacity: 0.8;
+                            list-style: none;
+                            padding: 0;
+                        }
+
+                        .footer-section li {
+                            margin-bottom: 6px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            color: white;
+                        }
+
+                        .footer-section img {
+                            height: 120px;
+                            width: auto;
+                            opacity: 0.9;
+                            object-fit: contain;
+                        }
                         
                         /* Enhanced Print optimizations */
                         @media print {
+                            @page {
+                                margin: 0.5in;
+                                size: A4;
+                            }
+
                             body {
                                 margin: 0;
                                 padding: 0;
-                                background: white;
+                                background: white !important;
                                 font-size: 12pt;
                                 color: black;
                             }
+
                             .container {
                                 max-width: none;
                                 margin: 0;
                                 padding: 0;
                             }
+
                             .paper {
-                                box-shadow: none;
-                                border: none;
-                                margin: 0;
-                                width: 100%;
-                                min-height: auto;
-                                max-width: none;
+                                box-shadow: none !important;
+                                border: none !important;
+                                margin: 0 !important;
+                                width: 100% !important;
+                                min-height: auto !important;
+                                max-width: none !important;
                                 page-break-inside: avoid;
+                                background: white !important;
                             }
+
                             .paper-wrapper {
-                                transform: none;
-                                margin: 0;
-                                width: 100%;
+                                transform: none !important;
+                                margin: 0 !important;
+                                width: 100% !important;
                             }
+
                             .inv-header {
                                 page-break-inside: avoid;
-                                border-bottom: 2px solid #333;
+                                border-bottom: 1px solid #e2e8f0 !important;
+                                background: white !important;
                             }
+
                             .parties {
                                 page-break-inside: avoid;
-                                margin: 0;
+                                margin: 0 !important;
+                                border-bottom: 1px solid #e2e8f0 !important;
+                                background: white !important;
                             }
+
                             .items-table {
                                 page-break-inside: auto;
+                                border: 1px solid #e2e8f0 !important;
                             }
+
                             .items-table thead {
                                 display: table-header-group;
                             }
+
+                            .items-table thead th {
+                                background: #f7fafc !important;
+                                border-bottom: 1px solid #e2e8f0 !important;
+                            }
+
                             .items-table tbody tr {
                                 page-break-inside: avoid;
                             }
+
+                            .items-table tbody td {
+                                border-bottom: 1px solid #e2e8f0 !important;
+                            }
+
                             .summary {
                                 page-break-inside: avoid;
-                                border-top: 2px solid #333;
+                                border-top: 1px solid #e2e8f0 !important;
+                                background: white !important;
                             }
+
+                            /* Footer Band Print Styles */
+                            .footer-band {
+                                background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
+                                color: white !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                                color-adjust: exact !important;
+                                page-break-inside: avoid !important;
+                                margin-bottom: 0 !important;
+                                padding: 20px !important;
+                            }
+
+                            .footer-section h4,
+                            .footer-section p,
+                            .footer-section ul,
+                            .footer-section li {
+                                color: white !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                                color-adjust: exact !important;
+                            }
+
+                            .footer-section img {
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                                color-adjust: exact !important;
+                                display: block !important;
+                                opacity: 0.9 !important;
+                            }
+
                             /* Hide elements that shouldn't be printed */
                             .no-print {
                                 display: none !important;
                             }
-                            /* Ensure colors are preserved in print */
+
+                            /* Ensure ALL colors are preserved in print */
                             * {
-                                -webkit-print-color-adjust: exact;
-                                color-adjust: exact;
-                                print-color-adjust: exact;
+                                -webkit-print-color-adjust: exact !important;
+                                color-adjust: exact !important;
+                                print-color-adjust: exact !important;
                             }
-                            /* Page margins */
-                            @page {
-                                margin: 0.5in;
-                                size: A4;
+
+                            /* Remove any problematic borders that could cause black lines */
+                            .paper,
+                            .paper-wrapper,
+                            .container {
+                                border: none !important;
+                                outline: none !important;
+                                box-shadow: none !important;
                             }
                         }
                     </style>
@@ -7516,6 +7636,52 @@ Terima kasih! 🙏`;
                                     </p>
                                 </div>
                                 ` : ''}
+
+                                <!-- Footer Section - Matching simple-invoice-view.html exactly -->
+                                <div class="footer-band" style="background: ${businessProfile?.premiumActive && businessProfile.customFooterBgColor ?
+                                    `linear-gradient(135deg, ${businessProfile.customFooterBgColor}, ${adjustBrightness(businessProfile.customFooterBgColor, 20)})` :
+                                    'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: white; padding: 20px; margin-bottom: 0;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
+                                        <div class="footer-section">
+                                            <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
+                                            <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessProfile?.terms || invoice.merchant_terms || 'Pembayaran dilakukan sesuai dengan ketentuan yang berlaku. Barang yang sudah dibeli tidak dapat dikembalikan kecuali ada kesepakatan khusus.'}</p>
+                                        </div>
+                                        <div class="footer-section">
+                                            <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
+                                            <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
+                                                <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                                    <span style="opacity: 0.7;">📞</span>
+                                                    ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
+                                                </li>
+                                                <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                                    <span style="opacity: 0.7;">📧</span>
+                                                    ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
+                                                </li>
+                                                ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${businessProfile.website}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${invoice.merchant_website}</li>` : ''}
+                                            </ul>
+                                        </div>
+                                        ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
+                                        <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
+                                            ${businessProfile?.premiumActive && businessProfile.customFooterLogoUrl ?
+                                                `<img src="${businessProfile.customFooterLogoUrl}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9;">` :
+                                                `<img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">`
+                                            }
+                                        </div>
+                                        `}
+                                    </div>
+
+                                    <!-- Powered by text -->
+                                    ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
+                                    <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                                        <p style="font-size: 12px; opacity: 0.7; margin: 0;">
+                                            ${businessProfile?.premiumActive && businessProfile.customPoweredByText ?
+                                                businessProfile.customPoweredByText :
+                                                'Powered by Aspree Invoice Generator'
+                                            }
+                                        </p>
+                                    </div>
+                                    `}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -10206,6 +10372,8 @@ Terima kasih! 🙏`;
                 if (data.success) {
                     customers = data.customers;
                     displayCustomers(customers);
+                    // Load customer stats after loading customers
+                    loadCustomerStats();
                 } else {
                     showCustomerError('Failed to load customers: ' + data.error);
                 }
@@ -10218,7 +10386,15 @@ Terima kasih! 🙏`;
 
         async function loadCustomerStats() {
             try {
-                const response = await fetch('/api/customers/stats');
+                const response = await fetch('/api/customers/stats', {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    if (handleAuthError(response)) return;
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
                 const data = await response.json();
                 
                 if (data.success) {
