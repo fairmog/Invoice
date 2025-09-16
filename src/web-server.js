@@ -4642,22 +4642,19 @@ app.put('/api/orders/:id/status', authMiddleware.authenticateMerchant, async (re
       });
     }
     
-    const additionalData = {};
-    if (tracking_number) additionalData.tracking_number = tracking_number;
-    if (notes) additionalData.notes = notes;
-    
-    const result = await database.updateOrderStatus(parseInt(req.params.id), status, additionalData, req.merchant.id);
-    
-    if (result.changes === 0) {
+    const result = await database.updateOrderStatus(parseInt(req.params.id), status, tracking_number, notes, req.merchant.id);
+
+    if (!result) {
       return res.status(404).json({
         success: false,
         error: 'Order not found'
       });
     }
-    
+
     res.json({
       success: true,
-      message: `Order status updated to ${status}`
+      message: `Order status updated to ${status}`,
+      order: result
     });
   } catch (error) {
     console.error('Error updating order status:', error);
