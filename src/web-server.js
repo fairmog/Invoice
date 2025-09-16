@@ -5023,10 +5023,16 @@ app.post('/api/customers/smart-match', async (req, res) => {
 app.get('/api/stats', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
+    console.log('📊 Stats request for merchant:', req.merchant.id, 'dateFrom:', dateFrom, 'dateTo:', dateTo);
+
     const invoiceStats = await database.getInvoiceStats(dateFrom, dateTo, req.merchant.id);
     const orderStats = await database.getOrderStats(dateFrom, dateTo, req.merchant.id);
     const customerStats = await database.getCustomerStats(req.merchant.id);
-    
+
+    console.log('📊 Invoice stats result:', invoiceStats);
+    console.log('📊 Order stats result:', orderStats);
+    console.log('📊 Customer stats result:', customerStats);
+
     res.json({
       success: true,
       stats: invoiceStats,
@@ -5034,7 +5040,7 @@ app.get('/api/stats', authMiddleware.authenticateMerchant, async (req, res) => {
       customerStats: customerStats
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    console.error('❌ Error fetching stats:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch statistics'
