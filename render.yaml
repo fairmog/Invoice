@@ -2,10 +2,12 @@ services:
   - type: web
     name: ai-invoice-generator
     env: node
-    rootDir: .
-    buildCommand: rm -rf node_modules package-lock.json && npm install
+    runtime: node
+    buildCommand: rm -rf node_modules package-lock.json && npm cache clean --force && npm install && npm run verify-build
     startCommand: node src/web-server.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_CACHE
+        value: /tmp/.npm
     plan: free
