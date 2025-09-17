@@ -121,6 +121,7 @@ CREATE TABLE invoices (
   final_payment_amount DECIMAL(15,2),
   sent_at TIMESTAMP WITH TIME ZONE,
   paid_at TIMESTAMP WITH TIME ZONE,
+  merchant_id INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
