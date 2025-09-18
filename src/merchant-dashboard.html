@@ -3157,6 +3157,12 @@
                 window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname);
                 return true;
             }
+            if (response.status === 429) {
+                console.log('Rate limit reached, please wait before trying again');
+                // Show user-friendly message instead of failing silently
+                showNotification('Server is busy, please wait a moment and refresh the page', 'warning');
+                return true;
+            }
             return false;
         }
 
@@ -4142,14 +4148,20 @@
                 const response = await fetch('/api/business/settings', {
                     headers: getAuthHeaders()
                 });
-                
+
                 if (!response.ok) {
                     if (handleAuthError(response)) return;
+                    if (response.status === 429) {
+                        console.log('Plan status loading delayed due to rate limit');
+                        // Default to free plan temporarily
+                        updatePlanStatusUI(false);
+                        return;
+                    }
                     throw new Error(`HTTP ${response.status}`);
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (data.success && data.settings) {
                     updatePlanStatusUI(data.settings.premiumActive === true);
                 } else {
@@ -4241,13 +4253,15 @@
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            loadProducts();
-            loadCategories();
             setupEventListeners();
             refreshInvoiceNumber();
-            loadUserInfo();
-            loadPlanStatus();
-            loadInvoiceStats(); // Load dashboard statistics on page load
+
+            // Load data with staggered delays to prevent rate limiting
+            setTimeout(() => loadUserInfo(), 100);
+            setTimeout(() => loadPlanStatus(), 200);
+            setTimeout(() => loadInvoiceStats(), 300);
+            setTimeout(() => loadProducts(), 400);
+            setTimeout(() => loadCategories(), 500);
 
             // Handle URL hash navigation
             const hash = window.location.hash.substring(1);
@@ -5678,13 +5692,19 @@
                 if (dateFrom) params.append('dateFrom', dateFrom);
                 if (dateTo) params.append('dateTo', dateTo);
                 if (params.toString()) url += '?' + params.toString();
-                
+
                 const response = await fetch(url, {
                     headers: getAuthHeaders()
                 });
-                
+
                 if (!response.ok) {
                     if (handleAuthError(response)) return;
+                    if (response.status === 429) {
+                        console.log('Stats loading delayed due to rate limit');
+                        // Show loading message instead of failing
+                        document.querySelector('.stats-container')?.setAttribute('data-loading', 'Rate limited, please wait...');
+                        return;
+                    }
                     throw new Error(`HTTP ${response.status}`);
                 }
                 
