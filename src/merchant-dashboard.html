@@ -3157,12 +3157,6 @@
                 window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname);
                 return true;
             }
-            if (response.status === 429) {
-                console.log('Rate limit reached, please wait before trying again');
-                // Show user-friendly message instead of failing silently
-                showNotification('Server is busy, please wait a moment and refresh the page', 'warning');
-                return true;
-            }
             return false;
         }
 
@@ -3616,7 +3610,7 @@
             const cleanHTML = `
                 <div class="paper">
                     <!-- Dynamic Premium/Aspree branding header -->
-                    ${hideAspreeBranding ? `
+                    ${!hideAspreeBranding ? `
                         <div style="background: linear-gradient(135deg, ${customHeaderBgColor}, ${customHeaderBgColor}aa); color: ${customHeaderTextColor}; padding: 12px 0; text-align: center;">
                             <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
                                 ${customHeaderLogo ? 
@@ -3967,7 +3961,7 @@
 
 
                     <!-- Dynamic Premium/Aspree Footer -->
-                    ${hideAspreeBranding ? `
+                    ${!hideAspreeBranding ? `
                         <div class="footer-band" style="background: linear-gradient(135deg, ${customFooterBgColor}, ${customFooterBgColor}aa); color: ${customFooterTextColor}; padding: 20px; margin-bottom: 0;">
                             <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
                                 <div class="footer-section">
@@ -3996,44 +3990,7 @@
                                 </div>
                             </div>
                         </div>
-                    ` : `
-                        <!-- Default Aspree Footer -->
-                        <div class="footer-band" style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 20px; margin-bottom: 0;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
-                                <div class="footer-section">
-                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
-                                    <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessTerms}</p>
-                                </div>
-                                <div class="footer-section">
-                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
-                                    <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
-                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">📞</span>
-                                            ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
-                                        </li>
-                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">✉️</span>
-                                            ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
-                                        </li>
-                                        <li style="display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">📍</span>
-                                            ${businessProfile ? (businessProfile.address || invoice.merchant_address) : invoice.merchant_address || '-'}
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
-                                    <img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">
-                                </div>
-                            </div>
-
-                            <!-- Powered by text -->
-                            <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
-                                <p style="font-size: 12px; opacity: 0.7; margin: 0;">
-                                    Powered by Aspree Invoice Generator
-                                </p>
-                            </div>
-                        </div>
-                    `}
+                    ` : ''}
                 </div>
             `;
             
@@ -4185,20 +4142,14 @@
                 const response = await fetch('/api/business/settings', {
                     headers: getAuthHeaders()
                 });
-
+                
                 if (!response.ok) {
                     if (handleAuthError(response)) return;
-                    if (response.status === 429) {
-                        console.log('Plan status loading delayed due to rate limit');
-                        // Default to free plan temporarily
-                        updatePlanStatusUI(false);
-                        return;
-                    }
                     throw new Error(`HTTP ${response.status}`);
                 }
-
+                
                 const data = await response.json();
-
+                
                 if (data.success && data.settings) {
                     updatePlanStatusUI(data.settings.premiumActive === true);
                 } else {
@@ -4290,16 +4241,13 @@
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
+            loadProducts();
+            loadCategories();
             setupEventListeners();
             refreshInvoiceNumber();
-
-            // Load data with staggered delays to prevent rate limiting
-            setTimeout(() => loadUserInfo(), 100);
-            setTimeout(() => loadPlanStatus(), 200);
-            setTimeout(() => loadInvoiceStats(), 300);
-            setTimeout(() => loadProducts(), 400);
-            setTimeout(() => loadCategories(), 500);
-
+            loadUserInfo();
+            loadPlanStatus();
+            
             // Handle URL hash navigation
             const hash = window.location.hash.substring(1);
             if (hash && ['products', 'orders', 'invoices', 'customers', 'inventory', 'categories'].includes(hash)) {
@@ -4641,7 +4589,37 @@
             displayProducts(filtered);
         }
 
-        // Duplicate showSection function removed - kept the original at line 3091
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            
+            // Load section-specific data
+            if (sectionName === 'products') {
+                loadProducts();
+            } else if (sectionName === 'orders') {
+                loadOrders();
+                loadOrderStats();
+            } else if (sectionName === 'invoices') {
+                loadInvoices();
+                loadInvoiceStats();
+            } else if (sectionName === 'customers') {
+                loadCustomers();
+                loadCustomerStats();
+            }
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(sectionName.toLowerCase())) {
+                    btn.classList.add('active');
+                }
+            });
+        }
 
         // Order Management Functions
         async function loadOrders() {
@@ -5217,20 +5195,11 @@
 
         async function deleteOrder(orderId) {
             if (!confirm('Are you sure you want to delete this order?')) return;
-
+            
             try {
-                const response = await fetch(`/api/orders/${orderId}`, {
-                    method: 'DELETE',
-                    headers: getAuthHeaders()
-                });
-
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
+                const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
                 const data = await response.json();
-
+                
                 if (data.success) {
                     showSuccess('Order deleted successfully!');
                     loadOrders();
@@ -5729,19 +5698,13 @@
                 if (dateFrom) params.append('dateFrom', dateFrom);
                 if (dateTo) params.append('dateTo', dateTo);
                 if (params.toString()) url += '?' + params.toString();
-
+                
                 const response = await fetch(url, {
                     headers: getAuthHeaders()
                 });
-
+                
                 if (!response.ok) {
                     if (handleAuthError(response)) return;
-                    if (response.status === 429) {
-                        console.log('Stats loading delayed due to rate limit');
-                        // Show loading message instead of failing
-                        document.querySelector('.stats-container')?.setAttribute('data-loading', 'Rate limited, please wait...');
-                        return;
-                    }
                     throw new Error(`HTTP ${response.status}`);
                 }
                 
@@ -7018,16 +6981,6 @@ Terima kasih! 🙏`;
                 if (savedProfile) {
                     businessProfile = JSON.parse(savedProfile);
                 }
-
-                console.log('🔍 Print function debug - businessProfile from localStorage:', {
-                    premiumActive: businessProfile?.premiumActive,
-                    hideAspreeBranding: businessProfile?.hideAspreeBranding,
-                    customHeaderText: businessProfile?.customHeaderText,
-                    customHeaderLogoUrl: businessProfile?.customHeaderLogoUrl,
-                    customFooterLogoUrl: businessProfile?.customFooterLogoUrl,
-                    customFooterTextColor: businessProfile?.customFooterTextColor,
-                    customFooterBgColor: businessProfile?.customFooterBgColor
-                });
             } catch (error) {
                 console.warn('⚠️ Error parsing business profile:', error);
             }
@@ -7068,724 +7021,11 @@ Terima kasih! 🙏`;
                 }];
             }
             
-            // Use the new consistent template that matches the invoice link view
-            return generateConsistentInvoiceTemplate(invoice, items, businessProfile);
-        }
-
-        // Generate invoice template that matches the simple-invoice-view.html exactly
-        function generateConsistentInvoiceTemplate(invoice, items, businessProfile) {
-            // Helper function to format dates
-            const formatDate = (dateString) => {
-                if (!dateString) return 'N/A';
-                const date = new Date(dateString);
-                return date.toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            };
+            // Use modular template engine for better performance and maintainability
+            const hideAspreeBranding = businessProfile?.hideAspreeBranding || false;
+            const theme = hideAspreeBranding ? 'custom' : 'aspree';
             
-            // Helper function to format currency
-            const formatCurrency = (amount) => {
-                return new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0
-                }).format(amount || 0);
-            };
-            
-            // Helper function to adjust brightness for gradients
-            const adjustBrightness = (hex, percent) => {
-                const num = parseInt(hex?.replace("#",""), 16);
-                const amt = Math.round(2.55 * percent);
-                const R = (num >> 16) + amt;
-                const G = (num >> 8 & 0x00FF) + amt;
-                const B = (num & 0x0000FF) + amt;
-                return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
-            };
-            
-            // Get business data
-            const businessLogo = businessProfile?.logo || businessProfile?.logoUrl || '';
-            const businessName = businessProfile?.name || businessProfile?.businessName || 'Business Name';
-            
-            // Calculate totals similar to simple-invoice-view
-            const subtotal = parseFloat(invoice.subtotal) || 0;
-            const taxAmount = parseFloat(invoice.tax_amount) || parseFloat(invoice.tax) || 0;
-            const shippingCost = parseFloat(invoice.shipping_cost) || 0;
-            const discount = parseFloat(invoice.discount_amount) || parseFloat(invoice.discount) || 0;
-            const grandTotal = parseFloat(invoice.grand_total) || parseFloat(invoice.total_amount) || 0;
-            
-            // Determine invoice title based on business category
-            const businessCategory = businessProfile?.category || 'general';
-            const getCategoryTitle = (category) => {
-                const categoryTitles = {
-                    'trade': 'FAKTUR PENJUALAN',
-                    'services': 'FAKTUR JASA',
-                    'manufacturing': 'FAKTUR PRODUKSI',
-                    'logistics': 'FAKTUR PENGIRIMAN',
-                    'digital_creative': 'FAKTUR LISENSI DIGITAL',
-                    'agriculture': 'FAKTUR PERTANIAN',
-                    'construction': 'FAKTUR KONSTRUKSI',
-                    'tourism': 'FAKTUR PERHOTELAN',
-                    'general': 'FAKTUR'
-                };
-                return categoryTitles[category] || 'FAKTUR';
-            };
-            const invoiceTitle = getCategoryTitle(businessCategory);
-            
-            return `
-                <!DOCTYPE html>
-                <html lang="id">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
-                    <title>Invoice - ${invoice.invoice_number}</title>
-                    <style>
-                        /* Clean Professional CSS Variables */
-                        :root {
-                            --text: #2D3748;
-                            --text-light: #718096;
-                            --border: #E2E8F0;
-                            --bg: #FFFFFF;
-                            --bg-light: #F7FAFC;
-                            --success: #48BB78;
-                            --error: #F56565;
-                            --info: #4299E1;
-                            --warning: #ED8936;
-                        }
-                        
-                        * {
-                            margin: 0;
-                            padding: 0;
-                            box-sizing: border-box;
-                        }
-                        
-                        body {
-                            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-                            font-size: 16px;
-                            line-height: 1.5;
-                            color: var(--text);
-                            background: white;
-                            margin: 0;
-                            padding: 20px;
-                        }
-                        
-                        .container {
-                            max-width: 800px;
-                            margin: 0 auto;
-                            overflow: auto;
-                            -webkit-overflow-scrolling: touch;
-                        }
-                        
-                        .paper-wrapper {
-                            width: fit-content;
-                            margin: 0 auto;
-                            transform-origin: top center;
-                            transform: scale(var(--mobile-scale-factor, 1));
-                            transition: transform 0.3s ease;
-                        }
-                        
-                        .paper {
-                            width: 210mm;
-                            min-height: 297mm;
-                            max-width: none;
-                            margin: 0;
-                            background: var(--bg);
-                            border: 1px solid var(--border);
-                            border-radius: 0;
-                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-                            overflow: hidden;
-                            padding: 0;
-                            position: relative;
-                            margin-bottom: 20px;
-                        }
-                        
-                        .inv-header {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 60px;
-                            padding: 24px 32px 16px 32px;
-                            background: var(--bg);
-                            border-bottom: 2px solid var(--border);
-                            align-items: start;
-                            border-radius: 8px 8px 0 0;
-                        }
-                        
-                        .logo-section {
-                            text-align: left;
-                        }
-                        
-                        .logo-section img {
-                            max-height: 120px;
-                            max-width: 300px;
-                            object-fit: contain;
-                            display: block;
-                            margin-bottom: 6px;
-                        }
-                        
-                        .logo-section strong {
-                            display: block;
-                            font-size: 28px;
-                            font-weight: 800;
-                            color: var(--text);
-                            margin-top: 4px;
-                            line-height: 1.1;
-                        }
-                        
-                        .invoice-meta {
-                            text-align: right;
-                        }
-                        
-                        .invoice-title {
-                            font-size: 28px;
-                            font-weight: 800;
-                            color: var(--text);
-                            margin: 0 0 20px 0;
-                            letter-spacing: 0.5px;
-                        }
-                        
-                        .invoice-details {
-                            font-size: 15px;
-                            color: var(--text-light);
-                            margin-bottom: 10px;
-                            line-height: 1.4;
-                        }
-                        
-                        .invoice-details strong {
-                            color: var(--text);
-                            font-weight: 600;
-                            min-width: 100px;
-                            display: inline-block;
-                        }
-                        
-                        .parties {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 80px;
-                            padding: 20px 32px;
-                            border-bottom: 1px solid var(--border);
-                            background: var(--bg);
-                            border-radius: 8px;
-                            margin: 0 12px;
-                        }
-                        
-                        .party-section h3 {
-                            font-size: 14px;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                            font-weight: 600;
-                            color: var(--text);
-                            margin: 0 0 16px 0;
-                        }
-                        
-                        .party-section address {
-                            font-style: normal;
-                            font-size: 15px;
-                            line-height: 1.5;
-                            color: var(--text-light);
-                        }
-                        
-                        .party-section strong {
-                            color: var(--text);
-                            font-weight: 600;
-                            font-size: 16px;
-                            display: block;
-                            margin-bottom: 3px;
-                        }
-                        
-                        .items-section {
-                            padding: 20px 32px;
-                        }
-                        
-                        .items-table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin: 0;
-                            border: 1px solid var(--border);
-                            border-radius: 8px;
-                            overflow: hidden;
-                        }
-                        
-                        .items-table thead th {
-                            background: var(--bg-light);
-                            border-bottom: 2px solid var(--border);
-                            padding: 18px 20px;
-                            font-size: 13px;
-                            font-weight: 700;
-                            text-transform: uppercase;
-                            letter-spacing: 0.8px;
-                            color: var(--text);
-                            text-align: left;
-                        }
-                        
-                        .items-table th:last-child,
-                        .items-table th.text-right { text-align: right; }
-                        .items-table th.text-center { text-align: center; }
-                        
-                        .items-table tbody td {
-                            padding: 20px;
-                            border-bottom: 1px solid var(--border);
-                            font-size: 15px;
-                            color: var(--text);
-                        }
-                        
-                        .items-table tbody tr:nth-child(even) {
-                            background: rgba(247, 250, 252, 0.5);
-                        }
-                        
-                        .items-table tbody tr:last-child td {
-                            border-bottom: none;
-                        }
-                        
-                        .items-table .text-right { text-align: right; font-weight: 600; }
-                        .items-table .text-center { text-align: center; }
-                        
-                        .product-name {
-                            font-weight: 500;
-                            color: var(--text);
-                            margin: 0;
-                        }
-                        
-                        .product-description {
-                            color: var(--text-light);
-                            font-size: 13px;
-                            margin: 2px 0 0 0;
-                        }
-                        
-                        .summary {
-                            padding: 20px 32px;
-                            border-top: 1px solid var(--border);
-                            background: var(--bg);
-                        }
-                        
-                        .summary-grid {
-                            display: grid;
-                            grid-template-columns: 1fr auto;
-                            gap: 12px 40px;
-                            max-width: 320px;
-                            margin-left: auto;
-                        }
-                        
-                        .summary-label {
-                            color: var(--text-light);
-                            font-size: 14px;
-                        }
-                        
-                        .summary-value {
-                            color: var(--text);
-                            font-size: 15px;
-                            font-weight: 600;
-                            text-align: right;
-                        }
-                        
-                        .total-label {
-                            color: var(--text) !important;
-                            font-weight: 700 !important;
-                            font-size: 16px !important;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                            padding-top: 12px;
-                            border-top: 2px solid var(--text);
-                            margin-top: 8px;
-                        }
-                        
-                        .total-value {
-                            color: var(--text) !important;
-                            font-weight: 800 !important;
-                            font-size: 20px !important;
-                            padding-top: 12px;
-                            border-top: 2px solid var(--text);
-                            margin-top: 8px;
-                        }
-
-                        /* Footer Band Styles */
-                        .footer-band {
-                            background: linear-gradient(135deg, #311d6b, #4a2b7a);
-                            color: white;
-                            padding: 20px;
-                            margin-bottom: 0;
-                            position: relative;
-                        }
-
-                        .footer-section {
-                            margin: 0;
-                        }
-
-                        .footer-section h4 {
-                            font-size: 14px;
-                            font-weight: 600;
-                            margin: 0 0 16px 0;
-                            opacity: 0.9;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                            color: white;
-                        }
-
-                        .footer-section p {
-                            font-size: 13px;
-                            line-height: 1.6;
-                            margin: 0;
-                            opacity: 0.8;
-                            color: white;
-                        }
-
-                        .footer-section ul {
-                            font-size: 13px;
-                            line-height: 1.6;
-                            margin: 0;
-                            opacity: 0.8;
-                            list-style: none;
-                            padding: 0;
-                        }
-
-                        .footer-section li {
-                            margin-bottom: 6px;
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            color: white;
-                        }
-
-                        .footer-section img {
-                            height: 120px;
-                            width: auto;
-                            opacity: 0.9;
-                            object-fit: contain;
-                        }
-                        
-                        /* Enhanced Print optimizations */
-                        @media print {
-                            @page {
-                                margin: 0.5in;
-                                size: A4;
-                            }
-
-                            body {
-                                margin: 0;
-                                padding: 0;
-                                background: white !important;
-                                font-size: 12pt;
-                                color: black;
-                            }
-
-                            .container {
-                                max-width: none;
-                                margin: 0;
-                                padding: 0;
-                            }
-
-                            .paper {
-                                box-shadow: none !important;
-                                border: none !important;
-                                margin: 0 !important;
-                                width: 100% !important;
-                                min-height: auto !important;
-                                max-width: none !important;
-                                page-break-inside: avoid;
-                                background: white !important;
-                            }
-
-                            .paper-wrapper {
-                                transform: none !important;
-                                margin: 0 !important;
-                                width: 100% !important;
-                            }
-
-                            .inv-header {
-                                page-break-inside: avoid;
-                                border-bottom: 1px solid #e2e8f0 !important;
-                                background: white !important;
-                            }
-
-                            .parties {
-                                page-break-inside: avoid;
-                                margin: 0 !important;
-                                border-bottom: 1px solid #e2e8f0 !important;
-                                background: white !important;
-                            }
-
-                            .items-table {
-                                page-break-inside: auto;
-                                border: 1px solid #e2e8f0 !important;
-                            }
-
-                            .items-table thead {
-                                display: table-header-group;
-                            }
-
-                            .items-table thead th {
-                                background: #f7fafc !important;
-                                border-bottom: 1px solid #e2e8f0 !important;
-                            }
-
-                            .items-table tbody tr {
-                                page-break-inside: avoid;
-                            }
-
-                            .items-table tbody td {
-                                border-bottom: 1px solid #e2e8f0 !important;
-                            }
-
-                            .summary {
-                                page-break-inside: avoid;
-                                border-top: 1px solid #e2e8f0 !important;
-                                background: white !important;
-                            }
-
-                            /* Footer Band Print Styles */
-                            .footer-band {
-                                background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
-                                color: white !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                                page-break-inside: avoid !important;
-                                margin-bottom: 0 !important;
-                                padding: 20px !important;
-                            }
-
-                            .footer-section h4,
-                            .footer-section p,
-                            .footer-section ul,
-                            .footer-section li {
-                                color: white !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                            }
-
-                            .footer-section img {
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                                display: block !important;
-                                opacity: 0.9 !important;
-                            }
-
-                            /* Hide elements that shouldn't be printed */
-                            .no-print {
-                                display: none !important;
-                            }
-
-                            /* Ensure ALL colors are preserved in print */
-                            * {
-                                -webkit-print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-
-                            /* Remove any problematic borders that could cause black lines */
-                            .paper,
-                            .paper-wrapper,
-                            .container {
-                                border: none !important;
-                                outline: none !important;
-                                box-shadow: none !important;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="paper-wrapper">
-                            <div class="paper">
-                                ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? `
-                                <!-- Custom Premium Header -->
-                                <div style="background: ${businessProfile.customHeaderBgColor ?
-                                    `linear-gradient(135deg, ${businessProfile.customHeaderBgColor}, ${adjustBrightness(businessProfile.customHeaderBgColor, 20)})` :
-                                    'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile.customHeaderTextColor || 'white'}; padding: 12px 0; text-align: center;">
-                                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                                        ${businessProfile.customHeaderLogoUrl ?
-                                            `<img src="${businessProfile.customHeaderLogoUrl}" alt="Header Logo" style="height: 32px; width: auto;">` : ''
-                                        }
-                                        ${businessProfile.customHeaderText ? `
-                                            <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: ${businessProfile.customHeaderTextColor || 'white'};">
-                                                ${businessProfile.customHeaderText}
-                                            </p>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                                ` : `
-                                <!-- Default Aspree Header -->
-                                <div style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 12px 0; text-align: center;">
-                                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                                        <img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">
-                                        <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: white;">
-                                            Powered by Aspree Invoice Generator
-                                        </p>
-                                    </div>
-                                </div>
-                                `}
-                                
-                                <div class="inv-header">
-                                    <div class="logo-section">
-                                        ${businessLogo ? 
-                                            `<img src="${businessLogo}" alt="Logo">` : 
-                                            `<div style="background: #f0f0f0; padding: 15px; border-radius: 4px; margin-bottom: 12px; font-size: 18px; color: #666; text-align: center; border: 1px solid #e0e0e0;">LOGO</div>`
-                                        }
-                                        ${businessProfile && businessProfile.hideBusinessName ? '' : `<strong>${invoice.merchant_name || businessName}</strong>`}
-                                    </div>
-                                    <div class="invoice-meta">
-                                        <h1 class="invoice-title">${invoiceTitle}</h1>
-                                        <div class="invoice-details">
-                                            <strong>No:</strong> ${invoice.invoice_number || 'INV-UNKNOWN'}
-                                        </div>
-                                        <div class="invoice-details">
-                                            <strong>Tanggal:</strong> ${formatDate(invoice.invoice_date || invoice.created_at || new Date().toISOString())}
-                                        </div>
-                                        <div class="invoice-details">
-                                            <strong>Jatuh Tempo:</strong> ${formatDate(invoice.due_date || invoice.invoice_date || new Date().toISOString())}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="parties">
-                                    <div class="party-section">
-                                        <h3>DARI</h3>
-                                        <address>
-                                            <strong>${invoice.merchant_name || businessName}</strong><br>
-                                            ${invoice.merchant_address || businessProfile?.address || ''}<br>
-                                            ${invoice.merchant_phone || businessProfile?.phone || ''}<br>
-                                            ${invoice.merchant_email || businessProfile?.email || ''}
-                                        </address>
-                                    </div>
-                                    <div class="party-section">
-                                        <h3>KEPADA</h3>
-                                        <address>
-                                            <strong>${invoice.customer_name || 'Customer Name'}</strong><br>
-                                            ${invoice.customer_address ? invoice.customer_address + '<br>' : ''}
-                                            ${invoice.customer_phone ? invoice.customer_phone + '<br>' : ''}
-                                            ${invoice.customer_email || ''}
-                                        </address>
-                                    </div>
-                                </div>
-                                
-                                <div class="items-section">
-                                    <table class="items-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Produk/Layanan</th>
-                                                <th class="text-center">Qty</th>
-                                                <th class="text-right">Harga Satuan</th>
-                                                <th class="text-right">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${items.length === 0 ? 
-                                                '<tr><td colspan="4" style="text-align: center; color: #666;">No items found</td></tr>' :
-                                                items.map(item => `
-                                                    <tr>
-                                                        <td>
-                                                            <div class="product-name">${item.productName || 'Product'}</div>
-                                                            ${item.description && item.description.trim() ? `<div class="product-description">${item.description}</div>` : ''}
-                                                        </td>
-                                                        <td class="text-center">${item.quantity || 1}</td>
-                                                        <td class="text-right">${formatCurrency(item.unitPrice || 0)}</td>
-                                                        <td class="text-right">${formatCurrency(item.lineTotal || 0)}</td>
-                                                    </tr>
-                                                `).join('')
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                <div class="summary">
-                                    <div class="summary-grid">
-                                        <div class="summary-label">Subtotal</div>
-                                        <div class="summary-value">${formatCurrency(subtotal)}</div>
-                                        
-                                        ${discount > 0 ? `
-                                        <div class="summary-label">Diskon</div>
-                                        <div class="summary-value">-${formatCurrency(discount)}</div>
-                                        ` : ''}
-                                        
-                                        ${taxAmount > 0 ? `
-                                        <div class="summary-label">Pajak</div>
-                                        <div class="summary-value">${formatCurrency(taxAmount)}</div>
-                                        ` : ''}
-                                        
-                                        ${shippingCost > 0 ? `
-                                        <div class="summary-label">Biaya Kirim</div>
-                                        <div class="summary-value">${formatCurrency(shippingCost)}</div>
-                                        ` : ''}
-                                        
-                                        <div class="summary-label total-label">TOTAL</div>
-                                        <div class="summary-value total-value">${formatCurrency(grandTotal)}</div>
-                                    </div>
-                                </div>
-                                
-                                ${invoice.notes ? `
-                                <div style="padding: 20px 32px; border-top: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
-                                    <p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;">
-                                        <strong style="color: var(--text);">Catatan:</strong> ${invoice.notes}
-                                    </p>
-                                </div>
-                                ` : ''}
-
-                                <!-- Footer Section - Matching simple-invoice-view.html exactly -->
-                                <div class="footer-band" style="background: ${businessProfile?.premiumActive && businessProfile.customFooterBgColor ?
-                                    `linear-gradient(135deg, ${businessProfile.customFooterBgColor}, ${adjustBrightness(businessProfile.customFooterBgColor, 20)})` :
-                                    'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile?.premiumActive && businessProfile.customFooterTextColor ? businessProfile.customFooterTextColor : 'white'}; padding: 20px; margin-bottom: 0;">
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
-                                        <div class="footer-section">
-                                            <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
-                                            <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessProfile?.terms || invoice.merchant_terms || 'Pembayaran dilakukan sesuai dengan ketentuan yang berlaku. Barang yang sudah dibeli tidak dapat dikembalikan kecuali ada kesepakatan khusus.'}</p>
-                                        </div>
-                                        <div class="footer-section">
-                                            <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
-                                            <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
-                                                <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                                    <span style="opacity: 0.7;">📞</span>
-                                                    ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
-                                                </li>
-                                                <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                                    <span style="opacity: 0.7;">📧</span>
-                                                    ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
-                                                </li>
-                                                ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${businessProfile.website}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${invoice.merchant_website}</li>` : ''}
-                                            </ul>
-                                        </div>
-                                        ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? `
-                                        <!-- Custom Premium Footer -->
-                                        ${businessProfile.customFooterLogoUrl ? `
-                                        <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
-                                            <img src="${businessProfile.customFooterLogoUrl}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9;">
-                                        </div>
-                                        ` : ''}
-                                        ` : `
-                                        <!-- Default Aspree Footer -->
-                                        <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
-                                            <img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">
-                                        </div>
-                                        `}
-                                    </div>
-
-                                    <!-- Powered by text -->
-                                    ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? `
-                                    <!-- Custom powered by text (if any) -->
-                                    ${businessProfile.customPoweredByText ? `
-                                    <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
-                                        <p style="font-size: 12px; opacity: 0.7; margin: 0;">
-                                            ${businessProfile.customPoweredByText}
-                                        </p>
-                                    </div>
-                                    ` : ''}
-                                    ` : `
-                                    <!-- Default Aspree powered by text -->
-                                    <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
-                                        <p style="font-size: 12px; opacity: 0.7; margin: 0;">
-                                            Powered by Aspree Invoice Generator
-                                        </p>
-                                    </div>
-                                    `}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `;
+            return generateModularTemplate(invoice, items, businessProfile, theme);
         }
 
         // Modular Template Engine - Reduces code duplication by 70%
@@ -8466,7 +7706,320 @@ Terima kasih! 🙏`;
         // This reduces code duplication by ~600 lines while maintaining functionality
 
         // DEPRECATED: Direct print function that generates unified invoice template
-        // Orphaned code removed to fix syntax errors
+            const itemsHTML = items.map(item => `
+                <tr>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0;">${item.productName}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatCurrency(item.unitPrice)}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatCurrency(item.lineTotal)}</td>
+                </tr>
+            `).join('');
+            
+            const businessName = businessProfile?.name || businessProfile?.businessName || 'Your Business Name';
+            const businessAddress = businessProfile?.address || 'Your Business Address';
+            const businessPhone = businessProfile?.phone || '';
+            const businessEmail = businessProfile?.email || '';
+            const businessLogo = businessProfile?.logo || businessProfile?.logoUrl || '';
+            
+            return `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Invoice - ${invoice.invoice_number}</title>
+                    <style>
+                        :root {
+                            --aspree-purple: #6366f1;
+                            --aspree-dark-purple: #4f46e5;
+                            --aspree-light: #e0e7ff;
+                        }
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                            color: #1f2937;
+                            line-height: 1.6;
+                            background: #f8fafc;
+                        }
+                        .invoice-container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            background: white;
+                            border-radius: 16px;
+                            overflow: hidden;
+                            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                        }
+                        .aspree-header {
+                            background: linear-gradient(135deg, var(--aspree-purple), var(--aspree-dark-purple));
+                            color: white;
+                            padding: 40px;
+                            position: relative;
+                            overflow: hidden;
+                        }
+                        .aspree-header::before {
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            right: 0;
+                            bottom: 0;
+                            left: 0;
+                            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+                            opacity: 0.5;
+                        }
+                        .header-content {
+                            position: relative;
+                            z-index: 1;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-start;
+                        }
+                        .business-info {
+                            flex: 1;
+                        }
+                        .business-logo {
+                            max-height: 60px;
+                            max-width: 180px;
+                            margin-bottom: 16px;
+                            border-radius: 8px;
+                        }
+                        .business-name {
+                            font-size: 28px;
+                            font-weight: 800;
+                            margin-bottom: 8px;
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        }
+                        .business-details {
+                            opacity: 0.9;
+                            font-size: 14px;
+                            line-height: 1.5;
+                        }
+                        .invoice-meta {
+                            text-align: right;
+                            background: rgba(255, 255, 255, 0.1);
+                            padding: 24px;
+                            border-radius: 12px;
+                            backdrop-filter: blur(10px);
+                        }
+                        .invoice-title {
+                            font-size: 32px;
+                            font-weight: 900;
+                            margin-bottom: 16px;
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                        }
+                        .invoice-number {
+                            font-size: 18px;
+                            font-weight: 600;
+                            opacity: 0.9;
+                        }
+                        .content-section {
+                            padding: 40px;
+                        }
+                        .parties {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 40px;
+                            margin-bottom: 40px;
+                        }
+                        .party {
+                            background: #f8fafc;
+                            padding: 24px;
+                            border-radius: 12px;
+                            border-left: 4px solid var(--aspree-purple);
+                        }
+                        .party h3 {
+                            margin: 0 0 12px 0;
+                            color: var(--aspree-purple);
+                            font-size: 12px;
+                            text-transform: uppercase;
+                            font-weight: 700;
+                            letter-spacing: 1px;
+                        }
+                        .party-name {
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: #1f2937;
+                            margin-bottom: 8px;
+                        }
+                        .items-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 32px;
+                            border-radius: 12px;
+                            overflow: hidden;
+                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                        }
+                        .items-table thead {
+                            background: linear-gradient(135deg, var(--aspree-purple), var(--aspree-dark-purple));
+                            color: white;
+                        }
+                        .items-table th {
+                            padding: 16px 12px;
+                            text-align: left;
+                            font-weight: 600;
+                            font-size: 14px;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        }
+                        .items-table th:nth-child(2) { text-align: center; }
+                        .items-table th:nth-child(3), .items-table th:nth-child(4) { text-align: right; }
+                        .items-table tbody tr:nth-child(even) {
+                            background: #f8fafc;
+                        }
+                        .totals {
+                            background: #f8fafc;
+                            padding: 24px;
+                            border-radius: 12px;
+                            border: 2px solid var(--aspree-light);
+                        }
+                        .totals-table {
+                            width: 100%;
+                            max-width: 400px;
+                            margin-left: auto;
+                        }
+                        .totals-table td {
+                            padding: 8px 0;
+                            border: none;
+                            font-size: 16px;
+                        }
+                        .totals-table .total-row td {
+                            font-weight: 800;
+                            font-size: 20px;
+                            padding-top: 16px;
+                            border-top: 2px solid var(--aspree-purple);
+                            color: var(--aspree-purple);
+                        }
+                        .aspree-footer {
+                            background: linear-gradient(135deg, #1f2937, #374151);
+                            color: white;
+                            padding: 24px 40px;
+                            text-align: center;
+                            font-size: 12px;
+                            opacity: 0.8;
+                        }
+                        .notes {
+                            background: #fef3cd;
+                            border: 1px solid #fbbf24;
+                            border-radius: 8px;
+                            padding: 20px;
+                            margin-top: 24px;
+                        }
+                        .notes h3 {
+                            color: #92400e;
+                            margin-bottom: 8px;
+                        }
+                        @media print {
+                            body { margin: 0; padding: 0; background: white; }
+                            .invoice-container { box-shadow: none; border-radius: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-container">
+                        <div class="aspree-header">
+                            <div class="header-content">
+                                <div class="business-info">
+                                    ${businessLogo ? `<img src="${businessLogo}" alt="Logo" class="business-logo">` : ''}
+                                    <div class="business-name">${businessName}</div>
+                                    <div class="business-details">
+                                        ${businessAddress}<br>
+                                        ${businessPhone}<br>
+                                        ${businessEmail}
+                                    </div>
+                                </div>
+                                <div class="invoice-meta">
+                                    <div class="invoice-title">FAKTUR</div>
+                                    <div class="invoice-number">#${invoice.invoice_number}</div>
+                                    <div style="margin-top: 12px; font-size: 14px;">
+                                        <div>Tanggal: ${formatDate(invoice.invoice_date)}</div>
+                                        <div>Jatuh Tempo: ${formatDate(invoice.due_date)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="content-section">
+                            <div class="parties">
+                                <div class="party">
+                                    <h3>DARI</h3>
+                                    <div class="party-name">${businessName}</div>
+                                    <div>
+                                        ${businessAddress}<br>
+                                        ${businessPhone}<br>
+                                        ${businessEmail}
+                                    </div>
+                                </div>
+                                <div class="party">
+                                    <h3>KEPADA</h3>
+                                    <div class="party-name">${invoice.customer_name}</div>
+                                    <div>
+                                        ${invoice.customer_address || ''}<br>
+                                        ${invoice.customer_phone || ''}<br>
+                                        ${invoice.customer_email || ''}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <table class="items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Qty</th>
+                                        <th>Harga</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsHTML}
+                                </tbody>
+                            </table>
+                            
+                            <div class="totals">
+                                <table class="totals-table">
+                                    ${invoice.tax > 0 ? `
+                                    <tr>
+                                        <td>Subtotal:</td>
+                                        <td style="text-align: right;">${formatCurrency(invoice.subtotal || (invoice.total_amount - invoice.tax))}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Pajak:</td>
+                                        <td style="text-align: right;">${formatCurrency(invoice.tax)}</td>
+                                    </tr>
+                                    ` : ''}
+                                    ${invoice.shipping_cost > 0 ? `
+                                    <tr>
+                                        <td>Ongkir:</td>
+                                        <td style="text-align: right;">${formatCurrency(invoice.shipping_cost)}</td>
+                                    </tr>
+                                    ` : ''}
+                                    ${invoice.discount > 0 ? `
+                                    <tr>
+                                        <td>Diskon:</td>
+                                        <td style="text-align: right;">-${formatCurrency(invoice.discount)}</td>
+                                    </tr>
+                                    ` : ''}
+                                    <tr class="total-row">
+                                        <td>TOTAL:</td>
+                                        <td style="text-align: right;">${formatCurrency(invoice.total_amount || invoice.grand_total || 0)}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            ${invoice.notes ? `
+                            <div class="notes">
+                                <h3>Catatan:</h3>
+                                <p>${invoice.notes}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="aspree-footer">
+                            Powered by <strong>Aspree.id</strong> - Professional Invoice Management
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+        }
 
         // Clean Custom Template without Aspree branding
         function generateCustomBrandingTemplate(invoice, items, businessProfile) {
@@ -10470,8 +10023,6 @@ Terima kasih! 🙏`;
                 if (data.success) {
                     customers = data.customers;
                     displayCustomers(customers);
-                    // Load customer stats after loading customers
-                    loadCustomerStats();
                 } else {
                     showCustomerError('Failed to load customers: ' + data.error);
                 }
@@ -10484,15 +10035,7 @@ Terima kasih! 🙏`;
 
         async function loadCustomerStats() {
             try {
-                const response = await fetch('/api/customers/stats', {
-                    headers: getAuthHeaders()
-                });
-
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
+                const response = await fetch('/api/customers/stats');
                 const data = await response.json();
                 
                 if (data.success) {
