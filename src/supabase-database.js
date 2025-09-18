@@ -691,41 +691,21 @@ class SupabaseDatabase {
     return data;
   }
 
-  async getInvoiceByNumber(invoiceNumber, merchantId = null) {
-    try {
-      console.log(`🔍 Getting invoice by number: ${invoiceNumber} for merchant: ${merchantId}`);
-      
-      let query = this.supabase
-        .from('invoices')
-        .select('*')
-        .eq('invoice_number', invoiceNumber);
-      
-      // Add merchant isolation if merchantId provided
-      if (merchantId) {
-        query = query.eq('merchant_id', merchantId);
-      }
-      
-      const { data, error } = await query.single();
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          console.log(`📭 No invoice found with number: ${invoiceNumber}${merchantId ? ` for merchant: ${merchantId}` : ''}`);
-          return null;
-        }
-        throw error;
-      }
-      
-      // Normalize invoice items if data exists
-      if (data && data.items_json) {
-        data.items_json = this.normalizeInvoiceItems(data.items_json);
-      }
-      
-      console.log(`✅ Found invoice: ${data.id} - ${data.invoice_number}`);
-      return data;
-    } catch (error) {
-      console.error('❌ Error getting invoice by number:', error);
-      throw error;
+  async getInvoiceByNumber(invoiceNumber) {
+    const { data, error } = await this.supabase
+      .from('invoices')
+      .select('*')
+      .eq('invoice_number', invoiceNumber)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    // Normalize invoice items if data exists
+    if (data && data.items_json) {
+      data.items_json = this.normalizeInvoiceItems(data.items_json);
     }
+    
+    return data;
   }
 
   async getInvoiceByCustomerToken(token) {
@@ -1023,8 +1003,6 @@ class SupabaseDatabase {
           customFooterLogoPublicId: data.custom_footer_logo_public_id,
           customHeaderBgColor: data.custom_header_bg_color,
           customFooterBgColor: data.custom_footer_bg_color,
-          customHeaderTextColor: data.custom_header_text_color,
-          customFooterTextColor: data.custom_footer_text_color,
           hideAspreeBranding: data.hide_aspree_branding
         };
       }
@@ -1111,12 +1089,6 @@ class SupabaseDatabase {
       if (settings.customFooterBgColor !== undefined || settings.custom_footer_bg_color !== undefined) {
         mappedSettings.custom_footer_bg_color = settings.customFooterBgColor || settings.custom_footer_bg_color || '#311d6b';
       }
-      if (settings.customHeaderTextColor !== undefined || settings.custom_header_text_color !== undefined) {
-        mappedSettings.custom_header_text_color = settings.customHeaderTextColor || settings.custom_header_text_color || '#ffffff';
-      }
-      if (settings.customFooterTextColor !== undefined || settings.custom_footer_text_color !== undefined) {
-        mappedSettings.custom_footer_text_color = settings.customFooterTextColor || settings.custom_footer_text_color || '#ffffff';
-      }
       if (settings.hideAspreeBranding !== undefined || settings.hide_aspree_branding !== undefined) {
         mappedSettings.hide_aspree_branding = settings.hideAspreeBranding !== undefined ? settings.hideAspreeBranding : settings.hide_aspree_branding;
       }
@@ -1148,7 +1120,6 @@ class SupabaseDatabase {
           .from('business_settings')
           .update(mappedSettings)
           .eq('id', existing.id)
-          .eq('merchant_id', merchantId)
           .select()
           .single();
 
@@ -1159,11 +1130,10 @@ class SupabaseDatabase {
         result = data;
       } else {
         console.log('✨ Creating new business settings record');
-        // Add merchant_id to new records - required for merchant isolation
-        if (!merchantId) {
-          throw new Error('Merchant ID is required when creating new business settings');
+        // Add merchant_id to new records if provided
+        if (merchantId) {
+          mappedSettings.merchant_id = merchantId;
         }
-        mappedSettings.merchant_id = merchantId;
         const { data, error } = await this.supabase
           .from('business_settings')
           .insert(mappedSettings)
@@ -1219,8 +1189,6 @@ class SupabaseDatabase {
       customFooterLogoPublicId: data.custom_footer_logo_public_id,
       customHeaderBgColor: data.custom_header_bg_color,
       customFooterBgColor: data.custom_footer_bg_color,
-      customHeaderTextColor: data.custom_header_text_color,
-      customFooterTextColor: data.custom_footer_text_color,
       hideAspreeBranding: data.hide_aspree_branding,
       createdAt: data.created_at,
       updatedAt: data.updated_at
@@ -2177,8 +2145,6 @@ class SupabaseDatabase {
         customFooterLogoUrl: businessSettings.customFooterLogoUrl,
         customHeaderBgColor: businessSettings.customHeaderBgColor || '#311d6b',
         customFooterBgColor: businessSettings.customFooterBgColor || '#311d6b',
-        customHeaderTextColor: businessSettings.customHeaderTextColor || '#ffffff',
-        customFooterTextColor: businessSettings.customFooterTextColor || '#ffffff',
         hideAspreeBranding: businessSettings.hideAspreeBranding === true
       };
     } catch (error) {
@@ -2703,6 +2669,31 @@ class SupabaseDatabase {
           return null;
         }
         throw error;
+      }
+
+      // Auto-create order if payment is fully approved (paid status)
+      if (status === 'approved' && data.status === 'paid') {
+        try {
+          console.log(`💎 Payment fully approved for invoice ${data.invoice_number} - creating order`);
+          const orderResult = await this.createOrderFromInvoice(invoiceId, data.merchant_id);
+          console.log(`✅ Order ${orderResult.orderNumber} auto-created from invoice ${data.invoice_number}`);
+
+          // Return data with order creation info
+          return {
+            ...data,
+            orderCreated: true,
+            orderId: orderResult.lastInsertRowid,
+            orderNumber: orderResult.orderNumber
+          };
+        } catch (orderError) {
+          console.error('❌ Failed to auto-create order from approved invoice:', orderError);
+          // Still return the updated invoice data even if order creation failed
+          return {
+            ...data,
+            orderCreated: false,
+            orderError: orderError.message
+          };
+        }
       }
 
       return data;
