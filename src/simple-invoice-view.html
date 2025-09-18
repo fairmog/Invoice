@@ -1554,20 +1554,29 @@
                 <div class="paper-wrapper">
                     <div class="paper">
                     <!-- Header band -->
-                    ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
-                    <div style="background: ${businessProfile?.premiumActive && businessProfile.customHeaderBgColor ? 
-                        `linear-gradient(135deg, ${businessProfile.customHeaderBgColor}, ${adjustBrightness(businessProfile.customHeaderBgColor, 20)})` : 
-                        'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile?.premiumActive && businessProfile.customHeaderTextColor ? businessProfile.customHeaderTextColor : 'white'}; padding: 12px 0; text-align: center;">
+                    ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? `
+                    <!-- Custom Premium Header -->
+                    <div style="background: ${businessProfile.customHeaderBgColor ?
+                        `linear-gradient(135deg, ${businessProfile.customHeaderBgColor}, ${adjustBrightness(businessProfile.customHeaderBgColor, 20)})` :
+                        'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile.customHeaderTextColor || 'white'}; padding: 12px 0; text-align: center;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                            ${businessProfile?.premiumActive && businessProfile.customHeaderLogoUrl ? 
-                                `<img src="${businessProfile.customHeaderLogoUrl}" alt="Header Logo" style="height: 32px; width: auto;">` :
-                                `<img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">`
+                            ${businessProfile.customHeaderLogoUrl ?
+                                `<img src="${businessProfile.customHeaderLogoUrl}" alt="Header Logo" style="height: 32px; width: auto;">` : ''
                             }
-                            <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: ${businessProfile?.premiumActive && businessProfile.customHeaderTextColor ? businessProfile.customHeaderTextColor : 'white'};">
-                                ${businessProfile?.premiumActive && businessProfile.customHeaderText ? 
-                                    businessProfile.customHeaderText : 
-                                    'Powered by Aspree Invoice Generator'
-                                }
+                            ${businessProfile.customHeaderText ? `
+                                <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: ${businessProfile.customHeaderTextColor || 'white'};">
+                                    ${businessProfile.customHeaderText}
+                                </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : `
+                    <!-- Default Aspree Header -->
+                    <div style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 12px 0; text-align: center;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                            <img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">
+                            <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: white;">
+                                Powered by Aspree Invoice Generator
                             </p>
                         </div>
                     </div>
@@ -1950,12 +1959,17 @@
                                     ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${escapeHtml(businessProfile.website)}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${escapeHtml(invoice.merchant_website)}</li>` : ''}
                                 </ul>
                             </div>
-                            ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
+                            ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? `
+                            <!-- Custom Premium Footer -->
+                            ${businessProfile.customFooterLogoUrl ? `
                             <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
-                                ${businessProfile?.premiumActive && businessProfile.customFooterLogoUrl ? 
-                                    `<img src="${businessProfile.customFooterLogoUrl}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9;">` :
-                                    `<img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">`
-                                }
+                                <img src="${businessProfile.customFooterLogoUrl}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9;">
+                            </div>
+                            ` : ''}
+                            ` : `
+                            <!-- Default Aspree Footer -->
+                            <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
+                                <img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">
                             </div>
                             `}
                         </div>
