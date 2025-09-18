@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Business Settings - AI Invoice Generator</title>
-    <style>
+    <style>w
         /* Modern Purple Design System */
         :root {
             /* Primary Purple Palette */
@@ -1611,8 +1611,29 @@
                 // Clear file inputs
                 headerLogoFile = null;
                 footerLogoFile = null;
-                document.getElementById('customHeaderLogo').value = '';
-                document.getElementById('customFooterLogo').value = '';
+
+                // Clear file inputs with null checks and debugging
+                const headerLogoInput = document.getElementById('customHeaderLogo');
+                const footerLogoInput = document.getElementById('customFooterLogo');
+
+                const premiumControls = document.getElementById('premiumControls');
+                console.log('🔍 Debug: Clearing file inputs', {
+                    headerLogoInput: !!headerLogoInput,
+                    footerLogoInput: !!footerLogoInput,
+                    premiumControlsVisible: premiumControls ? premiumControls.style.display : 'element not found'
+                });
+
+                if (headerLogoInput) {
+                    headerLogoInput.value = '';
+                } else {
+                    console.warn('⚠️ customHeaderLogo element not found');
+                }
+
+                if (footerLogoInput) {
+                    footerLogoInput.value = '';
+                } else {
+                    console.warn('⚠️ customFooterLogo element not found');
+                }
                 
             } catch (error) {
                 console.error('Error saving premium branding:', error);
