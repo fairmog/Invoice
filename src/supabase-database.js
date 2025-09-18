@@ -756,6 +756,7 @@ class SupabaseDatabase {
       updateData.sent_at = new Date().toISOString();
     } else if (status === 'paid') {
       updateData.paid_at = new Date().toISOString();
+      updateData.payment_status = 'paid'; // Ensure payment_status is also updated
     }
 
     const { data, error } = await this.supabase
@@ -771,15 +772,30 @@ class SupabaseDatabase {
     // Auto-create order if paid
     if (status === 'paid') {
       try {
+        console.log(`💎 Invoice ${data.invoice_number || invoiceId} marked as paid - creating order automatically`);
         const orderResult = await this.createOrderFromInvoice(invoiceId, merchantId);
+        console.log(`✅ Order ${orderResult.orderNumber} auto-created from paid invoice ${data.invoice_number || invoiceId}`);
+
         return {
           ...data,
           orderCreated: true,
           orderId: orderResult.lastInsertRowid,
           orderNumber: orderResult.orderNumber
         };
-      } catch (error) {
-        console.error('Failed to auto-create order from invoice:', error);
+      } catch (orderError) {
+        console.error(`❌ Failed to auto-create order from invoice ${data.invoice_number || invoiceId}:`, {
+          error: orderError.message,
+          stack: orderError.stack,
+          invoiceId,
+          merchantId
+        });
+
+        // Still return the updated invoice data even if order creation failed
+        return {
+          ...data,
+          orderCreated: false,
+          orderError: orderError.message
+        };
       }
     }
 
@@ -1266,14 +1282,20 @@ class SupabaseDatabase {
   }
 
   async createOrderFromInvoice(invoiceId, merchantId) {
-    if (!merchantId) {
-      throw new Error('Merchant ID is required for order creation');
-    }
-    
-    const invoice = await this.getInvoice(invoiceId, merchantId);
-    if (!invoice) {
-      throw new Error('Invoice not found or access denied');
-    }
+    try {
+      console.log(`🔄 Creating order from invoice ID ${invoiceId} for merchant ${merchantId}`);
+
+      if (!merchantId) {
+        throw new Error('Merchant ID is required for order creation');
+      }
+
+      const invoice = await this.getInvoice(invoiceId, merchantId);
+      if (!invoice) {
+        throw new Error(`Invoice ${invoiceId} not found or access denied for merchant ${merchantId}`);
+      }
+
+      console.log(`📋 Processing invoice ${invoice.invoice_number} (${invoice.customer_name}, Rp ${parseFloat(invoice.grand_total || 0).toLocaleString()})`);
+
 
     // Check if order already exists for this merchant
     const { data: existingOrder } = await this.supabase
@@ -1329,8 +1351,21 @@ class SupabaseDatabase {
       .eq('id', invoiceId)
       .eq('merchant_id', merchantId);
 
-    console.log(`Order ${result.orderNumber} auto-created from invoice ${invoice.invoice_number}`);
-    return result;
+      console.log(`✅ Order ${result.orderNumber} auto-created from invoice ${invoice.invoice_number}`);
+      return result;
+
+    } catch (error) {
+      console.error(`❌ Failed to create order from invoice ${invoiceId}:`, {
+        error: error.message,
+        stack: error.stack,
+        invoiceId,
+        merchantId,
+        timestamp: new Date().toISOString()
+      });
+
+      // Re-throw with more context
+      throw new Error(`Order creation failed for invoice ${invoiceId}: ${error.message}`);
+    }
   }
 
   // Utility methods
