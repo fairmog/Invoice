@@ -4247,7 +4247,8 @@
             refreshInvoiceNumber();
             loadUserInfo();
             loadPlanStatus();
-            
+            loadInvoiceStats(); // Load dashboard statistics on page load
+
             // Handle URL hash navigation
             const hash = window.location.hash.substring(1);
             if (hash && ['products', 'orders', 'invoices', 'customers', 'inventory', 'categories'].includes(hash)) {
