@@ -2663,9 +2663,47 @@ app.post('/api/preview-invoice', authMiddleware.authenticateMerchant, async (req
       const processingTime = Date.now() - startTime;
       console.log(`⏱️ Preview generation completed in ${processingTime}ms`);
       
+      // Enhance invoice with business profile for consistent template rendering
+      const enhancedInvoice = {
+        ...result.invoice,
+        // Add metadata for business profile (needed for template logic)
+        businessProfile: {
+          name: currentBusinessSettings.name,
+          address: currentBusinessSettings.address,
+          phone: currentBusinessSettings.phone,
+          email: currentBusinessSettings.email,
+          website: currentBusinessSettings.website,
+          logo: currentBusinessSettings.logoUrl,
+          logoUrl: currentBusinessSettings.logoUrl, // Ensure both fields are set for compatibility
+          hideBusinessName: currentBusinessSettings.hideBusinessName || false,
+          taxEnabled: currentBusinessSettings.taxEnabled || false,
+          taxRate: currentBusinessSettings.taxRate || 0,
+          termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari',
+          // Premium branding fields for invoice template
+          premiumActive: currentBusinessSettings.premiumActive || false,
+          hideAspreeBranding: currentBusinessSettings.hideAspreeBranding || false,
+          customHeaderText: currentBusinessSettings.customHeaderText,
+          customHeaderLogoUrl: currentBusinessSettings.customHeaderLogoUrl,
+          customFooterLogoUrl: currentBusinessSettings.customFooterLogoUrl,
+          customHeaderBgColor: currentBusinessSettings.customHeaderBgColor || '#311d6b',
+          customFooterBgColor: currentBusinessSettings.customFooterBgColor || '#311d6b',
+          customHeaderTextColor: currentBusinessSettings.customHeaderTextColor || '#ffffff',
+          customFooterTextColor: currentBusinessSettings.customFooterTextColor || '#ffffff'
+        }
+      };
+
+      console.log('🔍 Preview premium branding debug:', {
+        premiumActive: enhancedInvoice.businessProfile.premiumActive,
+        hideAspreeBranding: enhancedInvoice.businessProfile.hideAspreeBranding,
+        customHeaderText: enhancedInvoice.businessProfile.customHeaderText,
+        customHeaderLogoUrl: enhancedInvoice.businessProfile.customHeaderLogoUrl,
+        customFooterLogoUrl: enhancedInvoice.businessProfile.customFooterLogoUrl
+      });
+
       // Return preview data (no database save)
       const previewResult = {
         ...result,
+        invoice: enhancedInvoice,
         preview: true,
         isPreview: true,
         processingTime: processingTime,
@@ -4763,7 +4801,7 @@ app.put('/api/orders/bulk/status', authMiddleware.authenticateMerchant, async (r
 
 app.delete('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.deleteOrder(parseInt(req.params.id), req.user.id);
+    const result = await database.deleteOrder(parseInt(req.params.id), req.merchant.id);
     
     if (result.changes === 0) {
       return res.status(404).json({
