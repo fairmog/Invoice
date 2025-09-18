@@ -204,7 +204,19 @@ async function getCurrentBusinessSettings(merchantId = null) {
       logoUrl: dbSettings.logoUrl || null,
       logoFilename: dbSettings.logoFilename || null,
       hideBusinessName: dbSettings.hideBusinessName || false,
-      termsAndConditions: dbSettings.termsAndConditions || ''
+      termsAndConditions: dbSettings.termsAndConditions || '',
+      // Premium branding fields
+      premiumActive: dbSettings.premiumActive || false,
+      hideAspreeBranding: dbSettings.hideAspreeBranding || false,
+      customHeaderText: dbSettings.customHeaderText || null,
+      customHeaderLogoUrl: dbSettings.customHeaderLogoUrl || null,
+      customFooterLogoUrl: dbSettings.customFooterLogoUrl || null,
+      customHeaderBgColor: dbSettings.customHeaderBgColor || '#311d6b',
+      customFooterBgColor: dbSettings.customFooterBgColor || '#311d6b',
+      customHeaderTextColor: dbSettings.customHeaderTextColor || '#ffffff',
+      customFooterTextColor: dbSettings.customFooterTextColor || '#ffffff',
+      customHeaderLogoPublicId: dbSettings.customHeaderLogoPublicId || null,
+      customFooterLogoPublicId: dbSettings.customFooterLogoPublicId || null
     };
   } catch (error) {
     console.error('Error getting business settings:', error);
@@ -223,7 +235,19 @@ async function getCurrentBusinessSettings(merchantId = null) {
       logoUrl: null,
       logoFilename: null,
       hideBusinessName: false,
-      termsAndConditions: ''
+      termsAndConditions: '',
+      // Premium branding fields (fallback defaults)
+      premiumActive: false,
+      hideAspreeBranding: false,
+      customHeaderText: null,
+      customHeaderLogoUrl: null,
+      customFooterLogoUrl: null,
+      customHeaderBgColor: '#311d6b',
+      customFooterBgColor: '#311d6b',
+      customHeaderTextColor: '#ffffff',
+      customFooterTextColor: '#ffffff',
+      customHeaderLogoPublicId: null,
+      customFooterLogoPublicId: null
     };
   }
 }
