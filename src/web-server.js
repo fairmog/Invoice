@@ -1,10984 +1,7136 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
-    <title>Merchant Dashboard - Aspree Invoice Gen</title>
-    <style>
-        /* Professional Business Design System */
-        :root {
-            /* Primary Blue-Grey Palette */
-            --primary-purple: #2563EB;
-            --primary-dark: #1D4ED8;
-            --primary-light: #3B82F6;
-            
-            /* Secondary/Accent Colors */
-            --accent-purple: #1E40AF;
-            --light-accent: #60A5FA;
-            --deep-purple: #1E3A8A;
-            
-            /* Neutral Colors */
-            --background: #FAFAFA;
-            --card-background: #FFFFFF;
-            --text-primary: #2D3748;
-            --text-secondary: #718096;
-            --border-color: #E2E8F0;
-            
-            /* Status Colors */
-            --success: #48BB78;
-            --warning: #ED8936;
-            --error: #F56565;
-            --info: #4299E1;
-            --whatsapp: #25D366;
-            
-            /* Component Specific */
-            --shadow-soft: 0 4px 6px rgba(37, 99, 235, 0.05);
-            --shadow-medium: 0 10px 25px rgba(37, 99, 235, 0.1);
-            --shadow-strong: 0 20px 40px rgba(37, 99, 235, 0.15);
-            --gradient-primary: linear-gradient(135deg, var(--primary-purple) 0%, var(--accent-purple) 100%);
-            --gradient-card: linear-gradient(145deg, #FFFFFF 0%, #F7F9FF 100%);
-            --border-radius: 12px;
-            --border-radius-large: 16px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
-            background: var(--background);
-            color: var(--text-primary);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary-purple), var(--accent-purple));
-            border-bottom: none;
-            padding: 16px 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 20px;
-            font-weight: 700;
-            color: white;
-            text-decoration: none;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 18px;
-        }
-
-        .logo-icon img {
-            max-height: 36px;
-            max-width: 200px;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
-
-        .settings-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-            transition: var(--transition);
-            backdrop-filter: blur(4px);
-        }
-
-        .settings-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
-            color: white;
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-medium);
-        }
-
-        .settings-btn span:first-child {
-            font-size: 16px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 16px;
-            background: rgba(139, 95, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: var(--gradient-primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 12px;
-        }
-
-        .user-details {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .header-logout-btn {
-            padding: 4px 8px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 11px;
-            background: var(--error);
-            color: white;
-            border: 1px solid var(--error);
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            width: fit-content;
-            margin-top: 2px;
-        }
-
-        .header-logout-btn:hover {
-            background: #E53E3E;
-            border-color: #E53E3E;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
-        }
-
-        .header-logout-btn:active {
-            transform: translateY(0);
-        }
-
-        .header-logout-btn span {
-            font-size: 10px;
-        }
-
-        /* Plan Status and Upgrade Button */
-        .plan-status-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-right: 16px;
-        }
-
-        .plan-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .plan-badge.free {
-            background: linear-gradient(135deg, #E2E8F0, #CBD5E0);
-            color: #2D3748;
-            border: 1px solid #A0AEC0;
-        }
-
-        .plan-badge.premium {
-            background: linear-gradient(135deg, #9F7AEA, #805AD5);
-            color: white;
-            border: 1px solid #6B46C1;
-            box-shadow: 0 2px 4px rgba(159, 122, 234, 0.2);
-        }
-
-        .upgrade-btn {
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 11px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #48BB78, #38A169);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-
-        .upgrade-btn:hover {
-            background: linear-gradient(135deg, #38A169, #2F855A);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(72, 187, 120, 0.3);
-        }
-
-        .manage-btn {
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 11px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #4A5568, #2D3748);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-
-        .manage-btn:hover {
-            background: linear-gradient(135deg, #2D3748, #1A202C);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(74, 85, 104, 0.3);
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 40px 24px;
-        }
-
-        /* Dashboard Navigation */
-        .dashboard-nav {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 32px;
-            background: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius-large);
-            box-shadow: var(--shadow-soft);
-            border: 1px solid var(--border-color);
-        }
-
-        .nav-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-            text-decoration: none;
-            color: var(--text-primary);
-            background: var(--background);
-            border: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .nav-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-medium);
-            background: var(--primary-light);
-            color: white;
-            border-color: var(--primary-light);
-        }
-
-        .nav-btn.active {
-            background: var(--gradient-primary);
-            color: white;
-            border-color: var(--primary-purple);
-            box-shadow: var(--shadow-soft);
-        }
-
-
-        /* Page Header */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.02em;
-        }
-
-        .page-subtitle {
-            color: var(--text-secondary);
-            margin-top: 8px;
-        }
-
-        .section {
-            background: var(--gradient-card);
-            border-radius: var(--border-radius-large);
-            padding: 32px;
-            margin-bottom: 32px;
-            box-shadow: var(--shadow-medium);
-            border: 1px solid var(--border-color);
-        }
-
-        .section h2 {
-            color: var(--text-primary);
-            margin-bottom: 24px;
-            font-size: 24px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .section-icon {
-            width: 32px;
-            height: 32px;
-            background: var(--gradient-primary);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
-        }
-
-
-
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .filters {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .filter-select {
-            padding: 0.5rem 1rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            background: white;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        .btn-primary {
-            background: var(--gradient-primary);
-            color: white;
-            box-shadow: var(--shadow-soft);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-medium);
-        }
-
-        .btn-secondary {
-            background: var(--card-background);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--primary-light);
-            color: white;
-            border-color: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-soft);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #38a169;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(72, 187, 120, 0.3);
-        }
-
-        .btn-danger {
-            background: var(--error);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #e53e3e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(245, 101, 101, 0.3);
-        }
-
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background: #dd6b20;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(237, 137, 54, 0.3);
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        /* Legacy product grid styles - no longer used for products/customers */
-
-        .product-card {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .product-card .selection-checkbox {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            padding: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            border-color: #667eea;
-        }
-
-        .product-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .product-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-
-        .product-sku {
-            color: #666;
-            font-size: 0.9rem;
-            background: #f8f9fa;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            display: inline-block;
-        }
-
-        .product-price {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #27ae60;
-            margin: 0.5rem 0;
-        }
-
-        .product-stock {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin: 0.5rem 0;
-        }
-
-        .stock-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .stock-high {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .stock-low {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .stock-out {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .stock-medium {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .product-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-
-        /* Share Dropdown Styles */
-        .share-dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .share-menu {
-            display: none;
-            position: absolute;
-            background: white;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            border-radius: 6px;
-            z-index: 1000;
-            top: 100%;
-            left: 0;
-            border: 1px solid #ddd;
-        }
-
-        .share-menu.show {
-            display: block;
-        }
-
-        .share-option {
-            display: block;
-            width: 100%;
-            padding: 12px 16px;
-            text-align: left;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.2s;
-        }
-
-        .share-option:hover {
-            background-color: #f1f1f1;
-        }
-
-        .share-option:first-child {
-            border-radius: 6px 6px 0 0;
-        }
-
-        .share-option:last-child {
-            border-radius: 0 0 6px 6px;
-        }
-
-        /* Invoice, Order, Product & Customer Containers */
-        .invoices-container,
-        .orders-container,
-        .products-container,
-        .customers-container {
-            width: 100%;
-        }
-
-        /* Invoice List View Styles */
-        .invoice-date-group {
-            margin-bottom: 30px;
-        }
-
-        .date-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px 12px 0 0;
-            border-bottom: 2px solid #dee2e6;
-            margin-bottom: 0;
-        }
-
-        .date-group-header h3 {
-            margin: 0;
-            color: #495057;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .invoice-count {
-            color: #6c757d;
-            font-size: 0.9rem;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #dee2e6;
-        }
-
-        .invoices-list {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid #dee2e6;
-            border-top: none;
-            overflow: hidden;
-        }
-
-        .invoice-list-item {
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
-
-        .invoice-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .invoice-list-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .invoice-list-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .selection-checkbox {
-            display: flex;
-            align-items: center;
-            flex-shrink: 0;
-            margin-right: 15px;
-        }
-
-        .selection-checkbox input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            margin: 0;
-            cursor: pointer;
-            accent-color: #007bff;
-        }
-
-        .invoice-selection-buttons {
-            display: none;
-        }
-
-        .invoice-main-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .invoice-number {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .invoice-number strong {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-
-        .payment-stage-badge {
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            background: #e3f2fd;
-            color: #1976d2;
-            border: 1px solid #bbdefb;
-        }
-
-        .payment-stage-badge.payment-stage-dp {
-            background: #fff3e0;
-            color: #f57c00;
-            border-color: #ffcc02;
-        }
-
-        .payment-stage-badge.payment-stage-final {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border-color: #4caf50;
-        }
-
-        .invoice-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .invoice-customer {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .customer-name {
-            font-weight: 600;
-            color: #2d3748;
-            font-size: 0.95rem;
-        }
-
-        .customer-email {
-            color: #718096;
-            font-size: 0.85rem;
-        }
-
-        .invoice-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: right;
-        }
-
-        .invoice-meta span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .invoice-amount {
-            font-weight: 700 !important;
-            color: #2d3748 !important;
-            font-size: 1rem !important;
-        }
-
-        .invoice-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            align-items: stretch;
-            flex-shrink: 0;
-        }
-
-        .invoice-actions .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: auto;
-            width: 100%;
-            justify-content: center;
-        }
-
-        /* Mobile responsive for list view */
-        @media (max-width: 768px) {
-            .invoice-list-content {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 15px;
-                padding: 15px;
-            }
-
-            .invoice-details {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .invoice-meta {
-                text-align: left;
-            }
-
-            .invoice-actions {
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .invoice-actions .btn-sm {
-                flex: 1;
-                min-width: 100px;
-                text-align: center;
-            }
-
-            .date-group-header {
-                padding: 12px 15px;
-            }
-
-            .date-group-header h3 {
-                font-size: 1rem;
-            }
-
-            .share-dropdown {
-                width: 100%;
-            }
-        }
-
-        /* Order List View Styles */
-        .order-date-group {
-            margin-bottom: 30px;
-        }
-
-        .order-count {
-            color: #6c757d;
-            font-size: 0.9rem;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #dee2e6;
-        }
-
-        .orders-list {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid #dee2e6;
-            border-top: none;
-            overflow: hidden;
-        }
-
-        .order-list-item {
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
-
-        .order-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .order-list-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .order-list-content {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .order-selection {
-            flex-shrink: 0;
-        }
-
-        .order-main-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .order-number {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .order-number strong {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-
-        .tracking-badge {
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            background: #e3f2fd;
-            color: #1976d2;
-            border: 1px solid #bbdefb;
-        }
-
-        .order-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .order-customer {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .order-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: right;
-        }
-
-        .order-meta span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .order-amount {
-            font-weight: 700 !important;
-            color: #2d3748 !important;
-            font-size: 1rem !important;
-        }
-
-        .order-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            align-items: stretch;
-            flex-shrink: 0;
-        }
-
-        .order-actions .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: auto;
-            width: 100%;
-            justify-content: center;
-        }
-
-        /* Mobile responsive for order list view */
-        @media (max-width: 768px) {
-            .order-list-content {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 15px;
-                padding: 15px;
-            }
-
-            .order-selection {
-                order: 3;
-                text-align: center;
-            }
-
-            .order-main-info {
-                order: 1;
-            }
-
-            .order-actions {
-                order: 2;
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .order-details {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .order-meta {
-                text-align: left;
-            }
-
-            .order-actions .btn-sm {
-                flex: 1;
-                min-width: 100px;
-                text-align: center;
-            }
-        }
-
-        /* Product List View Styles */
-        .product-category-group {
-            margin-bottom: 30px;
-        }
-
-        .category-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
-            border-radius: 12px 12px 0 0;
-            border-bottom: 2px solid #b3d9ff;
-            margin-bottom: 0;
-        }
-
-        .category-group-header h3 {
-            margin: 0;
-            color: #1e40af;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .product-count {
-            color: #6c757d;
-            font-size: 0.9rem;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #b3d9ff;
-        }
-
-        .products-list {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid #b3d9ff;
-            border-top: none;
-            overflow: hidden;
-        }
-
-        .product-list-item {
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
-
-        .product-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .product-list-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .product-list-content {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .product-image-container {
-            flex-shrink: 0;
-            width: 80px;
-            height: 80px;
-        }
-
-        .product-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-
-        .product-image-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-            font-size: 2rem;
-            color: #6c757d;
-        }
-
-        .product-main-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .product-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .product-name {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .product-name strong {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-
-        .product-sku {
-            font-size: 0.75rem;
-            color: #718096;
-            background: #f7fafc;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .product-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .product-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .product-price {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #16a34a;
-        }
-
-        .product-description {
-            font-size: 0.85rem;
-            color: #718096;
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .product-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: right;
-        }
-
-        .product-meta span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .product-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .product-actions .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: auto;
-        }
-
-        /* Customer List View Styles */
-        .customer-activity-group {
-            margin-bottom: 30px;
-        }
-
-        .activity-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: linear-gradient(135deg, #fef3e2 0%, #fde68a 100%);
-            border-radius: 12px 12px 0 0;
-            border-bottom: 2px solid #f59e0b;
-            margin-bottom: 0;
-        }
-
-        .activity-group-header h3 {
-            margin: 0;
-            color: #92400e;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .customer-count {
-            color: #6c757d;
-            font-size: 0.9rem;
-            background: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #f59e0b;
-        }
-
-        .customers-list {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid #f59e0b;
-            border-top: none;
-            overflow: hidden;
-        }
-
-        .customer-list-item {
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s ease;
-        }
-
-        .customer-list-item:last-child {
-            border-bottom: none;
-        }
-
-        .customer-list-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .customer-list-content {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .customer-avatar {
-            flex-shrink: 0;
-            width: 60px;
-            height: 60px;
-        }
-
-        .customer-avatar-circle {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .customer-main-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .customer-header {
-            margin-bottom: 12px;
-        }
-
-        .customer-name {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .customer-name strong {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-
-
-        .customer-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .customer-contact {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .customer-contact span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .customer-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: right;
-        }
-
-        .customer-stats span {
-            font-size: 0.85rem;
-            color: #718096;
-        }
-
-        .customer-stats .total-spent {
-            font-weight: 700;
-            color: #16a34a;
-            font-size: 0.9rem;
-        }
-
-        .customer-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .customer-actions .btn-sm {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            min-width: auto;
-        }
-
-        /* Mobile responsive for product and customer list views */
-        @media (max-width: 768px) {
-            .product-list-content,
-            .customer-list-content {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 15px;
-                padding: 15px;
-            }
-
-            .product-image-container {
-                align-self: center;
-                width: 60px;
-                height: 60px;
-            }
-
-            .customer-avatar {
-                align-self: center;
-                width: 50px;
-                height: 50px;
-            }
-
-            .product-details,
-            .customer-details {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .product-meta,
-            .customer-stats {
-                text-align: left;
-            }
-
-            .product-actions,
-            .customer-actions {
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .product-actions .btn-sm,
-            .customer-actions .btn-sm {
-                flex: 1;
-                min-width: 100px;
-                text-align: center;
-            }
-
-            .category-group-header,
-            .activity-group-header {
-                padding: 12px 15px;
-            }
-
-            .category-group-header h3,
-            .activity-group-header h3 {
-                font-size: 1rem;
-            }
-        }
-
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 2rem;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            color: #2c3e50;
-        }
-
-        .close,
-        .modal-close {
-            font-size: 2rem;
-            cursor: pointer;
-            color: #666;
-            background: none;
-            border: none;
-            padding: 0;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .link-box {
-            display: flex;
-            gap: 8px;
-            margin: 16px 0;
-            align-items: center;
-        }
-
-        .link-input {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-family: monospace;
-            background: var(--background);
-        }
-
-        .share-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-            justify-content: center;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #2c3e50;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: #666;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-
-        .status-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .status-draft {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-sent {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .status-paid {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        /* Payment Stage Badges */
-        .payment-stage-badge {
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-top: 0.3rem;
-            display: inline-block;
-        }
-
-        .stage-down-payment {
-            background: #e3f2fd;
-            color: #1565c0;
-            border: 1px solid #bbdefb;
-        }
-
-        .stage-remaining {
-            background: #fff3e0;
-            color: #ef6c00;
-            border: 1px solid #ffcc02;
-        }
-
-        .stage-completed {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border: 1px solid #81c784;
-        }
-
-        .stage-full {
-            background: #f3e5f5;
-            color: #7b1fa2;
-            border: 1px solid #ce93d8;
-        }
-
-        .invoice-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .invoice-modal-content {
-            background-color: white;
-            margin: 2% auto;
-            padding: 2rem;
-            border-radius: 12px;
-            width: 95%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 0;
-            }
-
-            .header {
-                padding: 1.5rem 1rem;
-                text-align: center;
-            }
-
-            .header-content {
-                padding: 0 16px;
-            }
-
-            /* Mobile logo sizing */
-            .logo-icon img {
-                max-height: 28px;
-                max-width: 150px;
-            }
-
-            .user-info {
-                padding: 6px 12px;
-                gap: 8px;
-            }
-
-            .header-logout-btn {
-                font-size: 10px;
-                padding: 3px 6px;
-                margin-top: 1px;
-            }
-
-            .header-logout-btn span {
-                font-size: 9px;
-            }
-
-            /* Mobile plan status */
-            .plan-status-container {
-                gap: 6px;
-                margin-right: 8px;
-            }
-
-            .plan-badge {
-                padding: 3px 6px;
-                font-size: 10px;
-            }
-
-            .upgrade-btn, .manage-btn {
-                padding: 3px 8px;
-                font-size: 10px;
-                border-radius: 12px;
-            }
-
-            .settings-btn span:last-child {
-                display: none;
-            }
-
-            .settings-btn {
-                padding: 8px;
-                min-width: 40px;
-                justify-content: center;
-            }
-
-            .header h1 {
-                font-size: 1.8rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .header p {
-                font-size: 1rem;
-            }
-
-            .container {
-                padding: 1rem;
-            }
-
-            .dashboard-nav {
-                flex-wrap: wrap;
-                gap: 0.5rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .nav-btn {
-                flex: 1;
-                min-width: calc(50% - 0.25rem);
-                padding: 0.75rem 1rem;
-                font-size: 0.85rem;
-                text-align: center;
-            }
-
-            .section {
-                padding: 1.5rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .section h2 {
-                font-size: 1.3rem;
-                margin-bottom: 1rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .stat-card {
-                padding: 1rem;
-                text-align: center;
-            }
-
-            .stat-number {
-                font-size: 1.5rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .stat-label {
-                font-size: 0.8rem;
-            }
-
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .filters {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.75rem;
-            }
-
-            .filter-select {
-                padding: 0.75rem;
-                font-size: 16px; /* Prevents zoom on iOS */
-                width: 100%;
-            }
-
-            .btn {
-                padding: 0.75rem 1rem;
-                font-size: 1rem;
-                width: 100%;
-                margin-bottom: 0.5rem;
-                min-height: 44px;
-                touch-action: manipulation;
-            }
-
-            /* Legacy mobile product grid - no longer used */
-
-            .product-card {
-                padding: 1rem;
-            }
-
-            .product-name {
-                font-size: 1.1rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .product-sku {
-                font-size: 0.8rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .product-price {
-                font-size: 1.2rem;
-                margin: 0.5rem 0;
-            }
-
-            .product-actions {
-                flex-direction: column;
-                gap: 0.5rem;
-                margin-top: 1rem;
-            }
-
-            .btn-sm {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
-                width: 100%;
-            }
-
-            .form-row {
-                flex-direction: column;
-            }
-
-            .form-control {
-                padding: 0.75rem;
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
-
-            .modal-content {
-                width: 95%;
-                margin: 2% auto;
-                padding: 1.5rem;
-                max-height: 90vh;
-            }
-
-            .invoice-modal-content {
-                width: 98%;
-                margin: 1% auto;
-                padding: 1rem;
-                max-height: 95vh;
-            }
-            
-            /* Mobile Invoice Modal Zoom Controls */
-            .mobile-invoice-zoom-controls {
-                position: fixed !important;
-                top: 50% !important;
-                right: 8px !important;
-                transform: translateY(-50%) !important;
-                z-index: 1002 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 8px !important;
-                background: rgba(255, 255, 255, 0.95) !important;
-                padding: 12px 8px !important;
-                border-radius: 12px !important;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-                border: 1px solid rgba(0, 0, 0, 0.1) !important;
-            }
-            
-            .invoice-zoom-btn {
-                width: 36px !important;
-                height: 36px !important;
-                border: none !important;
-                border-radius: 8px !important;
-                background: var(--primary-purple) !important;
-                color: white !important;
-                font-size: 16px !important;
-                font-weight: bold !important;
-                cursor: pointer !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                transition: all 0.2s ease !important;
-                user-select: none !important;
-                -webkit-tap-highlight-color: transparent !important;
-            }
-            
-            .invoice-zoom-btn:hover, .invoice-zoom-btn:active {
-                background: var(--primary-dark) !important;
-                transform: scale(0.95) !important;
-            }
-            
-            /* Invoice Modal Content Scaling */
-            .invoice-modal-content-wrapper {
-                transform: scale(var(--invoice-mobile-scale-factor, 0.8)) !important;
-                transform-origin: top center !important;
-                transition: transform 0.3s ease !important;
-                width: 100% !important;
-                overflow: visible !important;
-            }
-            
-            /* Zoom Indicator */
-            .invoice-zoom-indicator {
-                position: fixed !important;
-                top: 20px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
-                z-index: 1003 !important;
-                background: rgba(0, 0, 0, 0.8) !important;
-                color: white !important;
-                padding: 4px 12px !important;
-                border-radius: 16px !important;
-                font-size: 12px !important;
-                font-weight: 500 !important;
-                pointer-events: none !important;
-                opacity: 0 !important;
-                transition: opacity 0.3s ease !important;
-            }
-            
-            .invoice-zoom-indicator.show {
-                opacity: 1 !important;
-            }
-
-            .modal-header {
-                margin-bottom: 1rem;
-            }
-
-            .modal-title {
-                font-size: 1.2rem;
-            }
-
-            .close {
-                font-size: 1.5rem;
-            }
-
-            /* Improve table display on mobile */
-            table {
-                font-size: 0.85rem;
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
-            }
-
-            table th,
-            table td {
-                padding: 8px 4px;
-                min-width: 80px;
-            }
-
-            .status-badge {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.7rem;
-            }
-
-            .stock-badge {
-                padding: 0.2rem 0.4rem;
-                font-size: 0.7rem;
-            }
-
-            /* Customer grids - legacy grid layout */
-            .customers-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header h1 {
-                font-size: 1.5rem;
-            }
-
-            .header p {
-                font-size: 0.9rem;
-            }
-
-            .container {
-                padding: 0.75rem;
-            }
-
-            /* Extra small mobile logo sizing */
-            .logo-icon img {
-                max-height: 24px;
-                max-width: 120px;
-            }
-
-            .nav-btn {
-                min-width: 100%;
-                margin-bottom: 0.5rem;
-                font-size: 0.8rem;
-            }
-
-            .section {
-                padding: 1rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-            }
-
-            .stat-card {
-                padding: 0.75rem;
-            }
-
-            .stat-number {
-                font-size: 1.3rem;
-            }
-
-            .product-card {
-                padding: 0.75rem;
-            }
-
-            .product-name {
-                font-size: 1rem;
-            }
-
-            .product-price {
-                font-size: 1.1rem;
-            }
-
-            .modal-content,
-            .invoice-modal-content {
-                padding: 1rem;
-            }
-
-            .btn-sm {
-                font-size: 0.8rem;
-                padding: 0.5rem;
-            }
-        }
-
-        /* Order Selection Mode Styles */
-        .order-selection {
-            display: none;
-        }
-        
-        .selection-mode .order-selection {
-            display: block;
-        }
-        
-        .selection-mode .order-list-item {
-            background-color: var(--background);
-            border-left: 3px solid var(--primary-purple);
-        }
-
-        .selection-mode .order-list-item:hover {
-            background-color: rgba(139, 69, 255, 0.1);
-        }
-
-        /* Service Ticket Modal Styles */
-        #serviceTicketModal .modal-content {
-            max-width: 900px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        .service-ticket-modal {
-            padding: 20px;
-            font-family: 'Arial', 'Helvetica', sans-serif;
-        }
-
-        .service-ticket {
-            background: white;
-            border: 1px solid #ddd;
-            padding: 0;
-            margin-bottom: 20px;
-            max-width: 600px;
-            margin: 0 auto 20px auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .ticket-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 1px solid #ddd;
-            padding: 24px 24px 16px 24px;
-            flex-wrap: wrap;
-        }
-
-        .ticket-title {
-            font-size: 24px;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-
-        .ticket-subtitle {
-            font-size: 16px;
-            margin-top: 5px;
-            color: #666;
-        }
-
-        .ticket-body {
-            font-size: 14px;
-        }
-
-        .info-section {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 15px;
-        }
-
-        .info-section:last-child {
-            border-bottom: none;
-        }
-
-        .info-section h3 {
-            margin-bottom: 10px;
-            text-decoration: underline;
-            font-size: 16px;
-        }
-
-        .info-item {
-            display: flex;
-            margin-bottom: 5px;
-        }
-
-        .info-label {
-            font-weight: bold;
-            width: 120px;
-            flex-shrink: 0;
-        }
-
-        .info-value {
-            flex: 1;
-        }
-
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        .items-table th, 
-        .items-table td {
-            border: 1px solid #000;
-            padding: 8px;
-            text-align: left;
-        }
-
-        .items-table th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-
-        .notes {
-            background-color: #f9f9f9;
-            padding: 10px;
-            border-left: 3px solid #ccc;
-            font-style: italic;
-        }
-
-        .print-button {
-            background-color: var(--primary-purple);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .print-button:hover {
-            background-color: var(--primary-purple-dark, #7c3aed);
-        }
-
-        /* New Service Ticket Styles - Clean Design */
-        .service-ticket .ticket-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            text-align: left;
-            flex-wrap: wrap;
-            padding: 24px 24px 16px 24px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .service-ticket .company-name {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-            margin: 0;
-        }
-
-        .service-ticket .order-info {
-            text-align: right;
-            font-size: 12px;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        .service-ticket .order-number {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-            font-size: 13px;
-        }
-
-        .ship-to-section {
-            padding: 20px 24px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .address-info {
-            font-size: 12px;
-            line-height: 1.6;
-            color: #555;
-        }
-
-        .customer-name {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .items-section {
-            padding: 20px 24px;
-        }
-
-        .items-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .items-header .section-title {
-            margin-bottom: 0;
-        }
-
-        .quantity-header {
-            font-size: 12px;
-            font-weight: 600;
-            color: #333;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .items-list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .item-row:last-child {
-            border-bottom: none;
-        }
-
-        .item-name {
-            font-size: 14px;
-            color: #333;
-            flex-grow: 1;
-            padding-right: 20px;
-        }
-
-        .item-quantity {
-            font-size: 14px;
-            color: #000;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        .ticket-footer {
-            padding: 20px 24px;
-            text-align: center;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-        }
-
-        .thank-you {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 16px;
-            font-weight: 500;
-        }
-
-        .company-info {
-            font-size: 12px;
-            color: #666;
-            line-height: 1.4;
-        }
-
-        .company-info strong {
-            color: #000;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        @media print {
-            .modal, .modal-content, .modal-header {
-                display: none !important;
-            }
-            
-            body {
-                font-family: Arial, sans-serif !important;
-                font-size: 10px !important;
-            }
-            
-            .service-ticket-modal {
-                padding: 0;
-                margin: 0;
-                font-size: 10px;
-            }
-            
-            .service-ticket {
-                border: 1px solid #333;
-                max-width: none;
-                width: 100%;
-                margin: 0;
-                box-shadow: none;
-                background: white;
-            }
-            
-            .ticket-header {
-                padding: 12px 16px 8px 16px;
-                border-bottom: 1px solid #333;
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-            }
-            
-            .ship-to-section {
-                padding: 12px 16px;
-                border-bottom: 1px solid #333;
-            }
-            
-            .items-section {
-                padding: 12px 16px;
-            }
-            
-            .items-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-                padding-bottom: 4px;
-                border-bottom: 1px solid #333;
-            }
-            
-            .ticket-footer {
-                padding: 16px;
-                background: #f8f8f8;
-                border-top: none;
-                text-align: center;
-                margin-top: 20px;
-            }
-            
-            .company-name {
-                font-size: 16px;
-                font-weight: bold;
-                margin: 0;
-            }
-            
-            .order-info {
-                font-size: 10px;
-                text-align: right;
-                line-height: 1.3;
-            }
-            
-            .order-number {
-                font-weight: normal;
-                font-size: 10px;
-                margin-bottom: 2px;
-            }
-            
-            .order-date {
-                font-size: 10px;
-                color: #666;
-            }
-            
-            .section-title {
-                font-size: 11px;
-                font-weight: bold;
-                margin-bottom: 8px;
-                text-transform: uppercase;
-            }
-            
-            .quantity-header {
-                font-size: 11px;
-                font-weight: bold;
-                text-transform: uppercase;
-            }
-            
-            .address-info {
-                font-size: 10px;
-                line-height: 1.3;
-            }
-            
-            .customer-name {
-                font-weight: bold;
-                font-size: 10px;
-                margin-bottom: 2px;
-            }
-            
-            .item-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 3px 0;
-                line-height: 1.3;
-            }
-            
-            .item-name {
-                font-size: 10px;
-                color: #000;
-                flex-grow: 1;
-                padding-right: 20px;
-            }
-            
-            .item-quantity {
-                font-size: 10px;
-                color: #000;
-                text-align: right;
-                min-width: 30px;
-            }
-            
-            .thank-you {
-                font-size: 12px;
-                margin-bottom: 12px;
-            }
-            
-            .company-info {
-                font-size: 10px;
-                line-height: 1.3;
-            }
-            
-            .company-info strong {
-                font-weight: bold;
-                font-size: 11px;
-                margin-bottom: 4px;
-            }
-            
-            .print-button {
-                display: none !important;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <a href="/generator" class="logo">
-                <div class="logo-icon">
-                    <img src="/assets/aspree-header-logo.png" alt="AI Invoice" onerror="this.style.display='none'; this.parentNode.innerHTML='🤖';">
-                </div>
-            </a>
-            <div class="header-actions">
-                <!-- Plan Status -->
-                <div class="plan-status-container" id="planStatusContainer">
-                    <div class="plan-badge free" id="planBadge">
-                        <span>🆓</span>
-                        <span id="planText">FREE</span>
-                    </div>
-                    <button class="upgrade-btn" id="upgradeBtn" onclick="showUpgradeModal()" style="display: none;">
-                        <span>⬆️</span>
-                        <span>Upgrade</span>
-                    </button>
-                    <button class="manage-btn" id="manageBtn" onclick="showManageSubscription()" style="display: none;">
-                        <span>⚙️</span>
-                        <span>Manage</span>
-                    </button>
-                </div>
-                <a href="/business-settings" class="settings-btn" title="Business Settings">
-                    <span>⚙️</span>
-                    <span>Settings</span>
-                </a>
-                <div class="user-info">
-                    <div class="user-avatar">AG</div>
-                    <div class="user-details">
-                        <div style="font-weight: 600; font-size: 14px;">Agus Merchant</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">Business Owner</div>
-                        <button class="header-logout-btn" onclick="handleLogout()">
-                            <span>🚪</span> Logout
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="container">
-        <!-- Page Header -->
-        <div class="page-header">
-            <div>
-                <h1 class="page-title">Aspree Invoice Gen - Merchant Dashboard</h1>
-                <p class="page-subtitle">Manage your business operations and insights</p>
-            </div>
-        </div>
-
-        <!-- Dashboard Navigation -->
-        <div class="dashboard-nav">
-            <button class="nav-btn active" onclick="showSection('products')">
-                <span>📦</span> Products
-            </button>
-            <button class="nav-btn" onclick="showSection('orders')">
-                <span>🛒</span> Orders
-            </button>
-            <button class="nav-btn" onclick="showSection('invoices')">
-                <span>📄</span> Invoices
-            </button>
-            <button class="nav-btn" onclick="showSection('customers')">
-                <span>👥</span> Customers
-            </button>
-        </div>
-
-        <div id="products-section" class="section">
-            <h2>
-                <div class="section-icon">📦</div>
-                Product Catalog
-            </h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-products">0</div>
-                    <div class="stat-label">Total Products</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="active-products">0</div>
-                    <div class="stat-label">Active Products</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="low-stock-products">0</div>
-                    <div class="stat-label">Low Stock</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-categories">0</div>
-                    <div class="stat-label">Categories</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="filters">
-                    <select class="filter-select" id="category-filter">
-                        <option value="">All Categories</option>
-                    </select>
-                    <select class="filter-select" id="status-filter">
-                        <option value="true">Active Only</option>
-                        <option value="false">All Products</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-warning" onclick="seedProducts()">Seed Sample Products</button>
-                    <button class="btn btn-primary" onclick="openAddProductModal()">+ Add Product</button>
-                </div>
-            </div>
-
-            <div id="products-loading" class="loading">Loading products...</div>
-            <div id="products-error" class="error" style="display: none;"></div>
-            <div id="products-grid" class="products-container"></div>
-        </div>
-
-        <div id="orders-section" class="section" style="display: none;">
-            <h2>
-                <div class="section-icon">🛒</div>
-                Order Management
-            </h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-orders">0</div>
-                    <div class="stat-label">Total Orders</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="pending-orders">0</div>
-                    <div class="stat-label">Pending</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="delivered-orders">0</div>
-                    <div class="stat-label">Delivered</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="shipped-orders">0</div>
-                    <div class="stat-label">Shipped</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-order-value">Rp 0</div>
-                    <div class="stat-label">Total Value</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="filters">
-                    <select class="filter-select" id="order-status-filter">
-                        <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                    </select>
-                    <input type="date" class="filter-select" id="order-date-from" placeholder="From Date">
-                    <input type="date" class="filter-select" id="order-date-to" placeholder="To Date">
-                    <button class="btn btn-primary" onclick="applyDateFilters()" id="apply-date-filters-btn" style="margin-left: 0.5rem; padding: 0.75rem 1rem;">🔄 Apply</button>
-                    <button class="btn btn-secondary" onclick="clearDateFilters()" id="clear-date-filters-btn" style="margin-left: 0.25rem; padding: 0.75rem 1rem;">🗑️ Clear</button>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-primary" onclick="toggleOrderSelectionMode()" id="select-orders-btn">📋 Select Orders</button>
-                    <button class="btn btn-info" onclick="printSelectedOrders()" id="print-orders-btn" style="display: none;">🖨️ Print Selected</button>
-                    <button class="btn btn-warning" onclick="changeSelectedOrdersStatus()" id="change-status-btn" style="display: none;">📝 Change Status</button>
-                    <button class="btn btn-success" onclick="openAddOrderModal()">+ Add Order</button>
-                </div>
-            </div>
-
-            <div id="orders-loading" class="loading">Loading orders...</div>
-            <div id="orders-error" class="error" style="display: none;"></div>
-            <div id="orders-grid" class="orders-container"></div>
-        </div>
-
-        <div id="customers-section" class="section" style="display: none;">
-            <h2>
-                <div class="section-icon">👥</div>
-                Customer Management
-            </h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-customers">0</div>
-                    <div class="stat-label">Total Customers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="active-customers">0</div>
-                    <div class="stat-label">Active Customers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="repeat-customers">0</div>
-                    <div class="stat-label">Repeat Customers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="new-customers">0</div>
-                    <div class="stat-label">New This Month</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="average-clv">Rp 0</div>
-                    <div class="stat-label">Avg CLV</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="filters">
-                    <input type="text" class="filter-select" id="customer-search" placeholder="Search customers..." style="min-width: 300px;">
-                    <select class="filter-select" id="customer-sort" onchange="filterCustomers()">
-                        <option value="name">Sort by Name</option>
-                        <option value="orders">Sort by Total Orders</option>
-                        <option value="spent">Sort by Total Spent</option>
-                        <option value="recent">Sort by Last Activity</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-success" onclick="exportCustomers()">📊 Export CSV</button>
-                    <button class="btn btn-primary" onclick="refreshCustomers()">🔄 Refresh</button>
-                </div>
-            </div>
-
-            <div id="customers-loading" class="loading">Loading customers...</div>
-            <div id="customers-error" class="error" style="display: none;"></div>
-            <div id="customers-grid" class="customers-container"></div>
-        </div>
-
-        <div id="inventory-section" class="section" style="display: none;">
-            <h2>Inventory Management</h2>
-            <div id="low-stock-alerts"></div>
-        </div>
-
-        <div id="categories-section" class="section" style="display: none;">
-            <h2>
-                <div class="section-icon">🏷️</div>
-                Product Categories
-            </h2>
-            <div id="categories-list"></div>
-        </div>
-
-        <div id="invoices-section" class="section" style="display: none;">
-            <h2>
-                <div class="section-icon">📄</div>
-                Invoice Management
-            </h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-invoices">0</div>
-                    <div class="stat-label">Total Invoices</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="draft-invoices">0</div>
-                    <div class="stat-label">Draft</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="sent-invoices">0</div>
-                    <div class="stat-label">Sent</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="paid-invoices">0</div>
-                    <div class="stat-label">Paid</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-revenue">Rp 0</div>
-                    <div class="stat-label">Total Revenue</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="filters">
-                    <input type="text" class="filter-select" id="invoice-search" placeholder="Search invoices..." style="min-width: 300px;">
-                    <select class="filter-select" id="invoice-status-filter">
-                        <option value="">All Status</option>
-                        <option value="draft">Draft</option>
-                        <option value="sent">Sent</option>
-                        <option value="paid">Paid</option>
-                    </select>
-                    <input type="date" class="filter-select" id="invoice-date-from" placeholder="From Date">
-                    <input type="date" class="filter-select" id="invoice-date-to" placeholder="To Date">
-                    <button class="btn btn-primary" onclick="applyInvoiceDateFilters()" id="apply-invoice-date-filters-btn" style="margin-left: 0.5rem; padding: 0.75rem 1rem;">🔄 Apply</button>
-                    <button class="btn btn-secondary" onclick="clearInvoiceDateFilters()" id="clear-invoice-date-filters-btn" style="margin-left: 0.25rem; padding: 0.75rem 1rem;">🗑️ Clear</button>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-primary" onclick="toggleInvoiceSelectionMode()" id="select-invoices-btn">📋 Select Invoices</button>
-                    <button class="btn btn-danger invoice-selection-buttons" onclick="deleteSelectedInvoices()" id="delete-invoices-btn" style="display: none;">🗑️ Delete Selected</button>
-                </div>
-            </div>
-
-            <div id="invoices-loading" class="loading">Loading invoices...</div>
-            <div id="invoices-error" class="error" style="display: none;"></div>
-            <div id="invoices-grid" class="invoices-container"></div>
-        </div>
-
-
-
-    </div>
-
-    <!-- Add/Edit Product Modal -->
-    <div id="productModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modal-title">Add New Product</h3>
-                <span class="close" onclick="closeProductModal()">&times;</span>
-            </div>
-            <form id="productForm">
-                <div class="form-group">
-                    <label class="form-label">Product Name *</label>
-                    <input type="text" class="form-control" id="product-name" required>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">SKU *</label>
-                        <input type="text" class="form-control" id="product-sku" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Category</label>
-                        <input type="text" class="form-control" id="product-category">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <textarea class="form-control" id="product-description" rows="3"></textarea>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Unit Price (IDR) *</label>
-                        <input type="number" class="form-control" id="product-price" required min="0" step="100">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Cost Price (IDR)</label>
-                        <input type="number" class="form-control" id="product-cost" min="0" step="100">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Stock Quantity</label>
-                        <input type="number" class="form-control" id="product-stock" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Min Stock Level</label>
-                        <input type="number" class="form-control" id="product-min-stock" min="0">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Tax Rate (%)</label>
-                        <input type="number" class="form-control" id="product-tax" min="0" max="100" step="0.1">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Weight (kg)</label>
-                        <input type="number" class="form-control" id="product-weight" min="0" step="0.1">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Dimensions (L x W x H cm)</label>
-                    <input type="text" class="form-control" id="product-dimensions" placeholder="e.g., 10 x 5 x 3">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Image URL</label>
-                    <input type="url" class="form-control" id="product-image">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">
-                        <input type="checkbox" id="product-active" checked> Active
-                    </label>
-                </div>
-
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary">Save Product</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Order Status Update Modal -->
-    <div id="statusModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Update Order Status</h3>
-                <span class="close" onclick="closeStatusModal()">&times;</span>
-            </div>
-            <form id="statusForm">
-                <div class="form-group">
-                    <label class="form-label">Current Order</label>
-                    <div id="current-order-info" style="padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 15px;">
-                        <strong id="current-order-number">Loading...</strong><br>
-                        <span id="current-customer-name">Loading customer...</span>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">New Status</label>
-                    <select class="form-control" id="new-status" required>
-                        <option value="">Select status...</option>
-                        <option value="pending">⏳ Pending</option>
-                        <option value="shipped">🚚 Shipped</option>
-                        <option value="delivered">📦 Delivered</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="tracking-group" style="display: none;">
-                    <label class="form-label">Tracking Number (Optional)</label>
-                    <input type="text" class="form-control" id="tracking-number" placeholder="Enter tracking number">
-                </div>
-
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary">Update Status</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeStatusModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Bulk Status Change Modal -->
-    <div id="bulkStatusModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Update Multiple Orders Status</h3>
-                <span class="close" onclick="closeBulkStatusModal()">&times;</span>
-            </div>
-            <form id="bulkStatusForm">
-                <div class="form-group">
-                    <label class="form-label">Selected Orders</label>
-                    <div id="selected-orders-info" style="padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 15px; max-height: 100px; overflow-y: auto;">
-                        <span id="selected-orders-count">0 orders selected</span>
-                        <div id="selected-orders-list" style="margin-top: 5px; font-size: 0.9rem;"></div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">New Status</label>
-                    <select class="form-control" id="bulk-new-status" required>
-                        <option value="">Select status...</option>
-                        <option value="pending">⏳ Pending</option>
-                        <option value="processing">🔄 Processing</option>
-                        <option value="shipped">🚚 Shipped</option>
-                        <option value="delivered">📦 Delivered</option>
-                        <option value="cancelled">❌ Cancelled</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="bulk-tracking-group" style="display: none;">
-                    <label class="form-label">Tracking Number (Optional)</label>
-                    <input type="text" class="form-control" id="bulk-tracking-number" placeholder="Enter tracking number for all orders">
-                    <small style="color: #666; font-size: 0.8rem;">This tracking number will be applied to all selected orders</small>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Notes (Optional)</label>
-                    <textarea class="form-control" id="bulk-status-notes" rows="2" placeholder="Add notes for this status change"></textarea>
-                </div>
-
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary">
-                        <span id="bulk-update-btn-text">Update All Orders</span>
-                        <span id="bulk-update-loading" style="display: none;">🔄 Updating...</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="closeBulkStatusModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Invoice Detail Modal -->
-    <div id="invoiceModal" class="invoice-modal">
-        <div class="invoice-modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Invoice Details</h3>
-                <span class="close" onclick="closeInvoiceModal()">&times;</span>
-            </div>
-            <div class="invoice-modal-content-wrapper" id="invoiceModalContentWrapper">
-                <div id="invoiceModalContent"></div>
-            </div>
-        </div>
-        
-        <!-- Mobile Zoom Controls (only visible on mobile) -->
-        <div class="mobile-invoice-zoom-controls" id="mobile-invoice-zoom-controls" style="display: none;">
-            <button class="invoice-zoom-btn" id="invoice-zoom-in-btn" onclick="adjustInvoiceZoom(0.1)" title="Zoom In">+</button>
-            <button class="invoice-zoom-btn" id="invoice-fit-screen-btn" onclick="fitInvoiceToScreen()" title="Fit to Screen">⌂</button>
-            <button class="invoice-zoom-btn" id="invoice-zoom-out-btn" onclick="adjustInvoiceZoom(-0.1)" title="Zoom Out">−</button>
-        </div>
-        
-        <!-- Zoom Indicator -->
-        <div class="invoice-zoom-indicator" id="invoice-zoom-indicator">100%</div>
-    </div>
-
-    <!-- Customer Detail Modal -->
-    <div id="customerModal" class="invoice-modal">
-        <div class="invoice-modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Customer Details</h3>
-                <span class="close" onclick="closeCustomerModal()">&times;</span>
-            </div>
-            <div id="customerModalContent"></div>
-        </div>
-    </div>
-
-    <!-- Service Ticket Modal -->
-    <div id="serviceTicketModal" class="modal">
-        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
-            <div class="modal-header">
-                <h3 class="modal-title">Order Details</h3>
-                <span class="close" onclick="closeServiceTicketModal()">&times;</span>
-            </div>
-            <div id="serviceTicketModalContent"></div>
-        </div>
-    </div>
-
-    <!-- Premium Upgrade Modal -->
-    <div id="premiumModal" class="modal">
-        <div class="modal-content" style="max-width: 700px;">
-            <div class="modal-header">
-                <h3 class="modal-title">
-                    <span style="background: linear-gradient(135deg, #9F7AEA, #805AD5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-flex; align-items: center; gap: 8px;">
-                        <span>👑</span> Upgrade to Premium
-                    </span>
-                </h3>
-                <button class="modal-close" onclick="closePremiumModal()" style="font-size: 20px;">&times;</button>
-            </div>
-            <div class="modal-body" style="padding: 20px;">
-                <!-- Before/After Preview -->
-                <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                    <h4 style="text-align: center; margin: 0 0 16px; color: #2D3748;">🎨 White-Label Your Invoices</h4>
-                    
-                    <!-- Before Preview -->
-                    <div style="margin-bottom: 20px;">
-                        <h5 style="color: #E53E3E; margin: 0 0 8px;">❌ Current (Free Plan):</h5>
-                        <div style="border: 2px solid #E2E8F0; border-radius: 8px; overflow: hidden; background: white;">
-                            <!-- Mock header -->
-                            <div style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 8px 12px; text-align: center; font-size: 12px;">
-                                <img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 16px; width: auto; margin-right: 8px; vertical-align: middle;">
-                                <span style="opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Powered by Aspree Invoice Generator</span>
-                            </div>
-                            <div style="padding: 12px; font-size: 12px; text-align: center; color: #666;">
-                                Your invoice content here...
-                            </div>
-                            <!-- Mock footer -->
-                            <div style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
-                                <div>Terms & Contact Info</div>
-                                <img src="/assets/aspri-logo.png" alt="Aspree" style="height: 24px; width: auto; opacity: 0.9;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- After Preview -->
-                    <div>
-                        <h5 style="color: #38A169; margin: 0 0 8px;">✅ Premium Plan:</h5>
-                        <div style="border: 2px solid #9F7AEA; border-radius: 8px; overflow: hidden; background: white; box-shadow: 0 4px 8px rgba(159, 122, 234, 0.1);">
-                            <!-- Mock custom header -->
-                            <div style="background: linear-gradient(135deg, #1A365D, #2C5282); color: white; padding: 8px 12px; text-align: center; font-size: 12px;">
-                                <span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Your Custom Business Text</span>
-                            </div>
-                            <div style="padding: 12px; font-size: 12px; text-align: center; color: #666;">
-                                Your invoice content here...
-                            </div>
-                            <!-- Mock custom footer -->
-                            <div style="background: linear-gradient(135deg, #1A365D, #2C5282); color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
-                                <div>Terms & Contact Info</div>
-                                <div style="background: white; color: #1A365D; padding: 2px 8px; border-radius: 4px; font-weight: 600;">YOUR LOGO</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Feature List -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                    <div style="background: white; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
-                        <h4 style="color: #9F7AEA; margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
-                            <span>🎨</span> Custom Branding
-                        </h4>
-                        <ul style="margin: 0; padding-left: 16px; color: #4A5568; font-size: 14px;">
-                            <li>Remove "Powered by Aspree" branding</li>
-                            <li>Add your own header text</li>
-                            <li>Upload your own logos</li>
-                        </ul>
-                    </div>
-                    
-                    <div style="background: white; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px;">
-                        <h4 style="color: #9F7AEA; margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
-                            <span>🎨</span> Custom Colors
-                        </h4>
-                        <ul style="margin: 0; padding-left: 16px; color: #4A5568; font-size: 14px;">
-                            <li>Customize header background</li>
-                            <li>Customize footer background</li>
-                            <li>Match your brand colors</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Pricing -->
-                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #EDF2F7, #E2E8F0); border-radius: 12px;">
-                    <h3 style="margin: 0 0 8px; color: #2D3748;">💎 Premium Plan</h3>
-                    <div style="font-size: 32px; font-weight: 700; color: #9F7AEA; margin: 0 0 8px;">$9.99<span style="font-size: 16px; font-weight: normal; color: #666;">/month</span></div>
-                    <p style="margin: 0; color: #4A5568;">Professional invoices that represent your brand</p>
-                </div>
-
-                <!-- Action Buttons -->
-                <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
-                    <button onclick="closePremiumModal()" style="padding: 12px 24px; border: 2px solid #E2E8F0; background: white; border-radius: 8px; cursor: pointer; color: #4A5568; font-weight: 600;">
-                        Maybe Later
-                    </button>
-                    <button onclick="upgradeToPremium()" style="padding: 12px 24px; border: none; background: linear-gradient(135deg, #9F7AEA, #805AD5); color: white; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                        <span>👑</span> Upgrade Now
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let products = [];
-        let categories = [];
-        let orders = [];
-        let invoices = [];
-        let customers = [];
-        let currentProduct = null;
-
-        // Navigation Functions
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.section').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Remove active class from all nav buttons
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected section
-            const targetSection = document.getElementById(`${sectionName}-section`);
-            if (targetSection) {
-                targetSection.style.display = 'block';
-            }
-            
-            // Add active class to clicked nav button
-            const targetButton = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
-            if (targetButton) {
-                targetButton.classList.add('active');
-            }
-            
-            // Load data for the selected section
-            switch(sectionName) {
-                case 'products':
-                    loadProducts();
-                    break;
-                case 'orders':
-                    loadOrders();
-                    break;
-                case 'invoices':
-                    loadInvoices();
-                    break;
-                case 'customers':
-                    loadCustomers();
-                    break;
-            }
-        }
-
-        // Authentication Helper Functions
-        function getMerchantToken() {
-            return localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
-        }
-
-        function getAuthHeaders() {
-            const token = getMerchantToken();
-            return {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            };
-        }
-
-        function getAuthHeadersForFormData() {
-            const token = getMerchantToken();
-            return {
-                'Authorization': `Bearer ${token}`
-                // Don't include Content-Type for FormData - browser sets it automatically
-            };
-        }
-
-        function handleAuthError(response) {
-            if (response.status === 401) {
-                console.log('Authentication failed, redirecting to login');
-                localStorage.removeItem('merchantToken');
-                sessionStorage.removeItem('merchantToken');
-                window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname);
-                return true;
-            }
-            if (response.status === 429) {
-                console.log('Rate limit reached, please wait before trying again');
-                // Show user-friendly message instead of failing silently
-                showNotification('Server is busy, please wait a moment and refresh the page', 'warning');
-                return true;
-            }
-            return false;
-        }
-
-        // generateUnifiedInvoiceTemplate function - copied from web-interface-indonesian.html
-        function generateUnifiedInvoiceTemplate(invoiceData, context = 'preview') {
-            const invoice = invoiceData.invoice;
-            
-            // Get business profile for logo and category
-            const savedProfile = localStorage.getItem('businessProfile');
-            let businessLogo = '';
-            let businessCategory = 'general';
-            let businessTerms = 'Pembayaran dalam 30 hari';
-            let businessProfile = null;
-            if (savedProfile) {
-                businessProfile = JSON.parse(savedProfile);
-                businessLogo = businessProfile.logo || '';
-                businessCategory = businessProfile.category || 'general';
-                businessTerms = businessProfile.termsAndConditions || 'Pembayaran dalam 30 hari';
-            }
-            
-            // Logo is now managed by loadBusinessDataFromAPI which syncs database with localStorage
-            
-            // Premium branding settings from localStorage business profile
-            const hideAspreeBranding = businessProfile?.hideAspreeBranding || businessProfile?.hide_aspree_branding || false;
-            const customHeaderLogo = businessProfile?.customHeaderLogoUrl || businessProfile?.custom_header_logo_url || null;
-            const customFooterLogo = businessProfile?.customFooterLogoUrl || businessProfile?.custom_footer_logo_url || null;
-            const customHeaderText = businessProfile?.customHeaderText || businessProfile?.custom_header_text || 'Powered by Aspree Invoice Generator';
-            const customHeaderBgColor = businessProfile?.customHeaderBgColor || businessProfile?.custom_header_bg_color || '#311d6b';
-            const customFooterBgColor = businessProfile?.customFooterBgColor || businessProfile?.custom_footer_bg_color || '#311d6b';
-            const customHeaderTextColor = businessProfile?.customHeaderTextColor || businessProfile?.custom_header_text_color || '#ffffff';
-            const customFooterTextColor = businessProfile?.customFooterTextColor || businessProfile?.custom_footer_text_color || '#ffffff';
-            
-            console.log('🎨 Premium branding settings (merchant dashboard):', {
-                hideAspreeBranding,
-                customHeaderLogo,
-                customFooterLogo,
-                customHeaderText,
-                customHeaderBgColor,
-                customFooterBgColor
-            });
-            
-            // Category-based titles (consistent across all contexts)
-            const getCategoryTitle = (category) => {
-                const categoryTitles = {
-                    'trade': 'FAKTUR PENJUALAN',
-                    'services': 'FAKTUR JASA',
-                    'manufacturing': 'FAKTUR PRODUKSI',
-                    'logistics': 'FAKTUR PENGIRIMAN',
-                    'digital_creative': 'FAKTUR LISENSI DIGITAL',
-                    'agriculture': 'FAKTUR PERTANIAN',
-                    'construction': 'FAKTUR KONSTRUKSI',
-                    'tourism': 'FAKTUR PERHOTELAN',
-                    'general': 'FAKTUR'
-                };
-                return categoryTitles[category] || 'FAKTUR';
-            };
-            
-            const invoiceTitle = getCategoryTitle(businessCategory);
-            
-            // Currency formatting function
-            const formatCurrency = (amount) => {
-                return new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }).format(amount || 0).replace('IDR', 'Rp');
-            };
-            
-            // Date formatting function
-            const formatDate = (dateString) => {
-                try {
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                    });
-                } catch (e) {
-                    return dateString;
-                }
-            };
-            
-            // Clean Professional CSS styling (no emojis, no purple gradient)
-            const getContextStyles = (context) => {
-                const cleanStyles = `
-                    :root {
-                        --text: #2D3748;
-                        --text-light: #718096;
-                        --border: #E2E8F0;
-                        --bg: #FFFFFF;
-                        --bg-light: #F7FAFC;
-                    }
-                    
-                    body {
-                        font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: var(--text);
-                        background: white;
-                        margin: 0;
-                        padding: 0;
-                    }
-                    
-                    .paper {
-                        width: 100%;
-                        max-width: 794px;
-                        min-height: 1123px;
-                        margin: 0 auto;
-                        background: var(--bg);
-                        border: 1px solid var(--border);
-                        border-radius: 0;
-                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-                        overflow: hidden;
-                        padding: 0;
-                        position: relative;
-                    }
-                    
-                    .inv-header {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 60px;
-                        padding: 24px 32px 16px 32px;
-                        background: var(--bg);
-                        border-bottom: 2px solid var(--border);
-                        align-items: start;
-                    }
-                    
-                    .logo-section {
-                        text-align: left;
-                    }
-                    
-                    .logo-section img {
-                        max-height: 120px;
-                        max-width: 300px;
-                        object-fit: contain;
-                        display: block;
-                        margin-bottom: 6px;
-                    }
-                    
-                    .logo-section strong {
-                        display: block;
-                        font-size: 28px;
-                        font-weight: 800;
-                        color: var(--text);
-                        margin-top: 4px;
-                        line-height: 1.1;
-                    }
-                    
-                    .invoice-meta {
-                        text-align: right;
-                    }
-                    
-                    .invoice-title {
-                        font-size: 28px;
-                        font-weight: 800;
-                        color: var(--text);
-                        margin: 0 0 20px 0;
-                        letter-spacing: 0.5px;
-                    }
-                    
-                    .invoice-details {
-                        font-size: 15px;
-                        color: var(--text-light);
-                        margin-bottom: 10px;
-                        line-height: 1.4;
-                    }
-                    
-                    .invoice-details strong {
-                        color: var(--text);
-                        font-weight: 600;
-                        min-width: 100px;
-                        display: inline-block;
-                    }
-                    
-                    .parties {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 80px;
-                        padding: 20px 32px;
-                        border-bottom: 1px solid var(--border);
-                    }
-                    
-                    .party-section h3 {
-                        font-size: 14px;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                        font-weight: 600;
-                        color: var(--text);
-                        margin: 0 0 16px 0;
-                    }
-                    
-                    .party-section address {
-                        font-style: normal;
-                        font-size: 15px;
-                        line-height: 1.5;
-                        color: var(--text-light);
-                    }
-                    
-                    .party-section strong {
-                        color: var(--text);
-                        font-weight: 600;
-                        font-size: 16px;
-                        display: block;
-                        margin-bottom: 3px;
-                    }
-                    
-                    .items-section {
-                        padding: 20px 32px;
-                    }
-                    
-                    .items-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin: 0;
-                        border: 1px solid var(--border);
-                        border-radius: 8px;
-                        overflow: hidden;
-                    }
-                    
-                    .items-table thead th {
-                        background: var(--bg-light);
-                        border-bottom: 2px solid var(--border);
-                        padding: 18px 20px;
-                        font-size: 13px;
-                        font-weight: 700;
-                        text-transform: uppercase;
-                        letter-spacing: 0.8px;
-                        color: var(--text);
-                        text-align: left;
-                    }
-                    
-                    .items-table th:last-child,
-                    .items-table th.text-right { text-align: right; }
-                    .items-table th.text-center { text-align: center; }
-                    
-                    .items-table tbody td {
-                        padding: 20px;
-                        border-bottom: 1px solid var(--border);
-                        font-size: 15px;
-                        color: var(--text);
-                    }
-                    
-                    .items-table tbody tr:nth-child(even) {
-                        background: rgba(247, 250, 252, 0.5);
-                    }
-                    
-                    .items-table tbody tr:last-child td {
-                        border-bottom: none;
-                    }
-                    
-                    .items-table .text-right { text-align: right; font-weight: 600; }
-                    .items-table .text-center { text-align: center; }
-                    
-                    .product-name {
-                        font-weight: 500;
-                        color: var(--text);
-                        margin: 0;
-                    }
-                    
-                    .product-description {
-                        color: var(--text-light);
-                        font-size: 13px;
-                        margin: 2px 0 0 0;
-                    }
-                    
-                    .summary {
-                        padding: 20px 32px;
-                        border-top: 1px solid var(--border);
-                        background: var(--bg);
-                    }
-                    
-                    .summary-grid {
-                        display: grid;
-                        grid-template-columns: 1fr auto;
-                        gap: 12px 40px;
-                        max-width: 320px;
-                        margin-left: auto;
-                    }
-                    
-                    .summary-label {
-                        color: var(--text-light);
-                        font-size: 14px;
-                    }
-                    
-                    .summary-value {
-                        color: var(--text);
-                        font-size: 15px;
-                        font-weight: 600;
-                        text-align: right;
-                    }
-                    
-                    .total-label {
-                        color: var(--text) !important;
-                        font-weight: 700 !important;
-                        font-size: 16px !important;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                        padding-top: 12px;
-                        border-top: 2px solid var(--text);
-                        margin-top: 8px;
-                    }
-                    
-                    .total-value {
-                        color: var(--text) !important;
-                        font-weight: 800 !important;
-                        font-size: 20px !important;
-                        padding-top: 12px;
-                        border-top: 2px solid var(--text);
-                        margin-top: 8px;
-                        text-align: right;
-                    }
-                    
-                    
-                    /* Compact Notes Styles */
-                    .editable[data-field="notes.publicNotes"] {
-                        min-width: 200px;
-                        display: inline-block;
-                        padding: 2px 4px;
-                        border-radius: 4px;
-                        transition: all 0.2s ease;
-                    }
-                    
-                    .editable[data-field="notes.publicNotes"]:hover {
-                        background: rgba(49, 29, 107, 0.05);
-                        cursor: text;
-                    }
-                    
-                    /* Print styles */
-                    @media print {
-                        @page {
-                            margin: 10mm;
-                            size: A4 portrait;
-                        }
-                        
-                        body {
-                            background: white !important;
-                            padding: 0 !important;
-                        }
-                        
-                        .paper {
-                            box-shadow: none !important;
-                            border: none !important;
-                            margin: 0 !important;
-                            max-width: none !important;
-                            page-break-inside: avoid !important;
-                        }
-                        
-                        /* Prevent page breaks within important sections */
-                        .inv-header,
-                        .invoice-table,
-                        .summary-section,
-                        .footer-band {
-                            page-break-inside: avoid !important;
-                        }
-                        
-                        /* Reduce spacing to fit on one page */
-                        .inv-header {
-                            margin-bottom: 10px !important;
-                        }
-                        
-                        .invoice-table {
-                            margin-bottom: 10px !important;
-                        }
-                        
-                        .summary-section {
-                            margin-bottom: 10px !important;
-                        }
-                        
-                        .edit-indicator {
-                            display: none !important;
-                        }
-
-                        .footer-band {
-                            background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
-                            color: white !important;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                            margin-bottom: 0 !important;
-                            padding-bottom: 0 !important;
-                        }
-
-                        .footer-section img {
-                            -webkit-print-color-adjust: exact !important;
-                            print-color-adjust: exact !important;
-                            display: block !important;
-                        }
-
-                        /* Header band print styles */
-                        .paper > div:first-child {
-                            background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
-                            color: white !important;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                        }
-
-                        /* Ensure all purple elements print with colors */
-                        * {
-                            -webkit-print-color-adjust: exact !important;
-                            print-color-adjust: exact !important;
-                        }
-                        
-                        /* Force single page printing */
-                        html, body {
-                            height: auto !important;
-                            overflow: visible !important;
-                        }
-                        
-                        /* Reduce font sizes slightly for print to fit more content */
-                        .paper {
-                            font-size: 13px !important;
-                        }
-                        
-                        /* Compact payment schedule section */
-                        .payment-schedule-section {
-                            margin: 10px 0 !important;
-                            padding: 15px !important;
-                        }
-                        
-                        /* Ensure footer doesn't create page break */
-                        .footer-band {
-                            page-break-inside: avoid !important;
-                            margin-top: 10px !important;
-                        }
-                    }
-                    
-                    /* Context-specific styles */
-                    ${context === 'preview' ? `
-                        .paper {
-                            margin: 20px auto;
-                        }
-                    ` : ''}
-                    
-                    ${context === 'print' ? `
-                        body {
-                            background: white !important;
-                            padding: 0;
-                        }
-                        .paper {
-                            box-shadow: none !important;
-                            border: none !important;
-                            margin: 0;
-                        }
-                    ` : ''}
-                `;
-                
-                return cleanStyles;
-            };
-            
-            // Generate clean professional HTML structure (no emojis)
-            const cleanHTML = `
-                <div class="paper">
-                    <!-- Dynamic Premium/Aspree branding header -->
-                    ${hideAspreeBranding ? `
-                        <div style="background: linear-gradient(135deg, ${customHeaderBgColor}, ${customHeaderBgColor}aa); color: ${customHeaderTextColor}; padding: 12px 0; text-align: center;">
-                            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                                ${customHeaderLogo ? 
-                                    `<img src="${customHeaderLogo}" alt="Header Logo" style="height: 32px; width: auto; object-fit: contain;">` :
-                                    `<img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">`
-                                }
-                                <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">${customHeaderText}</p>
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    <!-- Header with logo and invoice metadata -->
-                    <div class="inv-header">
-                        <div class="logo-section">
-                            ${businessLogo ? 
-                                `<img src="${businessLogo}" alt="Logo">` : 
-                                `<div style="background: #f0f0f0; padding: 15px; border-radius: 4px; margin-bottom: 12px; font-size: 18px; color: #666; text-align: center; border: 1px solid #e0e0e0;">LOGO</div>`
-                            }
-                            ${businessProfile && businessProfile.hideBusinessName ? '' : 
-                                `<strong>${context === 'preview' ? 
-                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant.businessName}<span class="edit-indicator">✏</span></span>` : 
-                                    invoice.merchant.businessName
-                                }</strong>`
-                            }
-                        </div>
-                        <div class="invoice-meta">
-                            <h1 class="invoice-title">${invoiceTitle}</h1>
-                            <div class="invoice-details">
-                                <strong>No:</strong> ${invoice.header.invoiceNumber}
-                            </div>
-                            <div class="invoice-details">
-                                <strong>Tanggal:</strong> ${context === 'preview' ? 
-                                    `<span class="editable" data-field="header.invoiceDate" data-type="date">${formatDate(invoice.header.invoiceDate)}<span class="edit-indicator">✏</span></span>` : 
-                                    formatDate(invoice.header.invoiceDate)
-                                }
-                            </div>
-                            <div class="invoice-details">
-                                <strong>Jatuh Tempo:</strong> ${context === 'preview' ? 
-                                    `<span class="editable" data-field="header.dueDate" data-type="date">${formatDate(invoice.header.dueDate || invoice.header.invoiceDate)}<span class="edit-indicator">✏</span></span>` : 
-                                    formatDate(invoice.header.dueDate || invoice.header.invoiceDate)
-                                }
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Parties section -->
-                    <div class="parties">
-                        <div class="party-section">
-                            <h3>DARI</h3>
-                            <address>
-                                <strong>${context === 'preview' ? 
-                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant.businessName}<span class="edit-indicator">✏</span></span>` : 
-                                    invoice.merchant.businessName
-                                }</strong><br>
-                                ${context === 'preview' ? 
-                                    `<span class="editable" data-field="merchant.address" data-type="textarea">${invoice.merchant.address}<span class="edit-indicator">✏</span></span>` : 
-                                    invoice.merchant.address
-                                }<br>
-                                ${context === 'preview' ? 
-                                    `<span class="editable" data-field="merchant.phone" data-type="tel">${invoice.merchant.phone}<span class="edit-indicator">✏</span></span>` : 
-                                    invoice.merchant.phone
-                                }<br>
-                                ${context === 'preview' ? 
-                                    `<span class="editable" data-field="merchant.email" data-type="email">${invoice.merchant.email}<span class="edit-indicator">✏</span></span>` : 
-                                    invoice.merchant.email
-                                }
-                            </address>
-                        </div>
-                        <div class="party-section">
-                            <h3>KEPADA</h3>
-                            <address>
-                                <strong>${context === 'preview' ? 
-                                    `<span class="editable" data-field="customer.name" data-type="text">${invoice.customer.name}<span class="edit-indicator">✏</span></span>` : 
-                                    invoice.customer.name
-                                }</strong><br>
-                                ${context === 'preview' ? 
-                                    `<span class="editable" data-field="customer.address" data-type="textarea">${invoice.customer.address}<span class="edit-indicator">✏</span></span>` : 
-                                    invoice.customer.address
-                                }<br>
-                                ${invoice.customer.phone ? (context === 'preview' ? 
-                                    `<span class="editable" data-field="customer.phone" data-type="tel">${invoice.customer.phone}<span class="edit-indicator">✏</span></span><br>` : 
-                                    `${invoice.customer.phone}<br>`
-                                ) : ''}
-                                ${invoice.customer.email ? (context === 'preview' ? 
-                                    `<span class="editable" data-field="customer.email" data-type="email">${invoice.customer.email}<span class="edit-indicator">✏</span></span>` : 
-                                    invoice.customer.email
-                                ) : ''}
-                            </address>
-                        </div>
-                    </div>
-                    
-                    <!-- Items section -->
-                    <div class="items-section">
-                        <table class="items-table">
-                            <thead>
-                                <tr>
-                                    <th>Produk/Layanan</th>
-                                    <th class="text-center">Qty</th>
-                                    <th class="text-right">Harga Satuan</th>
-                                    <th class="text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${invoice.items.map((item, index) => `
-                                    <tr>
-                                        <td>
-                                            <div class="product-name">${context === 'preview' ? 
-                                                `<span class="editable" data-field="items.${index}.productName" data-type="text">${item.productName}<span class="edit-indicator">✏</span></span>` : 
-                                                item.productName
-                                            }</div>
-                                            ${item.description ? `<div class="product-description">${item.description}</div>` : ''}
-                                        </td>
-                                        <td class="text-center">${context === 'preview' ? 
-                                            `<span class="editable editable-quantity" data-field="items.${index}.quantity" data-type="number">${item.quantity}<span class="edit-indicator">✏</span></span>` : 
-                                            item.quantity
-                                        }</td>
-                                        <td class="text-right">${context === 'preview' ? 
-                                            `<span class="editable editable-price" data-field="items.${index}.unitPrice" data-type="currency">${formatCurrency(item.unitPrice)}<span class="edit-indicator">✏</span></span>` : 
-                                            formatCurrency(item.unitPrice)
-                                        }</td>
-                                        <td class="text-right">${formatCurrency(item.lineTotal)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Compact Notes Section -->
-                    ${(() => {
-                        try {
-                            const notes = invoice.notes;
-                            
-                            // Collect all notes into an array
-                            const allNotes = [];
-                            
-                            // List of placeholder/demo texts to filter out
-                            const placeholderTexts = [
-                                'Pembayaran dapat dilakukan melalui transfer bank atau tunai',
-                                'tambahkan catatan tambahan disini, jika tidak ada catatan maka kolom catatan akan dihilangkan',
-                                'Klik untuk menambahkan catatan...',
-                                'Extract special requests from message',
-                                'Extract delivery schedule if mentioned',
-                                'Extract appointment info if service booking',
-                                'Extract payment deadline if mentioned'
-                            ];
-                            
-                            const isPlaceholderText = (text) => {
-                                if (!text || !text.trim()) return true;
-                                const trimmedText = text.trim();
-                                return placeholderTexts.some(placeholder => trimmedText.includes(placeholder));
-                            };
-                            
-                            // Only process main user-editable notes (removed AI extraction fields)
-                            if (notes?.publicNotes && notes.publicNotes.trim() && !isPlaceholderText(notes.publicNotes)) allNotes.push(notes.publicNotes.trim());
-                            if (notes?.customNotes && notes.customNotes.trim() && !isPlaceholderText(notes.customNotes)) allNotes.push(notes.customNotes.trim());
-                            
-                            console.log('🔧 All notes after filtering:', allNotes);
-                            
-                            // Show section always in preview mode for editing, or only when notes exist in other modes
-                            const hasNotes = allNotes.length > 0;
-                            const showSection = context === 'preview' || hasNotes;
-                            
-                            if (!showSection) return '';
-                            
-                            if (context === 'preview') {
-                                // In preview mode, make it editable
-                                const noteContent = hasNotes ? allNotes.join(' | ') : '';
-                                const isEmpty = !noteContent.trim();
-                                
-                                return `
-                                    <div style="padding: 12px 32px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
-                                        <p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;">
-                                            <strong style="color: var(--text);">Catatan:</strong> 
-                                            <span class="editable" data-field="notes.publicNotes" data-type="text" style="color: ${isEmpty ? 'var(--text-light)' : 'var(--text)'}; ${isEmpty ? 'font-style: italic;' : ''}">${isEmpty ? 'tambahkan catatan tambahan disini, jika tidak ada catatan maka kolom catatan akan dihilangkan' : noteContent}<span class="edit-indicator">✏</span></span>
-                                        </p>
-                                    </div>
-                                `;
-                            } else {
-                                // In other modes, show static content
-                                const combinedNotes = allNotes.length <= 2 ? 
-                                    allNotes : 
-                                    [allNotes.slice(0, 2).join(' | ')];
-                                
-                                return `
-                                    <div style="padding: 12px 32px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
-                                        ${combinedNotes.map(note => 
-                                            `<p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;"><strong style="color: var(--text);">Catatan:</strong> ${note}</p>`
-                                        ).join('')}
-                                    </div>
-                                `;
-                            }
-                        } catch (e) {
-                            console.error('Error parsing compact notes:', e);
-                            return '';
-                        }
-                    })()}
-                    
-                    <!-- Summary section -->
-                    <div class="summary">
-                        <div class="summary-grid">
-                            <div class="summary-label">Subtotal</div>
-                            <div class="summary-value">${formatCurrency(invoice.calculations.subtotal)}</div>
-                            
-                            <div class="summary-label">${(() => {
-                                const discountType = invoice.calculations.discountType;
-                                const discountValue = invoice.calculations.discountValue;
-                                if (discountType === 'percentage') {
-                                    return `Diskon (${discountValue}%)`;
-                                } else {
-                                    return 'Diskon (Jumlah Tetap)';
-                                }
-                            })()}</div>
-                            <div class="summary-value">${context === 'preview' ? 
-                                `<span class="editable" data-field="calculations.discount" data-type="currency">-${formatCurrency(invoice.calculations.discount || 0)}<span class="edit-indicator">✏</span></span>` : 
-                                `-${formatCurrency(invoice.calculations.discount || 0)}`
-                            }</div>
-                            
-                            <div class="summary-label">Pajak</div>
-                            <div class="summary-value">${context === 'preview' ? 
-                                `<span class="editable" data-field="calculations.totalTax" data-type="currency">${formatCurrency(invoice.calculations.totalTax)}<span class="edit-indicator">✏</span></span>` : 
-                                formatCurrency(invoice.calculations.totalTax)
-                            }</div>
-                            
-                            <div class="summary-label">Biaya Kirim</div>
-                            <div class="summary-value">${context === 'preview' ? 
-                                `<span class="editable" data-field="calculations.shippingCost" data-type="currency">${formatCurrency(invoice.calculations.shippingCost)}<span class="edit-indicator">✏</span></span>` : 
-                                formatCurrency(invoice.calculations.shippingCost)
-                            }</div>
-                            
-                            <div class="summary-label total-label">TOTAL</div>
-                            <div class="summary-value total-value">${formatCurrency(invoice.calculations.grandTotal)}</div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Schedule section -->
-                    ${(() => {
-                        try {
-                            console.log('🔧 Processing payment schedule - Context:', context);
-                            console.log('🔧 invoice.paymentSchedule:', invoice.paymentSchedule);
-                            console.log('🔧 invoice.payment_schedule_json:', invoice.payment_schedule_json);
-                            
-                            // Handle both direct object (preview) and JSON string (database) formats
-                            let paymentSchedule = null;
-                            if (invoice.paymentSchedule) {
-                                // Direct object format (preview mode)
-                                paymentSchedule = invoice.paymentSchedule;
-                                console.log('✅ Using direct paymentSchedule object:', paymentSchedule);
-                            } else if (invoice.payment_schedule_json) {
-                                // JSON string format (database/view mode)
-                                paymentSchedule = typeof invoice.payment_schedule_json === 'string' 
-                                    ? JSON.parse(invoice.payment_schedule_json) 
-                                    : invoice.payment_schedule_json;
-                                console.log('✅ Parsed payment_schedule_json:', paymentSchedule);
-                            } else {
-                                console.log('❌ No payment schedule data found');
-                            }
-                            
-                            if (paymentSchedule && paymentSchedule.scheduleType === 'down_payment') {
-                                return `
-                    <div class="payment-schedule-section" style="padding: 40px 32px; border-top: 1px solid var(--border); background: var(--bg);">
-                        <h3 style="color: var(--text); font-size: 16px; font-weight: 600; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                            Jadwal Pembayaran
-                        </h3>
-                        <div class="payment-schedule-table" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
-                            <div style="background: var(--bg-light); padding: 18px 20px; border-bottom: 2px solid var(--border); display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; font-weight: 700; font-size: 13px; color: var(--text); text-transform: uppercase; letter-spacing: 0.8px;">
-                                <div>Jenis Pembayaran</div>
-                                <div style="text-align: center;">Jatuh Tempo</div>
-                                <div style="text-align: right;">Jumlah</div>
-                            </div>
-                            ${(() => {
-                                // Show complete payment schedule with both phases
-                                const finalAmount = invoice.final_payment_amount || paymentSchedule.remainingBalance.amount;
-                                const currentStage = invoice.payment_stage || 'down_payment';
-                                
-                                // Determine status indicators
-                                const getStatusIndicator = (phase) => {
-                                    if (currentStage === 'completed' || (currentStage === 'final_payment' && phase === 'down_payment')) {
-                                        return '✅'; // Completed
-                                    } else if (currentStage === phase) {
-                                        return '⏳'; // Current/Pending
-                                    } else {
-                                        return '🔒'; // Future/Locked
-                                    }
-                                };
-                                
-                                const getPhaseStyle = (phase) => {
-                                    const baseStyle = "padding: 20px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: center;";
-                                    
-                                    if (currentStage === phase) {
-                                        return baseStyle + " background: rgba(139, 95, 255, 0.05); border-left: 4px solid #8B5FFF;";
-                                    } else if (currentStage === 'completed' || (currentStage === 'final_payment' && phase === 'down_payment')) {
-                                        return baseStyle + " opacity: 0.7; background: rgba(72, 187, 120, 0.05);";
-                                    } else {
-                                        return baseStyle + " opacity: 0.6;";
-                                    }
-                                };
-                                
-                                return `
-                                    <!-- Down Payment Row -->
-                                    <div style="${getPhaseStyle('down_payment')}">
-                                        <div style="font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                                            <span style="font-size: 16px;">${getStatusIndicator('down_payment')}</span>
-                                            ${(() => {
-                                                const dp = paymentSchedule.downPayment;
-                                                if (dp.type === 'fixed') {
-                                                    return 'Uang Muka (Jumlah Tetap)';
-                                                } else {
-                                                    return `Uang Muka (${dp.percentage}%)`;
-                                                }
-                                            })()}
-                                        </div>
-                                        <div style="text-align: center; color: var(--text-light); font-size: 15px;">${context === 'preview' ? 
-                                            `<span class="editable" data-field="paymentSchedule.downPayment.dueDate" data-type="date">${formatDate(paymentSchedule.downPayment.dueDate)}<span class="edit-indicator">✏</span></span>` : 
-                                            formatDate(paymentSchedule.downPayment.dueDate)
-                                        }</div>
-                                        <div style="text-align: right; font-weight: 600; font-size: 16px; color: var(--text);">${context === 'preview' ? 
-                                            `<span class="editable" data-field="paymentSchedule.downPayment.amount" data-type="currency">${formatCurrency(paymentSchedule.downPayment.amount)}<span class="edit-indicator">✏</span></span>` : 
-                                            formatCurrency(paymentSchedule.downPayment.amount)
-                                        }</div>
-                                    </div>
-                                    <!-- Remaining Payment Row -->
-                                    <div style="${getPhaseStyle('final_payment')}">
-                                        <div style="font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                                            <span style="font-size: 16px;">${getStatusIndicator('final_payment')}</span>
-                                            Sisa Pembayaran
-                                        </div>
-                                        <div style="text-align: center; color: var(--text-light); font-size: 15px;">${context === 'preview' ? 
-                                            `<span class="editable" data-field="paymentSchedule.remainingBalance.dueDate" data-type="date">${formatDate(paymentSchedule.remainingBalance.dueDate)}<span class="edit-indicator">✏</span></span>` : 
-                                            formatDate(paymentSchedule.remainingBalance.dueDate)
-                                        }</div>
-                                        <div style="text-align: right; font-weight: 600; font-size: 16px; color: var(--text);">${context === 'preview' ? 
-                                            `<span class="editable" data-field="final_payment_amount" data-type="currency">${formatCurrency(finalAmount)}<span class="edit-indicator">✏</span></span>` : 
-                                            formatCurrency(finalAmount)
-                                        }</div>
-                                    </div>
-                                `;
-                            })()}
-                        </div>
-                    </div>
-                    `;
-                            }
-                            return '';
-                        } catch (e) {
-                            console.error('Error parsing payment schedule:', e);
-                            return '';
-                        }
-                    })()}
-
-
-                    <!-- Dynamic Premium/Aspree Footer -->
-                    ${hideAspreeBranding ? `
-                        <div class="footer-band" style="background: linear-gradient(135deg, ${customFooterBgColor}, ${customFooterBgColor}aa); color: ${customFooterTextColor}; padding: 20px; margin-bottom: 0;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
-                                <div class="footer-section">
-                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
-                                    <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessTerms}</p>
-                                </div>
-                                <div class="footer-section">
-                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
-                                    <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
-                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">📞</span>
-                                            ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
-                                        </li>
-                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">📧</span>
-                                            ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
-                                        </li>
-                                        ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${businessProfile.website}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${invoice.merchant_website}</li>` : ''}
-                                    </ul>
-                                </div>
-                                <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 0; margin-bottom: -30px;">
-                                    ${customFooterLogo ? 
-                                        `<img src="${customFooterLogo}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9; object-fit: contain;">` :
-                                        `<img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">`
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    ` : `
-                        <!-- Default Aspree Footer -->
-                        <div class="footer-band" style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 20px; margin-bottom: 0;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
-                                <div class="footer-section">
-                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
-                                    <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessTerms}</p>
-                                </div>
-                                <div class="footer-section">
-                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
-                                    <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
-                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">📞</span>
-                                            ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
-                                        </li>
-                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">✉️</span>
-                                            ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
-                                        </li>
-                                        <li style="display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">📍</span>
-                                            ${businessProfile ? (businessProfile.address || invoice.merchant_address) : invoice.merchant_address || '-'}
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
-                                    <img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">
-                                </div>
-                            </div>
-
-                            <!-- Powered by text -->
-                            <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
-                                <p style="font-size: 12px; opacity: 0.7; margin: 0;">
-                                    Powered by Aspree Invoice Generator
-                                </p>
-                            </div>
-                        </div>
-                    `}
-                </div>
-            `;
-            
-            // Return appropriate format based on context
-            if (context === 'print') {
-                return `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>Faktur - ${invoice.header.invoiceNumber}</title>
-                        <style>${getContextStyles(context)}</style>
-                    </head>
-                    <body>
-                        ${cleanHTML}
-                    </body>
-                    </html>
-                `;
-            } else {
-                return {
-                    html: cleanHTML,
-                    css: getContextStyles(context)
-                };
-            }
-        }
-
-        // DATA TRANSFORMATION FUNCTIONS
-        // Transform flat database invoice to nested structure for template
-        function transformInvoiceForTemplate(flatInvoice) {
-            console.log('🔄 Transforming flat invoice data to nested structure:', flatInvoice);
-            
-            // Parse items_json if it's a string
-            let items = [];
-            try {
-                if (Array.isArray(flatInvoice.items_json)) {
-                    items = flatInvoice.items_json;
-                } else if (typeof flatInvoice.items_json === 'string') {
-                    items = JSON.parse(flatInvoice.items_json);
-                } else {
-                    console.warn('⚠️ No valid items data found');
-                    items = [];
-                }
-            } catch (error) {
-                console.error('❌ Error parsing items_json:', error);
-                items = [];
-            }
-            
-            // Get business profile for merchant data
-            let businessProfile = null;
-            try {
-                const savedProfile = localStorage.getItem('businessProfile');
-                if (savedProfile) {
-                    businessProfile = JSON.parse(savedProfile);
-                }
-            } catch (error) {
-                console.warn('⚠️ Error parsing business profile:', error);
-            }
-            
-            // Transform to nested structure expected by template
-            const transformed = {
-                invoice: {
-                    header: {
-                        invoiceNumber: flatInvoice.invoice_number,
-                        invoiceDate: flatInvoice.invoice_date,
-                        dueDate: flatInvoice.due_date
-                    },
-                    customer: {
-                        name: flatInvoice.customer_name,
-                        address: flatInvoice.customer_address,
-                        phone: flatInvoice.customer_phone,
-                        email: flatInvoice.customer_email
-                    },
-                    merchant: {
-                        businessName: businessProfile?.name || businessProfile?.businessName || 'Your Business Name',
-                        address: businessProfile?.address || 'Your Business Address',
-                        phone: businessProfile?.phone || '',
-                        email: businessProfile?.email || ''
-                    },
-                    items: items,
-                    totals: {
-                        subtotal: flatInvoice.subtotal,
-                        tax: flatInvoice.tax_amount,
-                        total: flatInvoice.total_amount,
-                        discount: flatInvoice.discount || 0
-                    },
-                    // Additional fields that might be used
-                    notes: flatInvoice.notes,
-                    status: flatInvoice.status,
-                    payment_stage: flatInvoice.payment_stage
-                }
-            };
-            
-            console.log('✅ Transformed invoice structure:', transformed);
-            return transformed;
-        }
-
-        // Load business data from API and sync with localStorage for invoice generation
-        async function loadBusinessDataFromAPI() {
-            try {
-                console.log('🏢 Loading business data from API...');
-                const response = await fetch('/api/business/settings', {
-                    headers: getAuthHeaders()
-                });
-                
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const result = await response.json();
-                const settings = result.settings || result;
-                
-                if (settings) {
-                    // Create business profile object for localStorage (used by invoice generation)
-                    const businessProfile = {
-                        name: settings.name || settings.businessName || 'Your Business Name',
-                        email: settings.email || 'business@example.com',
-                        phone: settings.phone || '+62 21 1234 5678',
-                        address: settings.address || 'Your Business Address',
-                        website: settings.website || '',
-                        taxId: settings.taxId || '',
-                        taxRate: settings.taxRate || 0,
-                        taxEnabled: settings.taxEnabled || false,
-                        taxName: settings.taxName || 'PPN',
-                        taxDescription: settings.taxDescription || '',
-                        logo: settings.logoUrl || '',  // Add logo field that template looks for
-                        logoUrl: settings.logoUrl || null,
-                        category: settings.category || 'general',
-                        termsAndConditions: settings.termsAndConditions || 'Pembayaran dalam 30 hari',
-                        hideBusinessName: settings.hideBusinessName || false  // Add hide business name setting
-                    };
-                    
-                    // Update localStorage for invoice generation
-                    localStorage.setItem('businessProfile', JSON.stringify(businessProfile));
-                    
-                    console.log('✅ Business data loaded and synced:', businessProfile);
-                } else {
-                    console.log('⚠️ No business settings found, using defaults');
-                }
-            } catch (error) {
-                console.error('❌ Error loading business data:', error);
-                // Keep existing hardcoded values as fallback
-            }
-        }
-
-        // Plan Status Management
-        async function loadPlanStatus() {
-            try {
-                const response = await fetch('/api/business/settings', {
-                    headers: getAuthHeaders()
-                });
-
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    if (response.status === 429) {
-                        console.log('Plan status loading delayed due to rate limit');
-                        // Default to free plan temporarily
-                        updatePlanStatusUI(false);
-                        return;
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (data.success && data.settings) {
-                    updatePlanStatusUI(data.settings.premiumActive === true);
-                } else {
-                    // Default to free plan
-                    updatePlanStatusUI(false);
-                }
-            } catch (error) {
-                console.error('Error loading plan status:', error);
-                updatePlanStatusUI(false);
-            }
-        }
-
-        function updatePlanStatusUI(isPremium) {
-            const planBadge = document.getElementById('planBadge');
-            const planText = document.getElementById('planText');
-            const upgradeBtn = document.getElementById('upgradeBtn');
-            const manageBtn = document.getElementById('manageBtn');
-
-            if (isPremium) {
-                planBadge.className = 'plan-badge premium';
-                planBadge.querySelector('span:first-child').textContent = '👑';
-                planText.textContent = 'PREMIUM';
-                upgradeBtn.style.display = 'none';
-                manageBtn.style.display = 'flex';
-            } else {
-                planBadge.className = 'plan-badge free';
-                planBadge.querySelector('span:first-child').textContent = '🆓';
-                planText.textContent = 'FREE';
-                upgradeBtn.style.display = 'flex';
-                manageBtn.style.display = 'none';
-            }
-        }
-
-        function showUpgradeModal() {
-            document.getElementById('premiumModal').style.display = 'block';
-        }
-
-        function closePremiumModal() {
-            document.getElementById('premiumModal').style.display = 'none';
-        }
-
-        function upgradeToPremium() {
-            // For now, redirect to business settings where we'll add premium controls
-            // In the future, this could integrate with a payment processor
-            window.location.href = '/business-settings#premium';
-        }
-
-        function showManageSubscription() {
-            // For now, redirect to business settings
-            window.location.href = '/business-settings#premium';
-        }
-
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            const premiumModal = document.getElementById('premiumModal');
-            if (event.target === premiumModal) {
-                closePremiumModal();
-            }
-        }
-
-        // Load user info from account settings
-        async function loadUserInfo() {
-            try {
-                const response = await fetch('/api/account-settings');
-                const settings = await response.json();
-                
-                if (settings && (settings.businessOwnerName || settings.fullName || settings.name)) {
-                    const userName = settings.businessOwnerName || settings.fullName || settings.name;
-                    const userInfoDiv = document.querySelector('.user-info div div');
-                    if (userInfoDiv) {
-                        userInfoDiv.textContent = userName;
-                    }
-                    
-                    // Update user avatar with initials
-                    const avatar = document.querySelector('.user-avatar');
-                    if (avatar && userName) {
-                        const initials = userName.split(' ')
-                            .filter(word => word.length > 0)
-                            .map(word => word.charAt(0).toUpperCase())
-                            .slice(0, 2)
-                            .join('');
-                        avatar.textContent = initials;
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading user info:', error);
-            }
-        }
-
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            setupEventListeners();
-            refreshInvoiceNumber();
-
-            // Load data with staggered delays to prevent rate limiting
-            setTimeout(() => loadUserInfo(), 100);
-            setTimeout(() => loadPlanStatus(), 200);
-            setTimeout(() => loadInvoiceStats(), 300);
-            setTimeout(() => loadProducts(), 400);
-            setTimeout(() => loadCategories(), 500);
-
-            // Handle URL hash navigation
-            const hash = window.location.hash.substring(1);
-            if (hash && ['products', 'orders', 'invoices', 'customers', 'inventory', 'categories'].includes(hash)) {
-                showSection(hash);
-            } else {
-                showSection('products'); // Default to products section
-            }
+import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import cors from 'cors';
+import https from 'https';
+import http from 'http';
+import compression from 'compression';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import fetch from 'node-fetch';
+import multer from 'multer';
+import config from '../config/config.js';
+import SSLManager from './ssl-manager.js';
+import WhatsAppInvoiceGenerator from './whatsapp-invoice-generator.js';
+// PDF Generator removed - using Print functionality instead
+import SupabaseDatabase from './supabase-database.js';
+import CloudinaryService from './cloudinary-service.js';
+import XenditService from './xendit-service.js';
+
+import SimpleEmailService from './simple-email-service.js';
+import AIAutoLearning from './ai-auto-learning.js';
+import AuthService from './auth/auth-service.js';
+import authMiddleware from './middleware/auth-middleware.js';
+// Removed business guidelines import - using simplified single format
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = config.server.port;
+
+// Trust proxy for Render deployment (fixes X-Forwarded-For header issues)
+app.set('trust proxy', 1);
+
+// Performance optimization: In-memory cache for frequently accessed data
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Cache helper functions
+const getCacheKey = (prefix, ...args) => `${prefix}:${args.join(':')}`;
+
+const getFromCache = (key) => {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    performanceMetrics.cacheStats.hits++;
+    return cached.data;
+  }
+  cache.delete(key);
+  performanceMetrics.cacheStats.misses++;
+  return null;
+};
+
+const setCache = (key, data) => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+  
+  // Cleanup old cache entries every 100 sets
+  if (cache.size % 100 === 0) {
+    const now = Date.now();
+    for (const [key, value] of cache.entries()) {
+      if (now - value.timestamp > CACHE_TTL) {
+        cache.delete(key);
+      }
+    }
+  }
+};
+
+// Performance optimization: Async queue for heavy operations
+const heavyOperationQueue = [];
+let isProcessingQueue = false;
+
+const processHeavyOperations = async () => {
+  if (isProcessingQueue || heavyOperationQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  while (heavyOperationQueue.length > 0) {
+    const operation = heavyOperationQueue.shift();
+    try {
+      await operation();
+    } catch (error) {
+      console.error('Heavy operation failed:', error);
+    }
+  }
+  
+  isProcessingQueue = false;
+};
+
+// Schedule heavy operations processing
+setInterval(processHeavyOperations, 1000);
+
+// Performance metrics tracking
+const performanceMetrics = {
+  requests: {
+    total: 0,
+    successful: 0,
+    failed: 0,
+    slow: 0 // requests over 200ms
+  },
+  averageResponseTime: 0,
+  responseTimeHistory: [],
+  cacheHitRate: 0,
+  cacheStats: {
+    hits: 0,
+    misses: 0
+  }
+};
+
+// Update performance metrics
+const updatePerformanceMetrics = (duration, successful = true) => {
+  performanceMetrics.requests.total++;
+  
+  if (successful) {
+    performanceMetrics.requests.successful++;
+  } else {
+    performanceMetrics.requests.failed++;
+  }
+  
+  if (duration > 200) {
+    performanceMetrics.requests.slow++;
+  }
+  
+  // Keep only last 100 response times for rolling average
+  performanceMetrics.responseTimeHistory.push(duration);
+  if (performanceMetrics.responseTimeHistory.length > 100) {
+    performanceMetrics.responseTimeHistory.shift();
+  }
+  
+  // Calculate average response time
+  const sum = performanceMetrics.responseTimeHistory.reduce((a, b) => a + b, 0);
+  performanceMetrics.averageResponseTime = Math.round(sum / performanceMetrics.responseTimeHistory.length);
+  
+  // Calculate cache hit rate
+  const totalCacheRequests = performanceMetrics.cacheStats.hits + performanceMetrics.cacheStats.misses;
+  if (totalCacheRequests > 0) {
+    performanceMetrics.cacheHitRate = Math.round((performanceMetrics.cacheStats.hits / totalCacheRequests) * 100);
+  }
+};
+
+// Performance monitoring middleware
+const performanceMonitor = (req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const route = req.route ? req.route.path : req.path;
+    const successful = res.statusCode < 400;
+    
+    // Update performance metrics
+    if (req.path.startsWith('/api/')) {
+      updatePerformanceMetrics(duration, successful);
+    }
+    
+    // Log slow requests (over 200ms for API endpoints)
+    if (duration > 200 && req.path.startsWith('/api/')) {
+      console.warn(`⚠️  Slow API request: ${req.method} ${route} - ${duration}ms`);
+    }
+    
+    // Log very slow requests (over 2 seconds for PDF generation)
+    if (duration > 2000 && req.path.includes('pdf')) {
+      console.warn(`⚠️  Very slow PDF generation: ${req.method} ${route} - ${duration}ms`);
+    }
+  });
+  
+  next();
+};
+
+// Initialize services: database, cloudinary, auth, and other services
+const database = new SupabaseDatabase();
+const cloudinaryService = new CloudinaryService();
+const generator = new WhatsAppInvoiceGenerator();
+const emailService = new SimpleEmailService();
+// PDF Generator removed - using Print functionality instead  
+const authService = new AuthService(database, emailService);
+const xenditService = new XenditService();
+
+// Function to get current business settings
+async function getCurrentBusinessSettings(merchantId = null) {
+  try {
+    console.log('🔍 getCurrentBusinessSettings called for merchantId:', merchantId);
+    const dbSettings = await database.getBusinessSettings(merchantId) || {};
+    console.log('🔍 Raw dbSettings from database:', dbSettings);
+    
+    // FIXED: Prioritize merchant-specific database settings over environment variables
+    // Environment variables should only be used as fallbacks when no merchant data exists
+    return {
+      name: dbSettings.name || process.env.MERCHANT_NAME || config.merchant.businessName,
+      email: dbSettings.email || process.env.MERCHANT_EMAIL || config.merchant.email,
+      address: dbSettings.address || process.env.MERCHANT_ADDRESS || config.merchant.address,
+      phone: dbSettings.phone || process.env.MERCHANT_PHONE || config.merchant.phone,
+      website: dbSettings.website || process.env.MERCHANT_WEBSITE || config.merchant.website,
+      taxId: dbSettings.taxId || process.env.MERCHANT_TAX_ID || config.merchant.taxId,
+      taxEnabled: dbSettings.taxEnabled !== undefined ? dbSettings.taxEnabled : (process.env.MERCHANT_TAX_ENABLED === 'true' || config.merchant.taxEnabled || false),
+      taxRate: dbSettings.taxRate !== undefined ? dbSettings.taxRate : (parseFloat(process.env.MERCHANT_TAX_RATE) || config.merchant.taxRate || 0),
+      taxName: dbSettings.taxName || process.env.MERCHANT_TAX_NAME || config.merchant.taxName || 'PPN',
+      taxDescription: dbSettings.taxDescription || process.env.MERCHANT_TAX_DESCRIPTION || config.merchant.taxDescription || '',
+      logoUrl: dbSettings.logoUrl || null,
+      logoFilename: dbSettings.logoFilename || null,
+      hideBusinessName: dbSettings.hideBusinessName || false,
+      termsAndConditions: dbSettings.termsAndConditions || ''
+    };
+  } catch (error) {
+    console.error('Error getting business settings:', error);
+    // Fallback to config values if database fails
+    return {
+      name: process.env.MERCHANT_NAME || config.merchant.businessName,
+      email: process.env.MERCHANT_EMAIL || config.merchant.email,
+      address: process.env.MERCHANT_ADDRESS || config.merchant.address,
+      phone: process.env.MERCHANT_PHONE || config.merchant.phone,
+      website: process.env.MERCHANT_WEBSITE || config.merchant.website,
+      taxId: process.env.MERCHANT_TAX_ID || config.merchant.taxId,
+      taxEnabled: process.env.MERCHANT_TAX_ENABLED === 'true' || config.merchant.taxEnabled || false,
+      taxRate: parseFloat(process.env.MERCHANT_TAX_RATE) || config.merchant.taxRate || 0,
+      taxName: process.env.MERCHANT_TAX_NAME || config.merchant.taxName || 'PPN',
+      taxDescription: process.env.MERCHANT_TAX_DESCRIPTION || config.merchant.taxDescription || '',
+      logoUrl: null,
+      logoFilename: null,
+      hideBusinessName: false,
+      termsAndConditions: ''
+    };
+  }
+}
+const sslManager = new SSLManager();
+const aiAutoLearning = new AIAutoLearning(database);
+
+// Merchant configuration (Indonesian market)
+const merchantConfig = {
+  businessName: config.merchant.businessName,
+  address: config.merchant.address,
+  phone: config.merchant.phone,
+  email: config.merchant.email,
+  website: config.merchant.website,
+  taxId: config.merchant.taxId,
+  paymentTerms: "NET_30",
+  catalog: [
+    {
+      id: "prod_001",
+      name: "iPhone 15 Pro",
+      description: "Latest iPhone with Pro features",
+      sku: "IPHONE15PRO",
+      category: "Smartphones",
+      price: 16500000,
+      tags: ["apple", "iphone", "smartphone", "mobile"]
+    },
+    {
+      id: "prod_002",
+      name: "Samsung Galaxy S24",
+      description: "Premium Android smartphone",
+      sku: "GALAXYS24",
+      category: "Smartphones", 
+      price: 14800000,
+      tags: ["samsung", "galaxy", "android", "smartphone"]
+    },
+    {
+      id: "prod_003",
+      name: "AirPods Pro",
+      description: "Wireless earbuds with noise cancellation",
+      sku: "AIRPODSPRO",
+      category: "Audio",
+      price: 4100000,
+      tags: ["apple", "airpods", "wireless", "earbuds"]
+    },
+    {
+      id: "prod_004",
+      name: "MacBook Pro 14",
+      description: "Professional laptop with M3 chip",
+      sku: "MBP14M3",
+      category: "Laptops",
+      price: 33000000,
+      tags: ["apple", "macbook", "laptop", "m3"]
+    },
+    {
+      id: "prod_005",
+      name: "Phone Case",
+      description: "Protective phone case",
+      sku: "PHONECASE",
+      category: "Accessories",
+      price: 500000,
+      tags: ["case", "protection", "accessory"]
+    },
+    {
+      id: "prod_006",
+      name: "Wireless Charger",
+      description: "Fast wireless charging pad",
+      sku: "WIRELESSCHARGER",
+      category: "Accessories",
+      price: 825000,
+      tags: ["wireless", "charger", "accessory"]
+    }
+  ]
+};
+
+// Performance optimization middleware
+app.use(compression()); // Gzip compression for responses
+
+// Security headers - Temporarily disabled for development debugging
+// TODO: Re-enable with proper CSP configuration for production
+if (!config.isDevelopment) {
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, etc.)
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+  }));
+}
+
+app.use(performanceMonitor); // Performance monitoring
+
+// Rate limiting for API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Auth-specific rate limiting (more lenient for login flows)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 200 auth requests per windowMs (more generous for dev/testing)
+  message: 'Too many authentication requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Stricter rate limiting for AI/PDF endpoints
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 AI/PDF requests per windowMs
+  message: 'Too many AI/PDF requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to specific API groups (excluding auth endpoints)
+app.use('/api/business', apiLimiter);
+app.use('/api/products', apiLimiter);
+app.use('/api/customers', apiLimiter);
+app.use('/api/orders', apiLimiter);
+app.use('/api/invoices', apiLimiter);
+app.use('/api/premium', apiLimiter);
+app.use('/api/upload', apiLimiter);
+app.use('/api/remove', apiLimiter);
+
+// Apply auth-specific rate limiting only to auth endpoints
+app.use('/api/auth', authLimiter);
+app.use('/api/generate-invoice', aiLimiter);
+app.use('/api/generate-pdf', aiLimiter);
+app.use('/api/export/', aiLimiter);
+
+// Middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// CORS Configuration
+if (config.security.enableCors) {
+  app.use(cors({
+    origin: config.security.corsOrigin,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  }));
+}
+
+// Security headers
+app.use((req, res, next) => {
+  // Explicitly allow all inline scripts and event handlers in development
+  if (config.isDevelopment) {
+    res.header('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; script-src-attr * 'unsafe-inline' 'unsafe-hashes'; style-src * 'unsafe-inline'; img-src * data: blob:; connect-src *; font-src *; object-src *; media-src *; frame-src *;");
+    // Allow framing in development mode
+    res.header('X-Frame-Options', 'SAMEORIGIN');
+  } else {
+    // Strict security in production with blob support for image previews
+    res.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https:; font-src 'self' data: https:; object-src 'none'; media-src 'self' blob: https:; frame-src 'self';");
+    res.header('X-Frame-Options', 'DENY');
+  }
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-XSS-Protection', '1; mode=block');
+  if (config.isProduction) {
+    res.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
+// Request logging
+app.use((req, res, next) => {
+  if (config.development.debugMode) {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  }
+  next();
+});
+
+// Serve only specific static files - prevent direct access to source files
+app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// Serve only specific files that should be publicly accessible
+app.use('/favicon.ico', express.static(path.join(__dirname, '..', 'favicon.ico')));
+
+// Block direct access to source files and other sensitive directories
+app.use('/src', (req, res) => {
+  res.status(403).json({ error: 'Direct access to source files is not allowed' });
+});
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'payment-confirmations');
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `payment-${req.params.id || 'unknown'}-${uniqueSuffix}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Allow only images and PDFs
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPG, PNG, GIF and PDF files are allowed.'));
+    }
+  }
+});
+
+// Configure multer for custom header/footer logo uploads
+const customLogoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Determine upload directory based on fieldname
+    let subDir = 'custom-headers'; // default for header logos
+    if (file.fieldname === 'footerLogo' || file.fieldname.includes('footer')) {
+      subDir = 'custom-footers';
+    }
+    
+    const uploadDir = path.join(__dirname, '..', 'uploads', subDir);
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    try {
+      // Get merchant ID from authenticated request
+      const merchantId = req.merchant ? req.merchant.id : 'unknown';
+      
+      // Generate merchant-specific filename
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const logoType = (file.fieldname === 'footerLogo' || file.fieldname.includes('footer')) ? 'footer' : 'header';
+      
+      const filename = `merchant_${merchantId}_${logoType}_logo_${uniqueSuffix}${ext}`;
+      cb(null, filename);
+    } catch (error) {
+      console.error('Error generating filename:', error);
+      // Fallback filename generation
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, `logo-${uniqueSuffix}${ext}`);
+    }
+  }
+});
+
+const customLogoUpload = multer({
+  storage: customLogoStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit for logos
+  },
+  fileFilter: function (req, file, cb) {
+    // Allow only image files for logos
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPEG, PNG, GIF, WebP) are allowed for logos'));
+    }
+  }
+});
+
+// Configure multer for business logo uploads using Cloudinary
+const logoUpload = cloudinaryService.getMulterConfig();
+
+// Serve the HTML interface - redirect to login if not authenticated
+app.get('/', authMiddleware.optionalAuth, (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  
+  // If authenticated, redirect to merchant dashboard
+  if (req.merchant) {
+    return res.redirect('/merchant');
+  }
+  
+  // Otherwise, redirect to login
+  res.redirect('/auth/login');
+});
+
+// Test endpoint to serve fresh content with timestamp
+app.get('/fresh', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  try {
+    let content = fs.readFileSync(path.join(__dirname, 'web-interface-indonesian.html'), 'utf8');
+    content = content.replace('<title>', `<title>Fresh ${Date.now()} - `);
+    res.send(content);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Minimal test endpoint
+app.get('/test', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(__dirname, '..', 'temp', 'test-minimal.html'));
+});
+
+// ==========================================
+// AUTHENTICATION ROUTES
+// ==========================================
+
+// Serve authentication pages
+app.get('/auth/login', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-login.html'));
+});
+
+app.get('/auth/register', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-register.html'));
+});
+
+app.get('/auth/forgot-password', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-forgot-password.html'));
+});
+
+app.get('/auth/reset-password', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-reset-password.html'));
+});
+
+// Email verification page
+app.get('/auth/verify-email', (req, res) => {
+  const token = req.query.token;
+  if (!token) {
+    return res.status(400).send('Missing verification token');
+  }
+  
+  // For now, redirect to a simple success page or handle verification
+  res.redirect(`/auth/login?message=verify-email&token=${token}`);
+});
+
+// Authentication API Routes
+app.use('/api/auth', authMiddleware.authRateLimit());
+
+// Register new merchant
+app.post('/api/auth/register', 
+  authMiddleware.logAuthEvent('REGISTER'), 
+  async (req, res) => {
+    try {
+      const { fullName, businessName, email, password, agreeTerms } = req.body;
+
+      // Validate required fields
+      if (!businessName || !email || !password) {
+        return res.status(400).json({
+          success: false,
+          error: 'Business name, email, and password are required'
         });
-
-        function setupEventListeners() {
-            // Navigation buttons - replace onclick handlers
-            const navButtons = document.querySelectorAll('.nav-btn[onclick]');
-            navButtons.forEach(button => {
-                const onclickAttr = button.getAttribute('onclick');
-                if (onclickAttr) {
-                    // Extract function call from onclick attribute
-                    const match = onclickAttr.match(/showSection\('([^']+)'\)/);
-                    if (match) {
-                        const section = match[1];
-                        button.addEventListener('click', () => showSection(section));
-                        button.removeAttribute('onclick');
-                    }
-                }
-            });
-            
-            // Other buttons with onclick handlers
-            const otherButtons = document.querySelectorAll('button[onclick]');
-            otherButtons.forEach(button => {
-                const onclickAttr = button.getAttribute('onclick');
-                if (onclickAttr) {
-                    button.addEventListener('click', function() {
-                        // Use eval for complex onclick handlers (temporary solution)
-                        try {
-                            eval(onclickAttr);
-                        } catch (error) {
-                            console.error('Error executing onclick handler:', error);
-                        }
-                    });
-                    button.removeAttribute('onclick');
-                }
-            });
-            
-            document.getElementById('category-filter').addEventListener('change', filterProducts);
-            document.getElementById('status-filter').addEventListener('change', filterProducts);
-            document.getElementById('productForm').addEventListener('submit', saveProduct);
-            
-            // Order event listeners
-            document.getElementById('order-status-filter').addEventListener('change', filterOrders);
-            // Note: Date inputs no longer have automatic change listeners - use Apply button instead
-            
-            // Invoice event listeners
-            document.getElementById('invoice-search').addEventListener('input', filterInvoices);
-            document.getElementById('invoice-status-filter').addEventListener('change', filterInvoices);
-            
-            // Customer event listeners
-            document.getElementById('customer-search').addEventListener('input', filterCustomers);
-            
-            // Status modal event listeners
-            document.getElementById('statusForm').addEventListener('submit', handleStatusUpdate);
-            document.getElementById('new-status').addEventListener('change', function() {
-                toggleTrackingField(this.value);
-            });
-        }
-        
-        async function handleStatusUpdate(e) {
-            e.preventDefault();
-            
-            if (!currentOrderId) {
-                alert('No order selected');
-                return;
-            }
-            
-            const newStatus = document.getElementById('new-status').value;
-            const trackingNumber = document.getElementById('tracking-number').value;
-            
-            if (!newStatus) {
-                alert('Please select a status');
-                return;
-            }
-            
-            await updateOrderStatus(currentOrderId, newStatus, trackingNumber);
-            closeStatusModal();
-        }
-
-        async function loadProducts() {
-            try {
-                const response = await fetch('/api/products');
-                const data = await response.json();
-                
-                if (data.success) {
-                    products = data.products;
-                    displayProducts(products);
-                    updateStats();
-                } else {
-                    showError('Failed to load products: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error loading products: ' + error.message);
-            } finally {
-                document.getElementById('products-loading').style.display = 'none';
-            }
-        }
-
-        async function loadCategories() {
-            try {
-                const response = await fetch('/api/products/categories');
-                const data = await response.json();
-                
-                if (data.success) {
-                    categories = data.categories;
-                    updateCategoryFilter();
-                }
-            } catch (error) {
-                console.error('Error loading categories:', error);
-            }
-        }
-
-        function updateCategoryFilter() {
-            const select = document.getElementById('category-filter');
-            select.innerHTML = '<option value="">All Categories</option>';
-            
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.category;
-                option.textContent = `${cat.category} (${cat.count})`;
-                select.appendChild(option);
-            });
-        }
-
-        function displayProducts(productsToShow) {
-            const container = document.getElementById('products-grid');
-            container.innerHTML = '';
-
-            if (productsToShow.length === 0) {
-                container.innerHTML = '<div class="loading">No products found</div>';
-                return;
-            }
-
-            // Group products by category
-            const groupedProducts = groupProductsByCategory(productsToShow);
-            
-            // Display each category group
-            Object.keys(groupedProducts).forEach(categoryKey => {
-                const categoryGroup = createProductCategoryGroup(categoryKey, groupedProducts[categoryKey]);
-                container.appendChild(categoryGroup);
-            });
-        }
-
-        function groupProductsByCategory(products) {
-            const groups = {};
-            
-            products.forEach(product => {
-                const category = product.category || 'Uncategorized';
-                
-                if (!groups[category]) {
-                    groups[category] = {
-                        displayName: category,
-                        products: []
-                    };
-                }
-                groups[category].products.push(product);
-            });
-            
-            // Sort each group's products by name
-            Object.keys(groups).forEach(key => {
-                groups[key].products.sort((a, b) => (a.product_name || '').localeCompare(b.product_name || ''));
-            });
-            
-            return groups;
-        }
-
-        function createProductCategoryGroup(categoryKey, group) {
-            const categoryGroup = document.createElement('div');
-            categoryGroup.className = 'product-category-group';
-            
-            const categoryHeader = document.createElement('div');
-            categoryHeader.className = 'category-group-header';
-            categoryHeader.innerHTML = `
-                <h3>${group.displayName}</h3>
-                <span class="product-count">${group.products.length} product${group.products.length !== 1 ? 's' : ''}</span>
-            `;
-            
-            const productsList = document.createElement('div');
-            productsList.className = 'products-list';
-            
-            group.products.forEach(product => {
-                const listItem = createProductListItem(product);
-                productsList.appendChild(listItem);
-            });
-            
-            categoryGroup.appendChild(categoryHeader);
-            categoryGroup.appendChild(productsList);
-            
-            return categoryGroup;
-        }
-
-        function createProductListItem(product) {
-            const listItem = document.createElement('div');
-            listItem.className = 'product-list-item';
-            
-            const stockStatus = getStockStatus(product.stock_quantity, product.min_stock_level);
-            const priceFormatted = formatCurrency(product.unit_price);
-            
-            // Product image or placeholder
-            const productImage = product.image_url 
-                ? `<img src="${product.image_url}" alt="${product.product_name}" class="product-image">` 
-                : '<div class="product-image-placeholder">📦</div>';
-            
-            listItem.innerHTML = `
-                <div class="product-list-content">
-                    <div class="product-image-container">
-                        ${productImage}
-                    </div>
-                    
-                    <div class="product-main-info">
-                        <div class="product-header">
-                            <div class="product-name">
-                                <strong>${product.product_name || 'Unnamed Product'}</strong>
-                                ${product.sku ? `<span class="product-sku">SKU: ${product.sku}</span>` : ''}
-                            </div>
-                            <div class="product-status">
-                                <span class="stock-badge ${stockStatus.class}">${stockStatus.text}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="product-details">
-                            <div class="product-info">
-                                <span class="product-price">${priceFormatted}</span>
-                                <span class="product-description">${product.description || 'No description'}</span>
-                            </div>
-                            
-                            <div class="product-meta">
-                                <span class="stock-info">📦 Stock: ${product.stock_quantity || 0}</span>
-                                ${product.min_stock_level > 0 ? `<span class="min-stock">⚠️ Min: ${product.min_stock_level}</span>` : ''}
-                                <span class="product-active">${product.active ? '✅ Active' : '❌ Inactive'}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="product-actions">
-                        ${getProductActionButtons(product)}
-                    </div>
-                </div>
-            `;
-            
-            return listItem;
-        }
-
-        function getProductActionButtons(product) {
-            let actions = [];
-
-            // Edit button - always available
-            actions.push(`<button class="btn btn-sm btn-primary" onclick="editProduct(${product.id})" title="Edit product details">✏️ Edit</button>`);
-
-            // Stock button - always available
-            actions.push(`<button class="btn btn-sm btn-warning" onclick="updateStock(${product.id})" title="Update stock quantity">📦 Stock</button>`);
-
-            // Delete button - always available
-            actions.push(`<button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})" title="Delete this product">🗑️ Delete</button>`);
-
-            return actions.join('');
-        }
-
-        function createProductCard(product) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const stockStatus = getStockStatus(product.stock_quantity, product.min_stock_level);
-            const priceFormatted = formatCurrency(product.unit_price);
-            
-            card.innerHTML = `
-                <div class="product-header">
-                    <div>
-                        <div class="product-name">${product.name}</div>
-                        <div class="product-sku">SKU: ${product.sku}</div>
-                    </div>
-                    <div class="stock-badge ${stockStatus.class}">${stockStatus.text}</div>
-                </div>
-                <div class="product-price">${priceFormatted}</div>
-                <div class="product-stock">
-                    <span>Stock: ${product.stock_quantity}</span>
-                    ${product.min_stock_level > 0 ? `<span>(Min: ${product.min_stock_level})</span>` : ''}
-                </div>
-                <div>Category: ${product.category || 'Uncategorized'}</div>
-                <div class="product-actions">
-                    <button class="btn btn-sm btn-primary" onclick="editProduct(${product.id})">Edit</button>
-                    <button class="btn btn-sm btn-warning" onclick="updateStock(${product.id})">Stock</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})">Delete</button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        function getStockStatus(stock, minStock) {
-            if (stock <= 0) {
-                return { class: 'stock-out', text: 'Out of Stock' };
-            } else if (stock <= minStock) {
-                return { class: 'stock-low', text: 'Low Stock' };
-            } else {
-                return { class: 'stock-high', text: 'In Stock' };
-            }
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            }).format(amount);
-        }
-
-        function updateStats() {
-            const totalProducts = products.length;
-            const activeProducts = products.filter(p => p.is_active).length;
-            const lowStockProducts = products.filter(p => p.stock_quantity <= p.min_stock_level).length;
-            const totalCategories = [...new Set(products.map(p => p.category).filter(c => c))].length;
-
-            document.getElementById('total-products').textContent = totalProducts;
-            document.getElementById('active-products').textContent = activeProducts;
-            document.getElementById('low-stock-products').textContent = lowStockProducts;
-            document.getElementById('total-categories').textContent = totalCategories;
-        }
-
-        function filterProducts() {
-            const categoryFilter = document.getElementById('category-filter').value;
-            const statusFilter = document.getElementById('status-filter').value;
-            
-            let filtered = products;
-            
-            if (categoryFilter) {
-                filtered = filtered.filter(p => p.category === categoryFilter);
-            }
-            
-            if (statusFilter === 'true') {
-                filtered = filtered.filter(p => p.is_active);
-            }
-            
-            displayProducts(filtered);
-        }
-
-        // Duplicate showSection function removed - kept the original at line 3091
-
-        // Order Management Functions
-        async function loadOrders() {
-            try {
-                const statusFilter = document.getElementById('order-status-filter').value;
-                const dateFrom = document.getElementById('order-date-from').value;
-                const dateTo = document.getElementById('order-date-to').value;
-                
-                let url = '/api/orders?limit=100';
-                if (statusFilter) url += `&status=${statusFilter}`;
-                if (dateFrom) url += `&dateFrom=${dateFrom}`;
-                if (dateTo) url += `&dateTo=${dateTo}`;
-                
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-                
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    orders = data.orders;
-                    displayOrders(orders);
-                    // Also try to load stats (with fallback to manual calculation)
-                    loadOrderStats();
-                } else {
-                    showOrderError('Failed to load orders: ' + data.error);
-                }
-            } catch (error) {
-                showOrderError('Error loading orders: ' + error.message);
-            } finally {
-                document.getElementById('orders-loading').style.display = 'none';
-            }
-        }
-
-        async function loadOrderStats() {
-            try {
-                // Get current date filter values
-                const dateFrom = document.getElementById('order-date-from').value;
-                const dateTo = document.getElementById('order-date-to').value;
-                
-                // Build URL with date filters
-                let url = '/api/orders/stats';
-                const params = new URLSearchParams();
-                if (dateFrom) params.append('dateFrom', dateFrom);
-                if (dateTo) params.append('dateTo', dateTo);
-                if (params.toString()) url += '?' + params.toString();
-                
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    console.warn('Orders stats endpoint not available:', response.status);
-                    // Calculate stats from orders data as fallback
-                    calculateOrderStatsFromData();
-                    return;
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const stats = data.stats;
-                    
-                    // Update elements if they exist
-                    const updateElement = (id, value) => {
-                        const element = document.getElementById(id);
-                        if (element) {
-                            element.textContent = value;
-                        }
-                    };
-                    
-                    updateElement('total-orders', stats.total_orders || 0);
-                    updateElement('pending-orders', stats.pending_orders || 0);
-                    updateElement('shipped-orders', stats.shipped_orders || 0);
-                    updateElement('delivered-orders', stats.delivered_orders || 0);
-                    updateElement('total-order-value', formatCurrency(stats.total_order_value || 0));
-                } else {
-                    // Fallback to manual calculation
-                    calculateOrderStatsFromData();
-                }
-            } catch (error) {
-                console.error('Error loading order stats:', error);
-                // Fallback to manual calculation
-                calculateOrderStatsFromData();
-            }
-        }
-
-        function calculateOrderStatsFromData() {
-            if (!orders || orders.length === 0) {
-                console.log('📊 No orders data available for stats calculation');
-                return;
-            }
-
-            console.log('📊 Calculating order stats from', orders.length, 'orders');
-
-            // Improved total value calculation with multiple field fallbacks and validation
-            let totalValue = 0;
-            let processedOrders = 0;
-            let skippedOrders = 0;
-            
-            const totalOrderValue = orders.reduce((sum, order, index) => {
-                // Try multiple field names and parsing approaches
-                let orderAmount = 0;
-                
-                // Primary field attempts with validation
-                if (order.total_amount !== undefined && order.total_amount !== null) {
-                    orderAmount = parseFloat(order.total_amount) || 0;
-                } else if (order.grand_total !== undefined && order.grand_total !== null) {
-                    orderAmount = parseFloat(order.grand_total) || 0;
-                } else if (order.subtotal !== undefined && order.subtotal !== null) {
-                    orderAmount = parseFloat(order.subtotal) || 0;
-                } else if (order.amount !== undefined && order.amount !== null) {
-                    orderAmount = parseFloat(order.amount) || 0;
-                }
-                
-                // Validate the amount is reasonable
-                if (orderAmount > 0 && orderAmount < 1000000000) { // Less than 1B IDR seems reasonable
-                    processedOrders++;
-                    return sum + orderAmount;
-                } else {
-                    skippedOrders++;
-                    console.warn(`📊 Order ${index + 1} (ID: ${order.id}) has invalid amount:`, {
-                        total_amount: order.total_amount,
-                        grand_total: order.grand_total,
-                        subtotal: order.subtotal,
-                        amount: order.amount,
-                        calculated: orderAmount
-                    });
-                    return sum;
-                }
-            }, 0);
-
-            console.log(`📊 Order value calculation complete:`, {
-                totalOrders: orders.length,
-                processedOrders,
-                skippedOrders,
-                totalValue: totalOrderValue,
-                formatted: formatCurrency(totalOrderValue)
-            });
-
-            const stats = {
-                total_orders: orders.length,
-                pending_orders: orders.filter(o => o.status === 'pending').length,
-                shipped_orders: orders.filter(o => o.status === 'shipped').length,
-                delivered_orders: orders.filter(o => o.status === 'delivered').length,
-                total_order_value: totalOrderValue
-            };
-
-            // Update elements if they exist
-            const updateElement = (id, value) => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.textContent = value;
-                    console.log(`📊 Updated ${id} with value:`, value);
-                } else {
-                    console.warn(`📊 Element ${id} not found`);
-                }
-            };
-
-            updateElement('total-orders', stats.total_orders);
-            updateElement('pending-orders', stats.pending_orders);
-            updateElement('shipped-orders', stats.shipped_orders);
-            updateElement('delivered-orders', stats.delivered_orders);
-            updateElement('total-order-value', formatCurrency(stats.total_order_value));
-        }
-
-        function displayOrders(ordersToShow) {
-            const container = document.getElementById('orders-grid');
-            container.innerHTML = '';
-
-            if (ordersToShow.length === 0) {
-                container.innerHTML = '<div class="loading">No orders found</div>';
-                return;
-            }
-
-            // Group orders by date
-            const groupedOrders = groupOrdersByDate(ordersToShow);
-            
-            // Display each date group
-            Object.keys(groupedOrders).forEach(dateKey => {
-                const dateGroup = createOrderDateGroup(dateKey, groupedOrders[dateKey]);
-                container.appendChild(dateGroup);
-            });
-        }
-
-        function groupOrdersByDate(orders) {
-            const groups = {};
-            
-            orders.forEach(order => {
-                const orderDate = new Date(order.order_date);
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                
-                let dateKey;
-                let sortKey;
-                
-                // Determine the date group key
-                if (isSameDay(orderDate, today)) {
-                    dateKey = 'Today';
-                    sortKey = '1-today';
-                } else if (isSameDay(orderDate, yesterday)) {
-                    dateKey = 'Yesterday';
-                    sortKey = '2-yesterday';
-                } else if (isThisWeek(orderDate)) {
-                    dateKey = formatDateGroup(orderDate, 'this-week');
-                    sortKey = '3-' + formatDate(order.order_date);
-                } else if (isThisMonth(orderDate)) {
-                    dateKey = formatDateGroup(orderDate, 'this-month');
-                    sortKey = '4-' + formatDate(order.order_date);
-                } else {
-                    dateKey = formatDateGroup(orderDate, 'older');
-                    sortKey = '5-' + formatDate(order.order_date);
-                }
-                
-                if (!groups[sortKey]) {
-                    groups[sortKey] = {
-                        displayName: dateKey,
-                        orders: []
-                    };
-                }
-                groups[sortKey].orders.push(order);
-            });
-            
-            // Sort each group's orders by date (newest first)
-            Object.keys(groups).forEach(key => {
-                groups[key].orders.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
-            });
-            
-            return groups;
-        }
-
-        function createOrderDateGroup(sortKey, group) {
-            const dateGroup = document.createElement('div');
-            dateGroup.className = 'order-date-group';
-            
-            const dateHeader = document.createElement('div');
-            dateHeader.className = 'date-group-header';
-            dateHeader.innerHTML = `
-                <h3>${group.displayName}</h3>
-                <span class="order-count">${group.orders.length} order${group.orders.length !== 1 ? 's' : ''}</span>
-            `;
-            
-            const ordersList = document.createElement('div');
-            ordersList.className = 'orders-list';
-            
-            group.orders.forEach(order => {
-                const listItem = createOrderListItem(order);
-                ordersList.appendChild(listItem);
-            });
-            
-            dateGroup.appendChild(dateHeader);
-            dateGroup.appendChild(ordersList);
-            
-            return dateGroup;
-        }
-
-        function createOrderListItem(order) {
-            const listItem = document.createElement('div');
-            listItem.className = 'order-list-item';
-            
-            const statusClass = getOrderStatusClass(order.status);
-            const statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-            const totalFormatted = formatCurrency(order.total_amount);
-            
-            // Get status icon
-            const statusIcon = getOrderStatusIcon(order.status);
-            
-            listItem.innerHTML = `
-                <div class="order-list-content">
-                    <div class="order-selection" style="display: none;">
-                        <input type="checkbox" onchange="toggleOrderSelection(${order.id}, this.checked)" style="margin-right: 15px;">
-                    </div>
-                    
-                    <div class="order-main-info">
-                        <div class="order-header">
-                            <div class="order-number">
-                                <strong>#${order.order_number}</strong>
-                                ${order.tracking_number ? `<span class="tracking-badge">📦 ${order.tracking_number}</span>` : ''}
-                            </div>
-                            <div class="order-status">
-                                <span class="status-badge ${statusClass}">${statusIcon} ${statusText}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="order-details">
-                            <div class="order-customer">
-                                <span class="customer-name">👤 ${order.customer_name}</span>
-                                <span class="customer-email">${order.customer_email}</span>
-                            </div>
-                            
-                            <div class="order-meta">
-                                <span class="order-date">📅 ${formatDate(order.order_date)}</span>
-                                <span class="order-items">📦 ${order.total_items || 'N/A'} items</span>
-                                <span class="order-amount">${totalFormatted}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="order-actions">
-                        ${getOrderActionButtons(order)}
-                    </div>
-                </div>
-            `;
-            
-            return listItem;
-        }
-
-        function getOrderStatusIcon(status) {
-            const icons = {
-                'pending': '⏳',
-                'shipped': '🚚',
-                'delivered': '📦'
-            };
-            return icons[status] || '⏳';
-        }
-
-        function getOrderActionButtons(order) {
-            let actions = [];
-
-            // View Ticket button - always available
-            actions.push(`<button class="btn btn-sm btn-info" onclick="printServiceTicket(${order.id})" title="View service ticket">🎫 View Ticket</button>`);
-
-            // Status button - always available
-            actions.push(`<button class="btn btn-sm btn-warning" onclick="updateOrderStatusModal(${order.id})" title="Update order status">📝 Status</button>`);
-
-            // Convert to Invoice button - only for delivered orders
-            if (order.status === 'delivered') {
-                actions.push(`<button class="btn btn-sm btn-success" onclick="convertToInvoice(${order.id})" title="Convert to invoice">📄 → Invoice</button>`);
-            }
-
-            // Delete button - always available
-            actions.push(`<button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id})" title="Delete this order">🗑️ Delete</button>`);
-
-            return actions.join('');
-        }
-
-        function createOrderCard(order) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const statusClass = getOrderStatusClass(order.status);
-            const statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-            const totalFormatted = formatCurrency(order.total_amount);
-            
-            card.innerHTML = `
-                <div class="product-header">
-                    <div>
-                        <div class="product-name">${order.order_number}</div>
-                        <div class="product-sku">Customer: ${order.customer_name}</div>
-                    </div>
-                    <div class="stock-badge ${statusClass}">${statusText}</div>
-                </div>
-                <div class="product-price">${totalFormatted}</div>
-                <div class="product-stock">
-                    <span>Date: ${formatDate(order.order_date)}</span>
-                </div>
-                <div>Email: ${order.customer_email}</div>
-                ${order.tracking_number ? `<div>Tracking: ${order.tracking_number}</div>` : ''}
-                <div class="product-actions">
-                    <input type="checkbox" onchange="toggleOrderSelection(${order.id}, this.checked)" style="margin-right: 0.5rem;">
-                    <button class="btn btn-sm btn-info" onclick="printServiceTicket(${order.id})">🎫 View Ticket</button>
-                    <button class="btn btn-sm btn-warning" onclick="updateOrderStatusModal(${order.id})">Status</button>
-                    ${order.status === 'delivered' ? `<button class="btn btn-sm btn-success" onclick="convertToInvoice(${order.id})">→ Invoice</button>` : ''}
-                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id})">Delete</button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        function getOrderStatusClass(status) {
-            const statusClasses = {
-                'pending': 'stock-low',
-                'shipped': 'stock-medium', 
-                'delivered': 'stock-high'
-            };
-            return statusClasses[status] || 'stock-low';
-        }
-
-        function filterOrders() {
-            loadOrders();
-        }
-
-        function applyDateFilters() {
-            const dateFrom = document.getElementById('order-date-from').value;
-            const dateTo = document.getElementById('order-date-to').value;
-            
-            // Validate date range
-            if (dateFrom && dateTo) {
-                const fromDate = new Date(dateFrom);
-                const toDate = new Date(dateTo);
-                
-                if (fromDate > toDate) {
-                    alert('Start date cannot be after end date. Please correct the date range.');
-                    return;
-                }
-            }
-            
-            // Visual feedback - show loading state
-            const applyBtn = document.getElementById('apply-date-filters-btn');
-            const originalText = applyBtn.innerHTML;
-            applyBtn.innerHTML = '🔄 Applying...';
-            applyBtn.disabled = true;
-            
-            // Apply the filters
-            filterOrders();
-            
-            // Reset button after a delay
-            setTimeout(() => {
-                applyBtn.innerHTML = originalText;
-                applyBtn.disabled = false;
-            }, 1000);
-            
-            // Show applied filter info
-            showDateFilterStatus();
-        }
-
-        function clearDateFilters() {
-            document.getElementById('order-date-from').value = '';
-            document.getElementById('order-date-to').value = '';
-            
-            // Automatically apply the cleared filters
-            applyDateFilters();
-        }
-
-        function showDateFilterStatus() {
-            const dateFrom = document.getElementById('order-date-from').value;
-            const dateTo = document.getElementById('order-date-to').value;
-            
-            // Remove existing status if any
-            const existingStatus = document.getElementById('date-filter-status');
-            if (existingStatus) {
-                existingStatus.remove();
-            }
-            
-            if (dateFrom || dateTo) {
-                let statusText = '📅 Active filters: ';
-                if (dateFrom && dateTo) {
-                    statusText += `${dateFrom} to ${dateTo}`;
-                } else if (dateFrom) {
-                    statusText += `From ${dateFrom}`;
-                } else {
-                    statusText += `Until ${dateTo}`;
-                }
-                
-                const statusDiv = document.createElement('div');
-                statusDiv.id = 'date-filter-status';
-                statusDiv.style.cssText = `
-                    background: #e3f2fd; 
-                    color: #1976d2; 
-                    padding: 0.5rem 1rem; 
-                    margin: 0.5rem 0; 
-                    border-radius: 4px; 
-                    font-size: 0.9rem;
-                    border-left: 4px solid #1976d2;
-                `;
-                statusDiv.innerHTML = statusText;
-                
-                const filtersDiv = document.querySelector('#orders-section .filters');
-                filtersDiv.parentNode.insertBefore(statusDiv, filtersDiv.nextSibling);
-            }
-        }
-
-
-        async function viewOrder(orderId) {
-            try {
-                const response = await fetch(`/api/orders/${orderId}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    showOrderModal(data.order);
-                } else {
-                    alert('Failed to load order details: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error loading order details: ' + error.message);
-            }
-        }
-
-        let currentOrderId = null;
-
-        async function updateOrderStatusModal(orderId) {
-            currentOrderId = orderId;
-            
-            // Load order details to display in modal
-            try {
-                const response = await fetch(`/api/orders/${orderId}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    const order = data.order;
-                    document.getElementById('current-order-number').textContent = order.order_number || `#${order.id}`;
-                    document.getElementById('current-customer-name').textContent = order.customer_name || 'Unknown Customer';
-                    document.getElementById('new-status').value = order.status || 'pending';
-                    document.getElementById('tracking-number').value = order.tracking_number || '';
-                    
-                    // Show/hide tracking number field based on current status
-                    toggleTrackingField(order.status);
-                } else {
-                    throw new Error(data.error || 'Failed to load order');
-                }
-            } catch (error) {
-                console.error('Error loading order details:', error);
-                document.getElementById('current-order-number').textContent = `Order #${orderId}`;
-                document.getElementById('current-customer-name').textContent = 'Error loading customer';
-            }
-            
-            document.getElementById('statusModal').style.display = 'block';
-        }
-
-        function closeStatusModal() {
-            document.getElementById('statusModal').style.display = 'none';
-            currentOrderId = null;
-        }
-
-        function toggleTrackingField(status) {
-            const trackingGroup = document.getElementById('tracking-group');
-            trackingGroup.style.display = status === 'shipped' ? 'block' : 'none';
-        }
-
-        async function updateOrderStatus(orderId, status, trackingNumber = '') {
-            try {
-                const payload = { status };
-                if (trackingNumber) payload.tracking_number = trackingNumber;
-                
-                const response = await fetch(`/api/orders/${orderId}/status`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Order status updated successfully!');
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to update order status: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error updating order status: ' + error.message);
-            }
-        }
-
-        async function convertToInvoice(orderId) {
-            if (!confirm('Convert this order to an invoice?')) return;
-            
-            try {
-                const response = await fetch(`/api/orders/${orderId}/convert-to-invoice`, {
-                    method: 'POST'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess(`Order converted to invoice: ${data.invoice.invoiceNumber}`);
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to convert order: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error converting order: ' + error.message);
-            }
-        }
-
-        async function deleteOrder(orderId) {
-            if (!confirm('Are you sure you want to delete this order?')) return;
-
-            try {
-                const response = await fetch(`/api/orders/${orderId}`, {
-                    method: 'DELETE',
-                    headers: getAuthHeaders()
-                });
-
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showSuccess('Order deleted successfully!');
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to delete order: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error deleting order: ' + error.message);
-            }
-        }
-
-        function openBulkUpdateModal() {
-            if (selectedOrders.length === 0) {
-                alert('Please select orders to update');
-                return;
-            }
-            
-            const newStatus = prompt(`Update ${selectedOrders.length} orders to status (pending, processing, shipped, delivered, cancelled):`);
-            if (!newStatus) return;
-            
-            const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-            if (!validStatuses.includes(newStatus)) {
-                alert('Invalid status. Valid options: ' + validStatuses.join(', '));
-                return;
-            }
-            
-            bulkUpdateOrderStatus(newStatus);
-        }
-
-        async function bulkUpdateOrderStatus(status) {
-            try {
-                const response = await fetch('/api/orders/bulk/status', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderIds: selectedOrders, status })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess(`${data.updatedCount} orders updated to ${status}`);
-                    selectedOrders = [];
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to bulk update orders: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error bulk updating orders: ' + error.message);
-            }
-        }
-
-        function showOrderError(message) {
-            const errorDiv = document.getElementById('orders-error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        function showOrderModal(order) {
-            // Simple order view modal - you can enhance this
-            const modalContent = `
-                <h3>Order ${order.order_number}</h3>
-                <p><strong>Customer:</strong> ${order.customer_name} (${order.customer_email})</p>
-                <p><strong>Status:</strong> ${order.status}</p>
-                <p><strong>Total:</strong> ${formatCurrency(order.total_amount)}</p>
-                <p><strong>Date:</strong> ${formatDate(order.order_date)}</p>
-                ${order.tracking_number ? `<p><strong>Tracking:</strong> ${order.tracking_number}</p>` : ''}
-                <h4>Items:</h4>
-                <ul>
-                    ${order.items.map(item => `<li>${item.quantity}x ${item.product_name} - ${formatCurrency(item.line_total)}</li>`).join('')}
-                </ul>
-            `;
-            
-            alert(modalContent.replace(/<[^>]*>/g, '\n')); // Simple alert for now
-        }
-
-        function openAddOrderModal() {
-            alert('Add Order functionality would open a form modal here. This feature can be implemented based on your specific needs.');
-        }
-
-        async function seedOrders() {
-            if (!confirm('This will add sample orders to your system. Continue?')) return;
-
-            try {
-                console.log('Attempting to seed orders...');
-                const response = await fetch('/api/orders/seed', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                console.log('Response status:', response.status);
-                const data = await response.json();
-                console.log('Response data:', data);
-                
-                if (data.success) {
-                    showSuccess(data.message);
-                    loadOrders();
-                    loadOrderStats();
-                } else {
-                    showError('Failed to seed orders: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error seeding orders:', error);
-                showError('Error seeding orders: ' + error.message);
-            }
-        }
-
-        function openAddProductModal() {
-            currentProduct = null;
-            document.getElementById('modal-title').textContent = 'Add New Product';
-            document.getElementById('productForm').reset();
-            document.getElementById('product-active').checked = true;
-            document.getElementById('productModal').style.display = 'block';
-        }
-
-        function closeProductModal() {
-            document.getElementById('productModal').style.display = 'none';
-        }
-
-        async function saveProduct(event) {
-            event.preventDefault();
-            
-            // Validate required fields
-            const nameField = document.getElementById('product-name');
-            const skuField = document.getElementById('product-sku');
-            const priceField = document.getElementById('product-price');
-            
-            if (!nameField.value.trim()) {
-                showError('Product name is required');
-                nameField.focus();
-                return;
-            }
-            
-            if (!skuField.value.trim()) {
-                showError('SKU is required');
-                skuField.focus();
-                return;
-            }
-            
-            if (!priceField.value || parseFloat(priceField.value) <= 0) {
-                showError('Valid unit price is required');
-                priceField.focus();
-                return;
-            }
-            
-            const formData = {
-                name: nameField.value.trim(),
-                sku: skuField.value.trim().toUpperCase(),
-                category: document.getElementById('product-category').value.trim(),
-                description: document.getElementById('product-description').value.trim(),
-                unit_price: parseFloat(priceField.value),
-                cost_price: parseFloat(document.getElementById('product-cost').value) || 0,
-                stock_quantity: parseInt(document.getElementById('product-stock').value) || 0,
-                min_stock_level: parseInt(document.getElementById('product-min-stock').value) || 0,
-                tax_rate: parseFloat(document.getElementById('product-tax').value) || 0,
-                weight: parseFloat(document.getElementById('product-weight').value) || null,
-                dimensions: document.getElementById('product-dimensions').value.trim(),
-                image_url: document.getElementById('product-image').value.trim(),
-                is_active: document.getElementById('product-active').checked
-            };
-
-            console.log('Submitting product data:', formData);
-
-            try {
-                const url = currentProduct ? `/api/products/${currentProduct.id}` : '/api/products';
-                const method = currentProduct ? 'PUT' : 'POST';
-                
-                const response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                console.log('Response status:', response.status);
-                const data = await response.json();
-                console.log('Response data:', data);
-                
-                if (data.success) {
-                    showSuccess(currentProduct ? 'Product updated successfully!' : 'Product created successfully!');
-                    closeProductModal();
-                    loadProducts();
-                    loadCategories();
-                } else {
-                    showError('Failed to save product: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error saving product:', error);
-                showError('Error saving product: ' + error.message);
-            }
-        }
-
-        async function editProduct(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            currentProduct = product;
-            document.getElementById('modal-title').textContent = 'Edit Product';
-            
-            document.getElementById('product-name').value = product.name;
-            document.getElementById('product-sku').value = product.sku;
-            document.getElementById('product-category').value = product.category || '';
-            document.getElementById('product-description').value = product.description || '';
-            document.getElementById('product-price').value = product.unit_price;
-            document.getElementById('product-cost').value = product.cost_price;
-            document.getElementById('product-stock').value = product.stock_quantity;
-            document.getElementById('product-min-stock').value = product.min_stock_level;
-            document.getElementById('product-tax').value = product.tax_rate;
-            document.getElementById('product-weight').value = product.weight || '';
-            document.getElementById('product-dimensions').value = product.dimensions || '';
-            document.getElementById('product-image').value = product.image_url || '';
-            document.getElementById('product-active').checked = product.is_active;
-            
-            document.getElementById('productModal').style.display = 'block';
-        }
-
-        async function deleteProduct(productId) {
-            if (!confirm('Are you sure you want to delete this product?')) return;
-
-            try {
-                const response = await fetch(`/api/products/${productId}`, {
-                    method: 'DELETE'
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Product deleted successfully!');
-                    loadProducts();
-                    loadCategories();
-                } else {
-                    showError('Failed to delete product: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error deleting product: ' + error.message);
-            }
-        }
-
-        function updateStock(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            const newStock = prompt(`Update stock for ${product.name}\nCurrent stock: ${product.stock_quantity}`, product.stock_quantity);
-            if (newStock === null) return;
-
-            const quantity = parseInt(newStock);
-            if (isNaN(quantity) || quantity < 0) {
-                alert('Please enter a valid stock quantity');
-                return;
-            }
-
-            updateProductStock(productId, quantity);
-        }
-
-        async function updateProductStock(productId, quantity) {
-            try {
-                const response = await fetch(`/api/products/${productId}/stock`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ quantity })
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Stock updated successfully!');
-                    loadProducts();
-                } else {
-                    showError('Failed to update stock: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error updating stock: ' + error.message);
-            }
-        }
-
-        function showError(message) {
-            const errorDiv = document.getElementById('products-error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        function showSuccess(message) {
-            const successDiv = document.createElement('div');
-            successDiv.className = 'success';
-            successDiv.textContent = message;
-            document.querySelector('.container').insertBefore(successDiv, document.querySelector('.section'));
-            setTimeout(() => {
-                successDiv.remove();
-            }, 5000);
-        }
-
-        async function seedProducts() {
-            if (!confirm('This will add sample products to your catalog. Continue?')) return;
-
-            try {
-                const response = await fetch('/api/seed-products', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess(data.message);
-                    loadProducts();
-                    loadCategories();
-                } else {
-                    showError('Failed to seed products: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error seeding products: ' + error.message);
-            }
-        }
-
-        async function refreshInvoiceNumber() {
-            try {
-                const nextInvoiceElement = document.getElementById('next-invoice-number');
-                if (!nextInvoiceElement) {
-                    // Element doesn't exist, skip this function
-                    return;
-                }
-                
-                const response = await fetch('/api/test-db');
-                const data = await response.json();
-                
-                if (data.success) {
-                    nextInvoiceElement.textContent = data.nextInvoiceNumber;
-                } else {
-                    nextInvoiceElement.textContent = 'Error loading';
-                }
-            } catch (error) {
-                console.error('Error fetching next invoice number:', error);
-                const nextInvoiceElement = document.getElementById('next-invoice-number');
-                if (nextInvoiceElement) {
-                    nextInvoiceElement.textContent = 'Error loading';
-                }
-            }
-        }
-
-        // Invoice Management Functions
-        let selectedInvoices = [];
-        let invoiceSelectionMode = false;
-
-        async function loadInvoices(dateFrom = null, dateTo = null) {
-            try {
-                document.getElementById('invoices-loading').style.display = 'block';
-                const searchTerm = document.getElementById('invoice-search').value;
-                const statusFilter = document.getElementById('invoice-status-filter').value;
-                
-                let url = '/api/invoices?limit=100';
-                if (statusFilter) url += `&status=${statusFilter}`;
-                if (searchTerm) url += `&customerEmail=${searchTerm}`;
-                if (dateFrom) url += `&dateFrom=${dateFrom}`;
-                if (dateTo) url += `&dateTo=${dateTo}`;
-                
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-                
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    invoices = data.invoices;
-                    displayInvoices(invoices);
-                } else {
-                    showInvoiceError('Failed to load invoices: ' + data.error);
-                }
-            } catch (error) {
-                showInvoiceError('Error loading invoices: ' + error.message);
-            } finally {
-                document.getElementById('invoices-loading').style.display = 'none';
-            }
-        }
-
-        function applyInvoiceDateFilters() {
-            const dateFrom = document.getElementById('invoice-date-from').value;
-            const dateTo = document.getElementById('invoice-date-to').value;
-            loadInvoices(dateFrom, dateTo);
-            loadInvoiceStats(dateFrom, dateTo);
-        }
-
-        function clearInvoiceDateFilters() {
-            document.getElementById('invoice-date-from').value = '';
-            document.getElementById('invoice-date-to').value = '';
-            loadInvoices();
-            loadInvoiceStats();
-        }
-
-        function toggleInvoiceSelectionMode() {
-            invoiceSelectionMode = !invoiceSelectionMode;
-            selectedInvoices = [];
-            
-            const selectionButtons = document.querySelectorAll('.invoice-selection-buttons');
-            const selectButton = document.getElementById('select-invoices-btn');
-            
-            if (invoiceSelectionMode) {
-                selectButton.innerHTML = '❌ Cancel Selection';
-                selectButton.classList.remove('btn-primary');
-                selectButton.classList.add('btn-secondary');
-                selectionButtons.forEach(btn => btn.style.display = 'inline-block');
-                displayInvoices(invoices); // Refresh to show checkboxes
-            } else {
-                selectButton.innerHTML = '📋 Select Invoices';
-                selectButton.classList.remove('btn-secondary');
-                selectButton.classList.add('btn-primary');
-                selectionButtons.forEach(btn => btn.style.display = 'none');
-                displayInvoices(invoices); // Refresh to hide checkboxes
-            }
-        }
-
-        function toggleInvoiceSelection(invoiceId) {
-            const index = selectedInvoices.indexOf(invoiceId);
-            if (index > -1) {
-                selectedInvoices.splice(index, 1);
-            } else {
-                selectedInvoices.push(invoiceId);
-            }
-            updateInvoiceSelectionUI();
-        }
-
-        function updateInvoiceSelectionUI() {
-            const deleteButton = document.getElementById('delete-invoices-btn');
-            
-            if (selectedInvoices.length > 0) {
-                deleteButton.innerHTML = `🗑️ Delete Selected (${selectedInvoices.length})`;
-                deleteButton.disabled = false;
-            } else {
-                deleteButton.innerHTML = '🗑️ Delete Selected';
-                deleteButton.disabled = true;
-            }
-        }
-
-
-
-        async function deleteSelectedInvoices() {
-            if (selectedInvoices.length === 0) {
-                alert('Please select invoices to delete');
-                return;
-            }
-
-            const confirmMessage = `Are you sure you want to delete ${selectedInvoices.length} selected invoice(s)? This action cannot be undone.`;
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/invoices/bulk-delete', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        invoiceIds: selectedInvoices
-                    })
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert(`Successfully deleted ${selectedInvoices.length} invoice(s)`);
-                    selectedInvoices = [];
-                    toggleInvoiceSelectionMode(); // Exit selection mode
-                    loadInvoices(); // Reload invoices
-                    loadInvoiceStats(); // Update stats
-                } else {
-                    alert('Failed to delete invoices: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error deleting invoices: ' + error.message);
-            }
-        }
-
-        async function loadInvoiceStats(dateFrom = null, dateTo = null) {
-            try {
-                let url = '/api/stats';
-                const params = new URLSearchParams();
-                if (dateFrom) params.append('dateFrom', dateFrom);
-                if (dateTo) params.append('dateTo', dateTo);
-                if (params.toString()) url += '?' + params.toString();
-
-                const response = await fetch(url, {
-                    headers: getAuthHeaders()
-                });
-
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    if (response.status === 429) {
-                        console.log('Stats loading delayed due to rate limit');
-                        // Show loading message instead of failing
-                        document.querySelector('.stats-container')?.setAttribute('data-loading', 'Rate limited, please wait...');
-                        return;
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const stats = data.stats;
-                    document.getElementById('total-invoices').textContent = stats.total_invoices || 0;
-                    document.getElementById('draft-invoices').textContent = stats.draft_invoices || 0;
-                    document.getElementById('sent-invoices').textContent = stats.sent_invoices || 0;
-                    document.getElementById('paid-invoices').textContent = stats.paid_invoices || 0;
-                    document.getElementById('total-revenue').textContent = formatCurrency(stats.total_revenue || 0);
-                }
-            } catch (error) {
-                console.error('Error loading invoice stats:', error);
-            }
-        }
-
-        function displayInvoices(invoicesToShow) {
-            const container = document.getElementById('invoices-grid');
-            container.innerHTML = '';
-
-            if (invoicesToShow.length === 0) {
-                container.innerHTML = '<div class="loading">No invoices found</div>';
-                return;
-            }
-
-            // Group invoices by date
-            const groupedInvoices = groupInvoicesByDate(invoicesToShow);
-            
-            // Display each date group
-            Object.keys(groupedInvoices).forEach(dateKey => {
-                const dateGroup = createDateGroup(dateKey, groupedInvoices[dateKey]);
-                container.appendChild(dateGroup);
-            });
-        }
-
-        function groupInvoicesByDate(invoices) {
-            const groups = {};
-            
-            invoices.forEach(invoice => {
-                // Handle empty or invalid dates
-                const invoiceDateStr = invoice.invoice_date || new Date().toISOString().split('T')[0];
-                const invoiceDate = new Date(invoiceDateStr);
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                
-                let dateKey;
-                let sortKey;
-                
-                // Determine the date group key
-                if (isSameDay(invoiceDate, today)) {
-                    dateKey = 'Today';
-                    sortKey = '1-today';
-                } else if (isSameDay(invoiceDate, yesterday)) {
-                    dateKey = 'Yesterday';
-                    sortKey = '2-yesterday';
-                } else if (isThisWeek(invoiceDate)) {
-                    dateKey = formatDateGroup(invoiceDate, 'this-week');
-                    sortKey = '3-' + formatDate(invoice.invoice_date);
-                } else if (isThisMonth(invoiceDate)) {
-                    dateKey = formatDateGroup(invoiceDate, 'this-month');
-                    sortKey = '4-' + formatDate(invoice.invoice_date);
-                } else {
-                    dateKey = formatDateGroup(invoiceDate, 'older');
-                    sortKey = '5-' + formatDate(invoice.invoice_date);
-                }
-                
-                if (!groups[sortKey]) {
-                    groups[sortKey] = {
-                        displayName: dateKey,
-                        invoices: []
-                    };
-                }
-                groups[sortKey].invoices.push(invoice);
-            });
-            
-            // Sort each group's invoices by date (newest first)
-            Object.keys(groups).forEach(key => {
-                groups[key].invoices.sort((a, b) => new Date(b.invoice_date) - new Date(a.invoice_date));
-            });
-            
-            return groups;
-        }
-
-        function isSameDay(date1, date2) {
-            return date1.getDate() === date2.getDate() &&
-                   date1.getMonth() === date2.getMonth() &&
-                   date1.getFullYear() === date2.getFullYear();
-        }
-
-        function isThisWeek(date) {
-            const today = new Date();
-            const weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - today.getDay());
-            weekStart.setHours(0, 0, 0, 0);
-            
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            weekEnd.setHours(23, 59, 59, 999);
-            
-            return date >= weekStart && date <= weekEnd;
-        }
-
-        function isThisMonth(date) {
-            const today = new Date();
-            return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-        }
-
-        function formatDateGroup(date, type) {
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-            
-            if (type === 'this-week') {
-                return days[date.getDay()];
-            } else if (type === 'this-month') {
-                return `${months[date.getMonth()]} ${date.getDate()}`;
-            } else {
-                return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-            }
-        }
-
-        function createDateGroup(sortKey, group) {
-            const dateGroup = document.createElement('div');
-            dateGroup.className = 'invoice-date-group';
-            
-            const dateHeader = document.createElement('div');
-            dateHeader.className = 'date-group-header';
-            dateHeader.innerHTML = `
-                <h3>${group.displayName}</h3>
-                <span class="invoice-count">${group.invoices.length} invoice${group.invoices.length !== 1 ? 's' : ''}</span>
-            `;
-            
-            const invoicesList = document.createElement('div');
-            invoicesList.className = 'invoices-list';
-            
-            group.invoices.forEach(invoice => {
-                const listItem = createInvoiceListItem(invoice);
-                invoicesList.appendChild(listItem);
-            });
-            
-            dateGroup.appendChild(dateHeader);
-            dateGroup.appendChild(invoicesList);
-            
-            return dateGroup;
-        }
-
-        function createInvoiceListItem(invoice) {
-            const listItem = document.createElement('div');
-            listItem.className = 'invoice-list-item';
-            
-            const statusClass = `status-${invoice.status}`;
-            const statusText = invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1);
-            const totalFormatted = formatCurrency(invoice.grand_total);
-            
-            // Payment stage information
-            const paymentStage = invoice.payment_stage || 'full_payment';
-            let paymentStageDisplay = '';
-            let paymentStageClass = '';
-            
-            if (paymentStage === 'down_payment') {
-                paymentStageDisplay = '💳 Down Payment';
-                paymentStageClass = 'payment-stage-dp';
-            } else if (paymentStage === 'final_payment') {
-                paymentStageDisplay = '💰 Final Payment';
-                paymentStageClass = 'payment-stage-final';
-            } else if (paymentStage === 'completed') {
-                paymentStageDisplay = '✅ Completed';
-                paymentStageClass = 'payment-stage-completed';
-            }
-            
-            listItem.innerHTML = `
-                <div class="invoice-list-content">
-                    ${invoiceSelectionMode ? `
-                    <div class="selection-checkbox">
-                        <input type="checkbox" 
-                               id="invoice-${invoice.id}" 
-                               onchange="toggleInvoiceSelection('${invoice.id}')"
-                               ${selectedInvoices.includes(invoice.id) ? 'checked' : ''}>
-                        <label for="invoice-${invoice.id}"></label>
-                    </div>
-                    ` : ''}
-                    <div class="invoice-main-info">
-                        <div class="invoice-header">
-                            <div class="invoice-number">
-                                <strong>#${invoice.invoice_number}</strong>
-                                ${paymentStageDisplay ? `<span class="payment-stage-badge ${paymentStageClass}">${paymentStageDisplay}</span>` : ''}
-                            </div>
-                            <div class="invoice-status">
-                                <span class="status-badge ${statusClass}">${statusText}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="invoice-details">
-                            <div class="invoice-customer">
-                                <span class="customer-name">👤 ${invoice.customer_name}</span>
-                                <span class="customer-email">${invoice.customer_email}</span>
-                            </div>
-                            
-                            <div class="invoice-meta">
-                                <span class="invoice-date">📅 ${formatDate(invoice.invoice_date)}</span>
-                                <span class="due-date">⏰ Due: ${formatDate(invoice.due_date)}</span>
-                                <span class="invoice-amount">${totalFormatted}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="invoice-actions">
-                        ${getSimplifiedInvoiceActions(invoice)}
-                    </div>
-                </div>
-            `;
-            
-            return listItem;
-        }
-
-        function createInvoiceCard(invoice) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const statusClass = `status-${invoice.status}`;
-            const statusText = invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1);
-            const totalFormatted = formatCurrency(invoice.grand_total);
-            
-            // Payment stage information
-            const paymentStage = invoice.payment_stage || 'full_payment';
-            const paymentStatus = invoice.payment_status || 'pending';
-            let paymentStageDisplay = '';
-            let paymentStageClass = '';
-            
-            if (paymentStage === 'down_payment') {
-                paymentStageDisplay = '💳 Uang Muka';
-                paymentStageClass = 'stage-down-payment';
-            } else if (paymentStage === 'final_payment') {
-                paymentStageDisplay = '💰 Sisa Pembayaran';
-                paymentStageClass = 'stage-remaining';
-            } else if (paymentStage === 'completed') {
-                paymentStageDisplay = '✅ Lunas';
-                paymentStageClass = 'stage-completed';
-            } else {
-                paymentStageDisplay = '💸 Pembayaran Penuh';
-                paymentStageClass = 'stage-full';
-            }
-            
-            card.innerHTML = `
-                ${invoiceSelectionMode ? `
-                <div class="selection-checkbox">
-                    <input type="checkbox" 
-                           id="invoice-${invoice.id}" 
-                           onchange="toggleInvoiceSelection('${invoice.id}')"
-                           ${selectedInvoices.includes(invoice.id) ? 'checked' : ''}>
-                    <label for="invoice-${invoice.id}"></label>
-                </div>
-                ` : ''}
-                <div class="product-header">
-                    <div>
-                        <div class="product-name">${invoice.invoice_number}</div>
-                        <div class="product-sku">Customer: ${invoice.customer_name}</div>
-                        ${paymentStage !== 'full_payment' ? `<div class="payment-stage-badge ${paymentStageClass}">${paymentStageDisplay}</div>` : ''}
-                    </div>
-                    <div class="status-badge ${statusClass}">${statusText}</div>
-                </div>
-                <div class="product-price">${totalFormatted}</div>
-                <div class="product-stock">
-                    <span>Date: ${formatDate(invoice.invoice_date)}</span>
-                </div>
-                <div>Email: ${invoice.customer_email}</div>
-                <div class="product-actions">
-                    ${getSimplifiedInvoiceActions(invoice)}
-                </div>
-            `;
-            
-            return card;
-        }
-        
-        function getPaymentActionButtons(invoice) {
-            const paymentStage = invoice.payment_stage || 'full_payment';
-            const status = invoice.status;
-            
-            if (status === 'draft') {
-                return `<button class="btn btn-sm btn-warning" onclick="updateInvoiceStatus(${invoice.id}, 'sent')">📤 Send</button>`;
-            } else if (status === 'sent') {
-                if (paymentStage === 'down_payment') {
-                    return `<button class="btn btn-sm btn-success" onclick="confirmDownPayment(${invoice.id})">💰 Confirm Down Payment</button>`;
-                } else if (paymentStage === 'final_payment') {
-                    return `<button class="btn btn-sm btn-success" onclick="confirmFinalPayment(${invoice.id})">✅ Confirm Final Payment</button>`;
-                } else {
-                    return `<button class="btn btn-sm btn-success" onclick="updateInvoiceStatus(${invoice.id}, 'paid')">💰 Paid</button>`;
-                }
-            } else if (status === 'dp_paid') {
-                // After down payment is confirmed, show final payment button
-                if (paymentStage === 'final_payment') {
-                    return `<button class="btn btn-sm btn-success" onclick="confirmFinalPayment(${invoice.id})">✅ Confirm Final Payment</button>`;
-                }
-            }
-            return '';
-        }
-
-        // Simplified Invoice Actions
-        function getSimplifiedInvoiceActions(invoice) {
-            const status = invoice.status;
-            let actions = [];
-
-            // View button - always available
-            actions.push(`<button class="btn btn-sm btn-primary" onclick="viewInvoiceDetailed(${invoice.id})" title="View invoice details and payment confirmations">👁️ View</button>`);
-
-            // Share button - removed as requested
-
-            // Print button - always available
-            actions.push(`<button class="btn btn-sm btn-success" onclick="printInvoice('${invoice.invoice_number}')" title="Download/Print PDF">🖨️ Print</button>`);
-
-            // Confirm Payment button - based on payment stage and status
-            if (status === 'sent' || status === 'dp_paid') {
-                const paymentStage = invoice.payment_stage || 'full_payment';
-                
-                // Debug logging for payment stage
-                console.log(`🔍 Invoice ${invoice.invoice_number} - Status: ${status}, Payment Stage: ${paymentStage}, Final Payment Token: ${invoice.final_payment_token ? 'Yes' : 'No'}`);
-                
-                if (paymentStage === 'down_payment') {
-                    actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmDownPayment(${invoice.id})" title="Confirm down payment received">✅ Confirm DP</button>`);
-                } else if (paymentStage === 'final_payment') {
-                    // Show confirm button only - final payment link is now in View modal
-                    actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmFinalPayment(${invoice.id})" title="Confirm final payment received">✅ Confirm Final</button>`);
-                    
-                    // Add debug info for final payment stage
-                    if (!invoice.final_payment_token) {
-                        console.warn(`⚠️ Invoice ${invoice.invoice_number} is in final_payment stage but missing final_payment_token`);
-                    }
-                } else if (paymentStage === 'full_payment') {
-                    actions.push(`<button class="btn btn-sm btn-warning" onclick="confirmPaymentAndMoveToOrders(${invoice.id}, 'full')" title="Confirm payment received">✅ Confirm Payment</button>`);
-                }
-            }
-
-            // Delete button - always available
-            actions.push(`<button class="btn btn-sm btn-danger" onclick="deleteInvoice(${invoice.id})" title="Delete this invoice">🗑️ Delete</button>`);
-
-            return actions.join('');
-        }
-
-        function filterInvoices() {
-            const searchTerm = document.getElementById('invoice-search').value.toLowerCase();
-            const statusFilter = document.getElementById('invoice-status-filter').value;
-            
-            let filtered = invoices.filter(invoice => {
-                const matchesSearch = !searchTerm || 
-                    invoice.customer_name.toLowerCase().includes(searchTerm) ||
-                    invoice.customer_email.toLowerCase().includes(searchTerm) ||
-                    invoice.invoice_number.toLowerCase().includes(searchTerm);
-                
-                const matchesStatus = !statusFilter || invoice.status === statusFilter;
-                
-                return matchesSearch && matchesStatus;
-            });
-            
-            displayInvoices(filtered);
-        }
-
-        async function viewInvoice(invoiceId) {
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`);
-                const data = await response.json();
-                
-                if (data.success && data.invoice) {
-                    showInvoiceModal(data.invoice);
-                } else {
-                    alert('Failed to load invoice details: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error loading invoice details: ' + error.message);
-            }
-        }
-
-        // Enhanced View with Payment Confirmations
-        async function viewInvoiceDetailed(invoiceId) {
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`);
-                const data = await response.json();
-                
-                if (data.success && data.invoice) {
-                    showEnhancedInvoiceModal(data.invoice);
-                } else {
-                    alert('Failed to load invoice details: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error loading invoice details: ' + error.message);
-            }
-        }
-
-        async function editInvoice(invoiceId) {
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`);
-                const data = await response.json();
-                
-                if (data.success && data.invoice) {
-                    const invoice = data.invoice;
-                    
-                    // Parse invoice items
-                    let items = [];
-                    try {
-                        if (Array.isArray(invoice.items_json)) {
-                            items = invoice.items_json;
-                        } else if (typeof invoice.items_json === 'string') {
-                            items = JSON.parse(invoice.items_json);
-                        }
-                    } catch (e) {
-                        console.error('Error parsing items:', e);
-                        items = [];
-                    }
-                    
-                    // Create a simplified description from the invoice data
-                    const description = `Invoice for: ${invoice.customer_name}
-Email: ${invoice.customer_email}
-Phone: ${invoice.customer_phone || 'N/A'}
-Address: ${invoice.customer_address || 'N/A'}
-
-Items:
-${items.map(item => `${item.quantity || 1}x ${item.productName || item.product_name || 'Unknown'} - ${formatCurrency(item.unitPrice || item.unit_price || 0)}`).join('\n')}
-
-Total: ${formatCurrency(invoice.grand_total)}`;
-                    
-                    // Open the invoice generator with pre-filled data
-                    const url = `/web-interface-indonesian.html?edit=${invoiceId}&desc=${encodeURIComponent(description)}`;
-                    window.open(url, '_blank');
-                } else {
-                    alert('Failed to load invoice for editing: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error loading invoice for editing: ' + error.message);
-            }
-        }
-
-        function showInvoiceModal(invoice) {
-            const modal = document.getElementById('invoiceModal');
-            const content = document.getElementById('invoiceModalContent');
-            
-            let items = [];
-            console.log('🔧 [Merchant Dashboard] Processing invoice items...');
-            console.log('🔧 Raw items_json:', invoice.items_json);
-            console.log('🔧 Type:', typeof invoice.items_json);
-            
-            try {
-                // Try multiple parsing strategies
-                if (Array.isArray(invoice.items_json)) {
-                    items = invoice.items_json;
-                    console.log('✅ Items parsed as array:', items);
-                } else if (typeof invoice.items_json === 'string') {
-                    items = JSON.parse(invoice.items_json);
-                    console.log('✅ Items parsed from string:', items);
-                } else if (invoice.items_json && typeof invoice.items_json === 'object') {
-                    items = [invoice.items_json];
-                    console.log('✅ Items converted from object:', items);
-                } else {
-                    // Fallback: try to find items in other locations
-                    console.log('🔧 Trying fallback methods...');
-                    if (invoice.items && Array.isArray(invoice.items)) {
-                        items = invoice.items;
-                        console.log('✅ Found items in invoice.items:', items);
-                    }
-                }
-                
-                // Validate and fix items structure
-                if (Array.isArray(items)) {
-                    items = items.map((item, index) => {
-                        return {
-                            productName: item.productName || item.product_name || item.name || `Product ${index + 1}`,
-                            quantity: parseInt(item.quantity || item.qty || 1),
-                            unitPrice: parseFloat(item.unitPrice || item.unit_price || item.price || 0),
-                            lineTotal: parseFloat(item.lineTotal || item.line_total || item.total || (item.quantity || 1) * (item.unitPrice || item.unit_price || item.price || 0)),
-                            description: item.description || item.desc || ''
-                        };
-                    });
-                    console.log('✅ Processed items:', items);
-                }
-                
-            } catch (e) {
-                console.error('❌ Error parsing items:', e);
-                items = [{
-                    productName: 'Error: Items parsing failed',
-                    quantity: 1,
-                    unitPrice: 0,
-                    lineTotal: 0,
-                    description: e.message
-                }];
-            }
-            
-            content.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h3>Invoice #${invoice.invoice_number}</h3>
-                    <p><strong>Status:</strong> <span class="status-badge status-${invoice.status}">${invoice.status}</span></p>
-                    <p><strong>Date:</strong> ${formatDate(invoice.invoice_date)}</p>
-                    <p><strong>Due Date:</strong> ${formatDate(invoice.due_date)}</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Customer Information</h4>
-                    <p><strong>Name:</strong> ${invoice.customer_name}</p>
-                    <p><strong>Email:</strong> ${invoice.customer_email}</p>
-                    <p><strong>Phone:</strong> ${invoice.customer_phone || 'N/A'}</p>
-                    <p><strong>Address:</strong> ${invoice.customer_address || 'N/A'}</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Financial Summary</h4>
-                    <p><strong>Subtotal:</strong> ${formatCurrency(invoice.subtotal)}</p>
-                    <p><strong>Tax:</strong> ${formatCurrency(invoice.tax_amount)}</p>
-                    <p><strong>Shipping:</strong> ${formatCurrency(invoice.shipping_cost)}</p>
-                    <p><strong>Discount:</strong> ${formatCurrency(invoice.discount)}</p>
-                    <p><strong>Total:</strong> <strong>${formatCurrency(invoice.grand_total)}</strong></p>
-                </div>
-                
-                ${generatePaymentSchedulePreview(invoice)}
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Items</h4>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th style="padding: 8px; text-align: left;">Product</th>
-                                <th style="padding: 8px; text-align: right;">Qty</th>
-                                <th style="padding: 8px; text-align: right;">Price</th>
-                                <th style="padding: 8px; text-align: right;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map(item => `
-                                <tr>
-                                    <td style="padding: 8px;">${item.productName || item.product_name || 'Unknown Product'}</td>
-                                    <td style="padding: 8px; text-align: right;">${item.quantity || 0}</td>
-                                    <td style="padding: 8px; text-align: right;">${formatCurrency(item.unitPrice || item.unit_price || 0)}</td>
-                                    <td style="padding: 8px; text-align: right;">${formatCurrency(item.lineTotal || item.line_total || 0)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <button class="btn btn-primary" onclick="downloadInvoicePDF('${invoice.invoice_number}')">📄 Download PDF</button>
-                    ${invoice.customer_token ? `<button class="btn btn-info" onclick="copyInvoiceLink('${invoice.customer_token}')">🔗 Copy Link</button>` : ''}
-                    <button class="btn btn-secondary" onclick="closeInvoiceModal()">Close</button>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-            
-            // Initialize mobile controls if on mobile
-            setTimeout(() => initializeInvoiceModalMobile(), 100);
-        }
-
-        // Enhanced Invoice Modal with Payment Confirmations
-        function showEnhancedInvoiceModal(invoice) {
-            const modal = document.getElementById('invoiceModal');
-            const content = document.getElementById('invoiceModalContent');
-            
-            let items = [];
-            try {
-                if (Array.isArray(invoice.items_json)) {
-                    items = invoice.items_json;
-                } else if (typeof invoice.items_json === 'string') {
-                    items = JSON.parse(invoice.items_json);
-                } else {
-                    items = [];
-                }
-            } catch (e) {
-                console.error('Error parsing items:', e);
-                items = [];
-            }
-            
-            content.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h3>📄 Invoice #${invoice.invoice_number}</h3>
-                    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin: 15px 0;">
-                        <div><strong>Status:</strong> <span class="status-badge status-${invoice.status}">${invoice.status.toUpperCase()}</span></div>
-                        <div><strong>Date:</strong> ${formatDate(invoice.invoice_date)}</div>
-                        <div><strong>Due Date:</strong> ${formatDate(invoice.due_date)}</div>
-                        <div><strong>Total:</strong> <span style="color: #28a745; font-size: 1.2em; font-weight: bold;">${formatCurrency(invoice.grand_total)}</span></div>
-                    </div>
-                </div>
-                
-                <!-- Payment Confirmations Section -->
-                ${generatePaymentConfirmationsSection(invoice)}
-                
-                <!-- Customer Information -->
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <h4>👤 Customer Information</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <p><strong>Name:</strong> ${invoice.customer_name}</p>
-                            <p><strong>Email:</strong> ${invoice.customer_email}</p>
-                        </div>
-                        <div>
-                            <p><strong>Phone:</strong> ${invoice.customer_phone || 'N/A'}</p>
-                            <p><strong>Address:</strong> ${invoice.customer_address || 'N/A'}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Financial Summary -->
-                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <h4>💰 Financial Summary</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <p><strong>Subtotal:</strong> ${formatCurrency(invoice.subtotal)}</p>
-                            <p><strong>Tax:</strong> ${formatCurrency(invoice.tax_amount)}</p>
-                        </div>
-                        <div>
-                            <p><strong>Shipping:</strong> ${formatCurrency(invoice.shipping_cost)}</p>
-                            <p><strong>Discount:</strong> ${formatCurrency(invoice.discount)}</p>
-                        </div>
-                    </div>
-                    <hr style="margin: 10px 0;">
-                    <p style="font-size: 1.1em;"><strong>Grand Total:</strong> <span style="color: #28a745; font-weight: bold;">${formatCurrency(invoice.grand_total)}</span></p>
-                </div>
-                
-                ${generatePaymentSchedulePreview(invoice)}
-                
-                <!-- Items Table -->
-                <div style="margin-bottom: 20px;">
-                    <h4>📦 Items</h4>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;">
-                            <thead>
-                                <tr style="background: #343a40; color: white;">
-                                    <th style="padding: 12px; text-align: left;">Product</th>
-                                    <th style="padding: 12px; text-align: center;">Qty</th>
-                                    <th style="padding: 12px; text-align: right;">Price</th>
-                                    <th style="padding: 12px; text-align: right;">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items.map((item, index) => `
-                                    <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'}; border-bottom: 1px solid #dee2e6;">
-                                        <td style="padding: 12px;">${item.productName || item.product_name || 'Unknown Product'}</td>
-                                        <td style="padding: 12px; text-align: center;">${item.quantity || 0}</td>
-                                        <td style="padding: 12px; text-align: right;">${formatCurrency(item.unitPrice || item.unit_price || 0)}</td>
-                                        <td style="padding: 12px; text-align: right; font-weight: bold;">${formatCurrency(item.lineTotal || item.line_total || 0)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Action Buttons -->
-                <!-- Final Payment Email Section for invoices in final_payment stage -->
-                ${invoice.payment_stage === 'final_payment' && invoice.final_payment_token ? `
-                <div style="margin-top: 30px; padding: 20px; border: 2px solid #fd7e14; border-radius: 8px; background-color: #fff8f0;">
-                    <h5 style="margin-bottom: 15px; color: #fd7e14;">🏦 Final Payment Required</h5>
-                    <p style="margin-bottom: 15px; color: #6c757d;">This invoice requires final payment completion. Send the final payment email to the customer:</p>
-                    
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                        <input type="email" id="finalPaymentEmailInput" placeholder="Customer email address" 
-                               value="${invoice.customer_email || ''}" 
-                               style="flex: 1; min-width: 250px; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
-                        <button onclick="sendFinalPaymentEmail(${invoice.id}, document.getElementById('finalPaymentEmailInput').value)" 
-                                class="btn btn-warning" style="min-width: 140px;">🏦 Send Final Payment Email</button>
-                    </div>
-                    
-                    <div style="font-size: 12px; color: #6c757d;">
-                        <strong>Final Payment Amount:</strong> ${formatCurrency(invoice.final_payment_amount || 0)}<br>
-                        <strong>Invoice Link:</strong> ${window.location.origin}/invoice?token=${invoice.customer_token}
-                    </div>
-                </div>
-                ` : ''}
-                
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #dee2e6; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                    <button class="btn btn-success" onclick="printInvoice('${invoice.invoice_number}')" style="min-width: 120px;">🖨️ Print/PDF</button>
-                    ${invoice.customer_token ? `<button class="btn btn-info" onclick="copyInvoiceLink('${invoice.customer_token}')" style="min-width: 120px;">🔗 Copy Link</button>` : ''}
-                    <button class="btn" style="background-color: var(--whatsapp); color: white; min-width: 120px;" onclick="shareViaWhatsApp('${invoice.id}')">📱 WhatsApp</button>
-                    ${invoice.customer_email && invoice.payment_stage !== 'final_payment' ? `<button class="btn btn-primary" onclick="sendInvoiceEmail(${invoice.id}, '${invoice.customer_email}')" style="min-width: 120px;">📧 Send Email</button>` : ''}
-                    <button class="btn btn-secondary" onclick="closeInvoiceModal()" style="min-width: 120px;">✖️ Close</button>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-            
-            // Initialize mobile controls if on mobile
-            setTimeout(() => initializeInvoiceModalMobile(), 100);
-        }
-
-        // Generate Payment Confirmations Section
-        function generatePaymentConfirmationsSection(invoice) {
-            if (invoice.status === 'draft') {
-                return `
-                    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
-                        <h4>⚠️ Payment Status</h4>
-                        <p>This invoice is still in draft mode. Send it to the customer to enable payment confirmations.</p>
-                    </div>
-                `;
-            } else if (invoice.status === 'sent' || invoice.status === 'dp_paid') {
-                const paymentStage = invoice.payment_stage || 'full_payment';
-                const paymentSchedule = invoice.payment_schedule_json ? 
-                    (typeof invoice.payment_schedule_json === 'string' ? JSON.parse(invoice.payment_schedule_json) : invoice.payment_schedule_json) : null;
-                
-                let stageInfo = '';
-                let headerIcon = '💳';
-                let headerText = 'Payment Confirmations';
-                
-                if (paymentStage === 'down_payment') {
-                    headerIcon = '💰';
-                    headerText = 'Down Payment Confirmations';
-                    stageInfo = `<div style="background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #ffc107;">
-                        <strong>📋 Payment Stage:</strong> Down Payment (${paymentSchedule ? formatCurrency(paymentSchedule.downPayment.amount) : 'N/A'})
-                        <br><small>After confirmation, final payment link will be generated for remaining amount.</small>
-                    </div>`;
-                } else if (paymentStage === 'final_payment') {
-                    headerIcon = '🏁';
-                    headerText = 'Final Payment Confirmations';
-                    stageInfo = `<div style="background: #e2e3ff; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #6f42c1;">
-                        <strong>📋 Payment Stage:</strong> Final Payment (${paymentSchedule ? formatCurrency(paymentSchedule.remainingBalance.amount) : 'N/A'})
-                        <br><small>After confirmation, invoice will be completed and order will be created.</small>
-                    </div>`;
-                } else {
-                    stageInfo = `<div style="background: #d4edda; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #28a745;">
-                        <strong>📋 Payment Stage:</strong> Full Payment (${formatCurrency(invoice.grand_total)})
-                        <br><small>After confirmation, invoice will be marked as paid and order will be created.</small>
-                    </div>`;
-                }
-                
-                return `
-                    <div style="background: #cce5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff;">
-                        <h4>${headerIcon} ${headerText}</h4>
-                        ${stageInfo}
-                        <p style="margin-bottom: 15px;">Waiting for customer payment. Payment confirmations will appear here when uploaded by the customer.</p>
-                        <div id="payment-confirmations-${invoice.id}">
-                            <!-- Payment confirmations will be loaded here -->
-                            <div style="background: white; padding: 10px; border-radius: 6px; text-align: center; color: #6c757d;">
-                                <em>No payment confirmations uploaded yet</em>
-                            </div>
-                        </div>
-                        <button class="btn btn-sm btn-warning" onclick="refreshPaymentConfirmations(${invoice.id})" style="margin-top: 10px;">🔄 Refresh</button>
-                    </div>
-                `;
-            } else if (invoice.status === 'paid') {
-                return `
-                    <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745;">
-                        <h4>✅ Payment Confirmed</h4>
-                        <p>This invoice has been marked as paid and moved to orders.</p>
-                        <div id="payment-confirmations-${invoice.id}">
-                            <!-- Payment confirmations will be loaded here -->
-                        </div>
-                        <button class="btn btn-sm btn-info" onclick="refreshPaymentConfirmations(${invoice.id})" style="margin-top: 10px;">📋 View Payment History</button>
-                    </div>
-                `;
-            }
-            return '';
-        }
-
-        function generatePaymentSchedulePreview(invoice) {
-            // Check if invoice has payment schedule data
-            let paymentSchedule = null;
-            try {
-                if (invoice.paymentSchedule) {
-                    paymentSchedule = invoice.paymentSchedule;
-                } else if (invoice.metadata_json) {
-                    const metadata = JSON.parse(invoice.metadata_json);
-                    paymentSchedule = metadata.paymentSchedule;
-                }
-            } catch (e) {
-                console.log('No payment schedule found in invoice');
-            }
-
-            if (!paymentSchedule) {
-                return '';
-            }
-
-            const formatDate = (dateString) => {
-                if (!dateString) return '-';
-                try {
-                    return new Date(dateString).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                    });
-                } catch (e) {
-                    return dateString;
-                }
-            };
-
-            const getStatusBadge = (status) => {
-                const statusClasses = {
-                    'pending': 'background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem;',
-                    'paid': 'background: #d1edff; color: #155724; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem;',
-                    'partial': 'background: #e2e3ff; color: #6D46D6; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem;'
-                };
-                const statusText = status === 'pending' ? '⏳ Pending' : status === 'paid' ? '✅ Paid' : '🔄 Partial';
-                return `<span style="${statusClasses[status] || statusClasses['pending']}">${statusText}</span>`;
-            };
-
-            const totalPaid = paymentSchedule.paymentStatus?.totalPaid || 0;
-            const totalAmount = paymentSchedule.totalAmount;
-            const progressPercentage = totalAmount > 0 ? (totalPaid / totalAmount) * 100 : 0;
-
-            return `
-                <div style="margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%); border-radius: 12px; border: 1px solid #e6ebff;">
-                    <h4 style="color: #8B5FFF; margin-bottom: 15px;">📅 Payment Schedule</h4>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e6ebff;">
-                            <div>
-                                <strong>Down Payment (${paymentSchedule.downPayment.percentage}%)</strong><br>
-                                <span style="color: #8B5FFF; font-size: 1.2rem; font-weight: 600;">${formatCurrency(paymentSchedule.downPayment.amount)}</span><br>
-                                <small style="color: #718096;">Due: ${formatDate(paymentSchedule.downPayment.dueDate)}</small>
-                            </div>
-                            <div>
-                                ${getStatusBadge(paymentSchedule.downPayment.status)}
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 8px; border: 1px solid #e6ebff;">
-                            <div>
-                                <strong>Remaining Balance</strong><br>
-                                <span style="color: #8B5FFF; font-size: 1.2rem; font-weight: 600;">${formatCurrency(paymentSchedule.remainingBalance.amount)}</span><br>
-                                <small style="color: #718096;">Due: ${formatDate(paymentSchedule.remainingBalance.dueDate)}</small>
-                            </div>
-                            <div>
-                                ${getStatusBadge(paymentSchedule.remainingBalance.status)}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 600;">Payment Progress</span>
-                            <span style="color: #718096;">${formatCurrency(totalPaid)} of ${formatCurrency(totalAmount)} paid</span>
-                        </div>
-                        <div style="width: 100%; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden;">
-                            <div style="height: 100%; background: linear-gradient(135deg, #8B5FFF 0%, #9966FF 100%); width: ${progressPercentage}%; border-radius: 4px; transition: width 0.3s ease;"></div>
-                        </div>
-                    </div>
-                    
-                    <div style="padding: 15px; background: linear-gradient(135deg, #8B5FFF 0%, #9966FF 100%); color: white; border-radius: 8px; text-align: center;">
-                        <strong>Payment Status: ${paymentSchedule.paymentStatus?.status.toUpperCase() || 'PENDING'}</strong>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function copyInvoiceLink(customerToken) {
-            console.log('🔗 Copy link called with token:', customerToken);
-            
-            if (!customerToken) {
-                alert('Error: No customer token available for this invoice');
-                return;
-            }
-            
-            const baseUrl = window.location.origin;
-            
-            // Find the invoice by customer token to check status
-            const foundInvoice = invoices.find(inv => inv.customer_token === customerToken);
-            
-            const invoiceUrl = `${baseUrl}/simple-invoice-view.html?id=${foundInvoice.invoice_number}&from=dashboard`;
-            console.log('🔗 Generated URL:', invoiceUrl);
-            console.log('🔍 Found invoice:', foundInvoice);
-            
-            // Copy to clipboard
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(invoiceUrl).then(async () => {
-                    showSuccess('Invoice link copied to clipboard!');
-                    await updateStatusOnShare(foundInvoice);
-                }).catch(() => {
-                    fallbackCopyTextToClipboard(invoiceUrl);
-                });
-            } else {
-                fallbackCopyTextToClipboard(invoiceUrl);
-                await updateStatusOnShare(foundInvoice);
-            }
-        }
-
-        function fallbackCopyTextToClipboard(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            
-            // Avoid scrolling to bottom
-            textArea.style.top = "0";
-            textArea.style.left = "0";
-            textArea.style.position = "fixed";
-
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    showSuccess('Invoice link copied to clipboard!');
-                } else {
-                    showError('Failed to copy link. Please try again.');
-                }
-            } catch (err) {
-                console.error('Fallback: Could not copy text: ', err);
-                showError('Could not copy link. Please copy manually: ' + text);
-            }
-
-            document.body.removeChild(textArea);
-        }
-
-        function closeInvoiceModal() {
-            document.getElementById('invoiceModal').style.display = 'none';
-            // Close any open share dropdowns
-            document.querySelectorAll('.share-menu.show').forEach(menu => {
-                menu.classList.remove('show');
-            });
-            // Hide mobile zoom controls
-            const mobileControls = document.getElementById('mobile-invoice-zoom-controls');
-            if (mobileControls) {
-                mobileControls.style.display = 'none';
-            }
-        }
-        
-        // Mobile Invoice Zoom Functionality
-        let invoiceCurrentScale = 0.8;
-        const invoiceMinScale = 0.3;
-        const invoiceMaxScale = 3.0;
-        
-        function initializeInvoiceModalMobile() {
-            const isMobile = window.innerWidth <= 767;
-            if (!isMobile) return;
-            
-            const mobileControls = document.getElementById('mobile-invoice-zoom-controls');
-            const wrapper = document.getElementById('invoiceModalContentWrapper');
-            
-            if (mobileControls && wrapper) {
-                mobileControls.style.display = 'flex';
-                
-                // Set initial scale
-                invoiceCurrentScale = 0.8;
-                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-                
-                // Add touch gesture support
-                addInvoiceModalTouchGestureSupport();
-            }
-        }
-        
-        function adjustInvoiceZoom(delta) {
-            invoiceCurrentScale = Math.max(invoiceMinScale, Math.min(invoiceMaxScale, invoiceCurrentScale + delta));
-            
-            const wrapper = document.getElementById('invoiceModalContentWrapper');
-            const indicator = document.getElementById('invoice-zoom-indicator');
-            
-            if (wrapper) {
-                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-            }
-            
-            // Show zoom indicator
-            if (indicator) {
-                indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
-                indicator.classList.add('show');
-                setTimeout(() => indicator.classList.remove('show'), 1500);
-            }
-        }
-        
-        function fitInvoiceToScreen() {
-            const modal = document.getElementById('invoiceModal');
-            if (!modal) return;
-            
-            const modalContent = modal.querySelector('.invoice-modal-content');
-            if (!modalContent) return;
-            
-            const containerWidth = modalContent.clientWidth - 32; // Account for padding
-            const estimatedContentWidth = 400; // Estimated invoice content width
-            invoiceCurrentScale = Math.max(containerWidth / estimatedContentWidth, invoiceMinScale);
-            invoiceCurrentScale = Math.min(invoiceCurrentScale, invoiceMaxScale);
-            
-            const wrapper = document.getElementById('invoiceModalContentWrapper');
-            const indicator = document.getElementById('invoice-zoom-indicator');
-            
-            if (wrapper) {
-                wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-            }
-            
-            if (indicator) {
-                indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
-                indicator.classList.add('show');
-                setTimeout(() => indicator.classList.remove('show'), 1500);
-            }
-        }
-        
-        function addInvoiceModalTouchGestureSupport() {
-            const wrapper = document.getElementById('invoiceModalContentWrapper');
-            if (!wrapper) return;
-            
-            let initialDistance = 0;
-            let initialScale = invoiceCurrentScale;
-            let lastTap = 0;
-            
-            wrapper.addEventListener('touchstart', function(e) {
-                if (e.touches.length === 2) {
-                    // Pinch-zoom start
-                    e.preventDefault();
-                    initialDistance = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    initialScale = invoiceCurrentScale;
-                } else if (e.touches.length === 1) {
-                    // Double-tap detection
-                    const currentTime = new Date().getTime();
-                    const tapGap = currentTime - lastTap;
-                    
-                    if (tapGap < 300 && tapGap > 0) {
-                        // Double-tap detected
-                        e.preventDefault();
-                        const targetScale = invoiceCurrentScale < 1.5 ? 2.0 : 0.8;
-                        invoiceCurrentScale = targetScale;
-                        
-                        wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-                        
-                        const indicator = document.getElementById('invoice-zoom-indicator');
-                        if (indicator) {
-                            indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
-                            indicator.classList.add('show');
-                            setTimeout(() => indicator.classList.remove('show'), 1500);
-                        }
-                    }
-                    lastTap = currentTime;
-                }
-            });
-            
-            wrapper.addEventListener('touchmove', function(e) {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const currentDistance = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    
-                    const scale = (currentDistance / initialDistance) * initialScale;
-                    invoiceCurrentScale = Math.max(invoiceMinScale, Math.min(invoiceMaxScale, scale));
-                    
-                    wrapper.style.setProperty('--invoice-mobile-scale-factor', invoiceCurrentScale);
-                    
-                    const indicator = document.getElementById('invoice-zoom-indicator');
-                    if (indicator) {
-                        indicator.textContent = Math.round(invoiceCurrentScale * 100) + '%';
-                        indicator.classList.add('show');
-                    }
-                }
-            });
-            
-            wrapper.addEventListener('touchend', function(e) {
-                if (e.touches.length === 0) {
-                    const indicator = document.getElementById('invoice-zoom-indicator');
-                    if (indicator) {
-                        setTimeout(() => indicator.classList.remove('show'), 1500);
-                    }
-                }
-            });
-        }
-
-        // Share Dropdown Functions
-        function toggleShareDropdown(invoiceId) {
-            const menu = document.getElementById(`share-menu-${invoiceId}`);
-            if (!menu) {
-                console.error('Share menu not found for invoice:', invoiceId);
-                return;
-            }
-            
-            // Close all other dropdowns first
-            document.querySelectorAll('.share-menu.show').forEach(otherMenu => {
-                if (otherMenu !== menu) {
-                    otherMenu.classList.remove('show');
-                }
-            });
-            
-            // Toggle current dropdown
-            menu.classList.toggle('show');
-            
-            // Debug log
-            console.log('Share dropdown toggled for invoice:', invoiceId, 'Visible:', menu.classList.contains('show'));
-        }
-
-        async function shareViaWhatsApp(invoiceId) {
-            console.log('📱 WhatsApp share called with ID:', invoiceId);
-            
-            // Get invoice data to construct WhatsApp message
-            const invoice = invoices.find(inv => inv.id == invoiceId || inv.id === parseInt(invoiceId));
-            console.log('🔍 Found invoice for WhatsApp:', invoice);
-            
-            if (!invoice) {
-                console.warn('Invoice not found for ID:', invoiceId, 'Available invoices:', invoices.map(inv => ({id: inv.id, number: inv.invoice_number})));
-                alert('Invoice not found for WhatsApp sharing');
-                return;
-            }
-
-            const baseUrl = window.location.origin;
-            const invoiceUrl = `${baseUrl}/simple-invoice-view.html?id=${invoice.invoice_number}`;
-            
-            // Parse invoice data with proper fallbacks
-            const invoiceNumber = invoice.invoice_number || 'N/A';
-            const customerName = invoice.customer_name || '';
-            const customerPhone = invoice.customer_phone || '';
-            const customerAddress = invoice.customer_address || '';
-            const businessName = invoice.business_name || 'Business';
-            const total = invoice.grand_total || 0;
-            const subtotal = invoice.subtotal || total;
-            const discount = invoice.discount_amount || 0;
-            const shippingCost = invoice.shipping_cost || 0;
-            
-            // Parse items from JSON with error handling
-            let items = [];
-            try {
-                if (invoice.items_json) {
-                    if (typeof invoice.items_json === 'string') {
-                        items = JSON.parse(invoice.items_json);
-                    } else if (Array.isArray(invoice.items_json)) {
-                        items = invoice.items_json;
-                    }
-                }
-            } catch (e) {
-                console.error('Error parsing items for WhatsApp:', e);
-                items = [];
-            }
-            
-            // Format items list
-            let itemsList = '';
-            if (items.length > 0) {
-                itemsList = items.map((item, index) => {
-                    const qty = item.quantity || 0;
-                    const price = item.unit_price || item.unitPrice || 0;
-                    const total = item.line_total || item.lineTotal || (qty * price);
-                    const productName = item.product_name || item.productName || 'Produk';
-                    return `${index + 1}. ${productName}\n   ${qty}x @ Rp ${price.toLocaleString('id-ID')} = Rp ${total.toLocaleString('id-ID')}`;
-                }).join('\n\n');
-            }
-            
-            // Check for payment schedule with proper date handling
-            let paymentSchedule = '';
-            try {
-                if (invoice.payment_schedule_json) {
-                    let schedule;
-                    if (typeof invoice.payment_schedule_json === 'string') {
-                        schedule = JSON.parse(invoice.payment_schedule_json);
-                    } else {
-                        schedule = invoice.payment_schedule_json;
-                    }
-                    
-                    if (schedule && schedule.scheduleType === 'down_payment') {
-                        const dp = schedule.downPayment;
-                        const remaining = schedule.remainingBalance;
-                        if (dp && remaining) {
-                            const dpDate = dp.dueDate ? new Date(dp.dueDate).toLocaleDateString('id-ID') : 'Segera';
-                            const finalDate = remaining.dueDate ? new Date(remaining.dueDate).toLocaleDateString('id-ID') : 'Sesuai kesepakatan';
-                            paymentSchedule = `\n📅 *JADWAL PEMBAYARAN*\n• DP (${dp.percentage}%): Rp ${dp.amount.toLocaleString('id-ID')} - Jatuh Tempo: ${dpDate}\n• Pelunasan: Rp ${remaining.amount.toLocaleString('id-ID')} - Jatuh Tempo: ${finalDate}`;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error parsing payment schedule:', error);
-            }
-            
-            // Get notes
-            let notes = '';
-            try {
-                if (invoice.notes_json) {
-                    let notesData;
-                    if (typeof invoice.notes_json === 'string') {
-                        notesData = JSON.parse(invoice.notes_json);
-                    } else {
-                        notesData = invoice.notes_json;
-                    }
-                    if (notesData && notesData.publicNotes) {
-                        notes = `\n📝 *CATATAN*\n${notesData.publicNotes}`;
-                    }
-                }
-            } catch (error) {
-                console.error('Error parsing notes:', error);
-            }
-            
-            // Get proper due date
-            const dueDate = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('id-ID') : 'Sesuai kesepakatan';
-            
-            // Create comprehensive WhatsApp message
-            const message = `🧾 *FAKTUR #${invoiceNumber}*
-
-*DARI:* ${businessName}
-*KEPADA:* ${customerName}
-
-👤 *MOHON KONFIRMASI DATA ANDA:*
-📱 Telepon: ${customerPhone || 'Belum diisi'}
-📍 Alamat: ${customerAddress || 'Belum diisi'}
-${customerPhone || customerAddress ? '\n*Jika ada yang salah, silakan beritahu kami.*' : '\n*Silakan berikan no. telepon dan alamat lengkap Anda.*'}
-
-🛒 *DETAIL PEMBELIAN:*${itemsList ? `\n${itemsList}` : '\nTidak ada detail item'}
-
-💰 *RINGKASAN BIAYA:*
-• Subtotal: Rp ${subtotal.toLocaleString('id-ID')}${discount > 0 ? `\n• Diskon: -Rp ${discount.toLocaleString('id-ID')}` : ''}${shippingCost > 0 ? `\n• Ongkos Kirim: Rp ${shippingCost.toLocaleString('id-ID')}` : ''}
-• *TOTAL: Rp ${total.toLocaleString('id-ID')}*${paymentSchedule}${notes}
-
-📋 *LIHAT FAKTUR LENGKAP:*
-${invoiceUrl}
-
-Terima kasih! 🙏`;
-
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-            
-            // Update status after sharing
-            await updateStatusOnShare(invoice);
-            
-            // Close dropdown
-            document.getElementById(`share-menu-${invoiceId}`).classList.remove('show');
-        }
-
-        // Direct Print Function - Simple approach that works with flat invoice data
-        async function printInvoice(invoiceNumber) {
-            console.log('🖨️ Print function called for invoice:', invoiceNumber);
-            
-            try {
-                // Get the invoice by number to find the full invoice data
-                const invoiceResponse = await fetch(`/api/invoices/number/${invoiceNumber}`, {
-                    headers: getAuthHeaders()
-                });
-                
-                if (!invoiceResponse.ok) {
-                    if (handleAuthError(invoiceResponse)) return;
-                    throw new Error(`HTTP ${invoiceResponse.status}: ${invoiceResponse.statusText}`);
-                }
-                
-                const invoiceResult = await invoiceResponse.json();
-                
-                if (!invoiceResult.success) {
-                    alert('Failed to load invoice for printing: ' + invoiceResult.error);
-                    return;
-                }
-
-                const invoice = invoiceResult.invoice;
-                console.log('🔍 Found invoice for printing:', invoice);
-                
-                // Load business profile for logos and branding
-                console.log('🏢 Loading business data...');
-                await loadBusinessDataFromAPI();
-                console.log('✅ Business data loaded');
-                
-                // Generate simple printable HTML directly from flat data
-                console.log('🎨 Generating simple printable HTML...');
-                const printableHTML = generateSimplePrintableInvoice(invoice);
-                console.log('✅ Printable HTML generated');
-                
-                // Create new window and print immediately
-                const printWindow = window.open('', '_blank', 'width=1000,height=800,scrollbars=yes');
-                if (!printWindow) {
-                    alert('Popup blocked. Please allow popups for this site and try again.');
-                    return;
-                }
-                
-                // Write the complete HTML to the print window
-                printWindow.document.write(printableHTML);
-                printWindow.document.close();
-                
-                // Wait for content to load then print
-                printWindow.onload = function() {
-                    console.log('🖨️ Print window loaded, initiating print...');
-                    setTimeout(() => {
-                        printWindow.print();
-                    }, 500);
-                };
-                
-            } catch (error) {
-                console.error('❌ Error loading invoice for printing:', error);
-                console.error('❌ Error stack:', error.stack);
-                alert('Error loading invoice for printing: ' + error.message);
-            }
-        }
-
-        // Generate simple printable invoice HTML directly from flat database data
-        function generateSimplePrintableInvoice(invoice) {
-            // Get business profile from localStorage
-            let businessProfile = null;
-            try {
-                const savedProfile = localStorage.getItem('businessProfile');
-                if (savedProfile) {
-                    businessProfile = JSON.parse(savedProfile);
-                }
-
-                console.log('🔍 Print function debug - businessProfile from localStorage:', {
-                    premiumActive: businessProfile?.premiumActive,
-                    hideAspreeBranding: businessProfile?.hideAspreeBranding,
-                    customHeaderText: businessProfile?.customHeaderText,
-                    customHeaderLogoUrl: businessProfile?.customHeaderLogoUrl,
-                    customFooterLogoUrl: businessProfile?.customFooterLogoUrl,
-                    customFooterTextColor: businessProfile?.customFooterTextColor,
-                    customFooterBgColor: businessProfile?.customFooterBgColor
-                });
-            } catch (error) {
-                console.warn('⚠️ Error parsing business profile:', error);
-            }
-            
-            // Parse items similar to showInvoiceModal
-            let items = [];
-            try {
-                if (Array.isArray(invoice.items_json)) {
-                    items = invoice.items_json;
-                } else if (typeof invoice.items_json === 'string') {
-                    items = JSON.parse(invoice.items_json);
-                } else if (invoice.items_json && typeof invoice.items_json === 'object') {
-                    items = [invoice.items_json];
-                } else if (invoice.items && Array.isArray(invoice.items)) {
-                    items = invoice.items;
-                }
-                
-                // Validate and fix items structure
-                if (Array.isArray(items)) {
-                    items = items.map((item, index) => {
-                        return {
-                            productName: item.productName || item.product_name || item.name || `Product ${index + 1}`,
-                            quantity: parseInt(item.quantity || item.qty || 1),
-                            unitPrice: parseFloat(item.unitPrice || item.unit_price || item.price || 0),
-                            lineTotal: parseFloat(item.lineTotal || item.line_total || item.total || (item.quantity || 1) * (item.unitPrice || item.unit_price || item.price || 0)),
-                            description: item.description || item.desc || ''
-                        };
-                    });
-                }
-            } catch (e) {
-                console.error('❌ Error parsing items for print:', e);
-                items = [{
-                    productName: 'Error: Items parsing failed',
-                    quantity: 1,
-                    unitPrice: 0,
-                    lineTotal: 0,
-                    description: e.message
-                }];
-            }
-            
-            // Use the new consistent template that matches the invoice link view
-            return generateConsistentInvoiceTemplate(invoice, items, businessProfile);
-        }
-
-        // Generate invoice template that matches the simple-invoice-view.html exactly
-        function generateConsistentInvoiceTemplate(invoice, items, businessProfile) {
-            // Helper function to format dates
-            const formatDate = (dateString) => {
-                if (!dateString) return 'N/A';
-                const date = new Date(dateString);
-                return date.toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            };
-            
-            // Helper function to format currency
-            const formatCurrency = (amount) => {
-                return new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0
-                }).format(amount || 0);
-            };
-            
-            // Helper function to adjust brightness for gradients
-            const adjustBrightness = (hex, percent) => {
-                const num = parseInt(hex?.replace("#",""), 16);
-                const amt = Math.round(2.55 * percent);
-                const R = (num >> 16) + amt;
-                const G = (num >> 8 & 0x00FF) + amt;
-                const B = (num & 0x0000FF) + amt;
-                return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
-            };
-            
-            // Get business data
-            const businessLogo = businessProfile?.logo || businessProfile?.logoUrl || '';
-            const businessName = businessProfile?.name || businessProfile?.businessName || 'Business Name';
-            
-            // Calculate totals similar to simple-invoice-view
-            const subtotal = parseFloat(invoice.subtotal) || 0;
-            const taxAmount = parseFloat(invoice.tax_amount) || parseFloat(invoice.tax) || 0;
-            const shippingCost = parseFloat(invoice.shipping_cost) || 0;
-            const discount = parseFloat(invoice.discount_amount) || parseFloat(invoice.discount) || 0;
-            const grandTotal = parseFloat(invoice.grand_total) || parseFloat(invoice.total_amount) || 0;
-            
-            // Determine invoice title based on business category
-            const businessCategory = businessProfile?.category || 'general';
-            const getCategoryTitle = (category) => {
-                const categoryTitles = {
-                    'trade': 'FAKTUR PENJUALAN',
-                    'services': 'FAKTUR JASA',
-                    'manufacturing': 'FAKTUR PRODUKSI',
-                    'logistics': 'FAKTUR PENGIRIMAN',
-                    'digital_creative': 'FAKTUR LISENSI DIGITAL',
-                    'agriculture': 'FAKTUR PERTANIAN',
-                    'construction': 'FAKTUR KONSTRUKSI',
-                    'tourism': 'FAKTUR PERHOTELAN',
-                    'general': 'FAKTUR'
-                };
-                return categoryTitles[category] || 'FAKTUR';
-            };
-            const invoiceTitle = getCategoryTitle(businessCategory);
-            
-            return `
-                <!DOCTYPE html>
-                <html lang="id">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
-                    <title>Invoice - ${invoice.invoice_number}</title>
-                    <style>
-                        /* Clean Professional CSS Variables */
-                        :root {
-                            --text: #2D3748;
-                            --text-light: #718096;
-                            --border: #E2E8F0;
-                            --bg: #FFFFFF;
-                            --bg-light: #F7FAFC;
-                            --success: #48BB78;
-                            --error: #F56565;
-                            --info: #4299E1;
-                            --warning: #ED8936;
-                        }
-                        
-                        * {
-                            margin: 0;
-                            padding: 0;
-                            box-sizing: border-box;
-                        }
-                        
-                        body {
-                            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-                            font-size: 16px;
-                            line-height: 1.5;
-                            color: var(--text);
-                            background: white;
-                            margin: 0;
-                            padding: 20px;
-                        }
-                        
-                        .container {
-                            max-width: 800px;
-                            margin: 0 auto;
-                            overflow: auto;
-                            -webkit-overflow-scrolling: touch;
-                        }
-                        
-                        .paper-wrapper {
-                            width: fit-content;
-                            margin: 0 auto;
-                            transform-origin: top center;
-                            transform: scale(var(--mobile-scale-factor, 1));
-                            transition: transform 0.3s ease;
-                        }
-                        
-                        .paper {
-                            width: 210mm;
-                            min-height: 297mm;
-                            max-width: none;
-                            margin: 0;
-                            background: var(--bg);
-                            border: 1px solid var(--border);
-                            border-radius: 0;
-                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-                            overflow: hidden;
-                            padding: 0;
-                            position: relative;
-                            margin-bottom: 20px;
-                        }
-                        
-                        .inv-header {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 60px;
-                            padding: 24px 32px 16px 32px;
-                            background: var(--bg);
-                            border-bottom: 2px solid var(--border);
-                            align-items: start;
-                            border-radius: 8px 8px 0 0;
-                        }
-                        
-                        .logo-section {
-                            text-align: left;
-                        }
-                        
-                        .logo-section img {
-                            max-height: 120px;
-                            max-width: 300px;
-                            object-fit: contain;
-                            display: block;
-                            margin-bottom: 6px;
-                        }
-                        
-                        .logo-section strong {
-                            display: block;
-                            font-size: 28px;
-                            font-weight: 800;
-                            color: var(--text);
-                            margin-top: 4px;
-                            line-height: 1.1;
-                        }
-                        
-                        .invoice-meta {
-                            text-align: right;
-                        }
-                        
-                        .invoice-title {
-                            font-size: 28px;
-                            font-weight: 800;
-                            color: var(--text);
-                            margin: 0 0 20px 0;
-                            letter-spacing: 0.5px;
-                        }
-                        
-                        .invoice-details {
-                            font-size: 15px;
-                            color: var(--text-light);
-                            margin-bottom: 10px;
-                            line-height: 1.4;
-                        }
-                        
-                        .invoice-details strong {
-                            color: var(--text);
-                            font-weight: 600;
-                            min-width: 100px;
-                            display: inline-block;
-                        }
-                        
-                        .parties {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 80px;
-                            padding: 20px 32px;
-                            border-bottom: 1px solid var(--border);
-                            background: var(--bg);
-                            border-radius: 8px;
-                            margin: 0 12px;
-                        }
-                        
-                        .party-section h3 {
-                            font-size: 14px;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                            font-weight: 600;
-                            color: var(--text);
-                            margin: 0 0 16px 0;
-                        }
-                        
-                        .party-section address {
-                            font-style: normal;
-                            font-size: 15px;
-                            line-height: 1.5;
-                            color: var(--text-light);
-                        }
-                        
-                        .party-section strong {
-                            color: var(--text);
-                            font-weight: 600;
-                            font-size: 16px;
-                            display: block;
-                            margin-bottom: 3px;
-                        }
-                        
-                        .items-section {
-                            padding: 20px 32px;
-                        }
-                        
-                        .items-table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin: 0;
-                            border: 1px solid var(--border);
-                            border-radius: 8px;
-                            overflow: hidden;
-                        }
-                        
-                        .items-table thead th {
-                            background: var(--bg-light);
-                            border-bottom: 2px solid var(--border);
-                            padding: 18px 20px;
-                            font-size: 13px;
-                            font-weight: 700;
-                            text-transform: uppercase;
-                            letter-spacing: 0.8px;
-                            color: var(--text);
-                            text-align: left;
-                        }
-                        
-                        .items-table th:last-child,
-                        .items-table th.text-right { text-align: right; }
-                        .items-table th.text-center { text-align: center; }
-                        
-                        .items-table tbody td {
-                            padding: 20px;
-                            border-bottom: 1px solid var(--border);
-                            font-size: 15px;
-                            color: var(--text);
-                        }
-                        
-                        .items-table tbody tr:nth-child(even) {
-                            background: rgba(247, 250, 252, 0.5);
-                        }
-                        
-                        .items-table tbody tr:last-child td {
-                            border-bottom: none;
-                        }
-                        
-                        .items-table .text-right { text-align: right; font-weight: 600; }
-                        .items-table .text-center { text-align: center; }
-                        
-                        .product-name {
-                            font-weight: 500;
-                            color: var(--text);
-                            margin: 0;
-                        }
-                        
-                        .product-description {
-                            color: var(--text-light);
-                            font-size: 13px;
-                            margin: 2px 0 0 0;
-                        }
-                        
-                        .summary {
-                            padding: 20px 32px;
-                            border-top: 1px solid var(--border);
-                            background: var(--bg);
-                        }
-                        
-                        .summary-grid {
-                            display: grid;
-                            grid-template-columns: 1fr auto;
-                            gap: 12px 40px;
-                            max-width: 320px;
-                            margin-left: auto;
-                        }
-                        
-                        .summary-label {
-                            color: var(--text-light);
-                            font-size: 14px;
-                        }
-                        
-                        .summary-value {
-                            color: var(--text);
-                            font-size: 15px;
-                            font-weight: 600;
-                            text-align: right;
-                        }
-                        
-                        .total-label {
-                            color: var(--text) !important;
-                            font-weight: 700 !important;
-                            font-size: 16px !important;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                            padding-top: 12px;
-                            border-top: 2px solid var(--text);
-                            margin-top: 8px;
-                        }
-                        
-                        .total-value {
-                            color: var(--text) !important;
-                            font-weight: 800 !important;
-                            font-size: 20px !important;
-                            padding-top: 12px;
-                            border-top: 2px solid var(--text);
-                            margin-top: 8px;
-                        }
-
-                        /* Footer Band Styles */
-                        .footer-band {
-                            background: linear-gradient(135deg, #311d6b, #4a2b7a);
-                            color: white;
-                            padding: 20px;
-                            margin-bottom: 0;
-                            position: relative;
-                        }
-
-                        .footer-section {
-                            margin: 0;
-                        }
-
-                        .footer-section h4 {
-                            font-size: 14px;
-                            font-weight: 600;
-                            margin: 0 0 16px 0;
-                            opacity: 0.9;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                            color: white;
-                        }
-
-                        .footer-section p {
-                            font-size: 13px;
-                            line-height: 1.6;
-                            margin: 0;
-                            opacity: 0.8;
-                            color: white;
-                        }
-
-                        .footer-section ul {
-                            font-size: 13px;
-                            line-height: 1.6;
-                            margin: 0;
-                            opacity: 0.8;
-                            list-style: none;
-                            padding: 0;
-                        }
-
-                        .footer-section li {
-                            margin-bottom: 6px;
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            color: white;
-                        }
-
-                        .footer-section img {
-                            height: 120px;
-                            width: auto;
-                            opacity: 0.9;
-                            object-fit: contain;
-                        }
-                        
-                        /* Enhanced Print optimizations */
-                        @media print {
-                            @page {
-                                margin: 0.5in;
-                                size: A4;
-                            }
-
-                            body {
-                                margin: 0;
-                                padding: 0;
-                                background: white !important;
-                                font-size: 12pt;
-                                color: black;
-                            }
-
-                            .container {
-                                max-width: none;
-                                margin: 0;
-                                padding: 0;
-                            }
-
-                            .paper {
-                                box-shadow: none !important;
-                                border: none !important;
-                                margin: 0 !important;
-                                width: 100% !important;
-                                min-height: auto !important;
-                                max-width: none !important;
-                                page-break-inside: avoid;
-                                background: white !important;
-                            }
-
-                            .paper-wrapper {
-                                transform: none !important;
-                                margin: 0 !important;
-                                width: 100% !important;
-                            }
-
-                            .inv-header {
-                                page-break-inside: avoid;
-                                border-bottom: 1px solid #e2e8f0 !important;
-                                background: white !important;
-                            }
-
-                            .parties {
-                                page-break-inside: avoid;
-                                margin: 0 !important;
-                                border-bottom: 1px solid #e2e8f0 !important;
-                                background: white !important;
-                            }
-
-                            .items-table {
-                                page-break-inside: auto;
-                                border: 1px solid #e2e8f0 !important;
-                            }
-
-                            .items-table thead {
-                                display: table-header-group;
-                            }
-
-                            .items-table thead th {
-                                background: #f7fafc !important;
-                                border-bottom: 1px solid #e2e8f0 !important;
-                            }
-
-                            .items-table tbody tr {
-                                page-break-inside: avoid;
-                            }
-
-                            .items-table tbody td {
-                                border-bottom: 1px solid #e2e8f0 !important;
-                            }
-
-                            .summary {
-                                page-break-inside: avoid;
-                                border-top: 1px solid #e2e8f0 !important;
-                                background: white !important;
-                            }
-
-                            /* Footer Band Print Styles */
-                            .footer-band {
-                                background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
-                                color: white !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                                page-break-inside: avoid !important;
-                                margin-bottom: 0 !important;
-                                padding: 20px !important;
-                            }
-
-                            .footer-section h4,
-                            .footer-section p,
-                            .footer-section ul,
-                            .footer-section li {
-                                color: white !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                            }
-
-                            .footer-section img {
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                                display: block !important;
-                                opacity: 0.9 !important;
-                            }
-
-                            /* Hide elements that shouldn't be printed */
-                            .no-print {
-                                display: none !important;
-                            }
-
-                            /* Ensure ALL colors are preserved in print */
-                            * {
-                                -webkit-print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-
-                            /* Remove any problematic borders that could cause black lines */
-                            .paper,
-                            .paper-wrapper,
-                            .container {
-                                border: none !important;
-                                outline: none !important;
-                                box-shadow: none !important;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="paper-wrapper">
-                            <div class="paper">
-                                ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? `
-                                <!-- Custom Premium Header -->
-                                <div style="background: ${businessProfile.customHeaderBgColor ?
-                                    `linear-gradient(135deg, ${businessProfile.customHeaderBgColor}, ${adjustBrightness(businessProfile.customHeaderBgColor, 20)})` :
-                                    'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile.customHeaderTextColor || 'white'}; padding: 12px 0; text-align: center;">
-                                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                                        ${businessProfile.customHeaderLogoUrl ?
-                                            `<img src="${businessProfile.customHeaderLogoUrl}" alt="Header Logo" style="height: 32px; width: auto;">` : ''
-                                        }
-                                        ${businessProfile.customHeaderText ? `
-                                            <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: ${businessProfile.customHeaderTextColor || 'white'};">
-                                                ${businessProfile.customHeaderText}
-                                            </p>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                                ` : `
-                                <!-- Default Aspree Header -->
-                                <div style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 12px 0; text-align: center;">
-                                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                                        <img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">
-                                        <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: white;">
-                                            Powered by Aspree Invoice Generator
-                                        </p>
-                                    </div>
-                                </div>
-                                `}
-                                
-                                <div class="inv-header">
-                                    <div class="logo-section">
-                                        ${businessLogo ? 
-                                            `<img src="${businessLogo}" alt="Logo">` : 
-                                            `<div style="background: #f0f0f0; padding: 15px; border-radius: 4px; margin-bottom: 12px; font-size: 18px; color: #666; text-align: center; border: 1px solid #e0e0e0;">LOGO</div>`
-                                        }
-                                        ${businessProfile && businessProfile.hideBusinessName ? '' : `<strong>${invoice.merchant_name || businessName}</strong>`}
-                                    </div>
-                                    <div class="invoice-meta">
-                                        <h1 class="invoice-title">${invoiceTitle}</h1>
-                                        <div class="invoice-details">
-                                            <strong>No:</strong> ${invoice.invoice_number || 'INV-UNKNOWN'}
-                                        </div>
-                                        <div class="invoice-details">
-                                            <strong>Tanggal:</strong> ${formatDate(invoice.invoice_date || invoice.created_at || new Date().toISOString())}
-                                        </div>
-                                        <div class="invoice-details">
-                                            <strong>Jatuh Tempo:</strong> ${formatDate(invoice.due_date || invoice.invoice_date || new Date().toISOString())}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="parties">
-                                    <div class="party-section">
-                                        <h3>DARI</h3>
-                                        <address>
-                                            <strong>${invoice.merchant_name || businessName}</strong><br>
-                                            ${invoice.merchant_address || businessProfile?.address || ''}<br>
-                                            ${invoice.merchant_phone || businessProfile?.phone || ''}<br>
-                                            ${invoice.merchant_email || businessProfile?.email || ''}
-                                        </address>
-                                    </div>
-                                    <div class="party-section">
-                                        <h3>KEPADA</h3>
-                                        <address>
-                                            <strong>${invoice.customer_name || 'Customer Name'}</strong><br>
-                                            ${invoice.customer_address ? invoice.customer_address + '<br>' : ''}
-                                            ${invoice.customer_phone ? invoice.customer_phone + '<br>' : ''}
-                                            ${invoice.customer_email || ''}
-                                        </address>
-                                    </div>
-                                </div>
-                                
-                                <div class="items-section">
-                                    <table class="items-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Produk/Layanan</th>
-                                                <th class="text-center">Qty</th>
-                                                <th class="text-right">Harga Satuan</th>
-                                                <th class="text-right">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${items.length === 0 ? 
-                                                '<tr><td colspan="4" style="text-align: center; color: #666;">No items found</td></tr>' :
-                                                items.map(item => `
-                                                    <tr>
-                                                        <td>
-                                                            <div class="product-name">${item.productName || 'Product'}</div>
-                                                            ${item.description && item.description.trim() ? `<div class="product-description">${item.description}</div>` : ''}
-                                                        </td>
-                                                        <td class="text-center">${item.quantity || 1}</td>
-                                                        <td class="text-right">${formatCurrency(item.unitPrice || 0)}</td>
-                                                        <td class="text-right">${formatCurrency(item.lineTotal || 0)}</td>
-                                                    </tr>
-                                                `).join('')
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                <div class="summary">
-                                    <div class="summary-grid">
-                                        <div class="summary-label">Subtotal</div>
-                                        <div class="summary-value">${formatCurrency(subtotal)}</div>
-                                        
-                                        ${discount > 0 ? `
-                                        <div class="summary-label">Diskon</div>
-                                        <div class="summary-value">-${formatCurrency(discount)}</div>
-                                        ` : ''}
-                                        
-                                        ${taxAmount > 0 ? `
-                                        <div class="summary-label">Pajak</div>
-                                        <div class="summary-value">${formatCurrency(taxAmount)}</div>
-                                        ` : ''}
-                                        
-                                        ${shippingCost > 0 ? `
-                                        <div class="summary-label">Biaya Kirim</div>
-                                        <div class="summary-value">${formatCurrency(shippingCost)}</div>
-                                        ` : ''}
-                                        
-                                        <div class="summary-label total-label">TOTAL</div>
-                                        <div class="summary-value total-value">${formatCurrency(grandTotal)}</div>
-                                    </div>
-                                </div>
-                                
-                                ${invoice.notes ? `
-                                <div style="padding: 20px 32px; border-top: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
-                                    <p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;">
-                                        <strong style="color: var(--text);">Catatan:</strong> ${invoice.notes}
-                                    </p>
-                                </div>
-                                ` : ''}
-
-                                <!-- Footer Section - Matching simple-invoice-view.html exactly -->
-                                <div class="footer-band" style="background: ${businessProfile?.premiumActive && businessProfile.customFooterBgColor ?
-                                    `linear-gradient(135deg, ${businessProfile.customFooterBgColor}, ${adjustBrightness(businessProfile.customFooterBgColor, 20)})` :
-                                    'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile?.premiumActive && businessProfile.customFooterTextColor ? businessProfile.customFooterTextColor : 'white'}; padding: 20px; margin-bottom: 0;">
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
-                                        <div class="footer-section">
-                                            <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
-                                            <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessProfile?.terms || invoice.merchant_terms || 'Pembayaran dilakukan sesuai dengan ketentuan yang berlaku. Barang yang sudah dibeli tidak dapat dikembalikan kecuali ada kesepakatan khusus.'}</p>
-                                        </div>
-                                        <div class="footer-section">
-                                            <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
-                                            <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
-                                                <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                                    <span style="opacity: 0.7;">📞</span>
-                                                    ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
-                                                </li>
-                                                <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                                    <span style="opacity: 0.7;">📧</span>
-                                                    ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
-                                                </li>
-                                                ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${businessProfile.website}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${invoice.merchant_website}</li>` : ''}
-                                            </ul>
-                                        </div>
-                                        ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? `
-                                        <!-- Custom Premium Footer -->
-                                        ${businessProfile.customFooterLogoUrl ? `
-                                        <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
-                                            <img src="${businessProfile.customFooterLogoUrl}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9;">
-                                        </div>
-                                        ` : ''}
-                                        ` : `
-                                        <!-- Default Aspree Footer -->
-                                        <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
-                                            <img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">
-                                        </div>
-                                        `}
-                                    </div>
-
-                                    <!-- Powered by text -->
-                                    ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? `
-                                    <!-- Custom powered by text (if any) -->
-                                    ${businessProfile.customPoweredByText ? `
-                                    <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
-                                        <p style="font-size: 12px; opacity: 0.7; margin: 0;">
-                                            ${businessProfile.customPoweredByText}
-                                        </p>
-                                    </div>
-                                    ` : ''}
-                                    ` : `
-                                    <!-- Default Aspree powered by text -->
-                                    <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
-                                        <p style="font-size: 12px; opacity: 0.7; margin: 0;">
-                                            Powered by Aspree Invoice Generator
-                                        </p>
-                                    </div>
-                                    `}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `;
-        }
-
-        // Modular Template Engine - Reduces code duplication by 70%
-        function generateModularTemplate(invoice, items, businessProfile, theme = 'aspree') {
-            const templateData = prepareTemplateData(invoice, items, businessProfile);
-            const themeConfig = getThemeConfiguration(theme, businessProfile);
-            
-            return buildInvoiceTemplate(templateData, themeConfig);
-        }
-
-        // Data Preparation Utility - Shared across all templates
-        function prepareTemplateData(invoice, items, businessProfile) {
-            const businessName = businessProfile?.name || businessProfile?.businessName || 'Your Business Name';
-            const businessAddress = businessProfile?.address || 'Your Business Address';
-            const businessPhone = businessProfile?.phone || '';
-            const businessEmail = businessProfile?.email || '';
-            const businessLogo = businessProfile?.logo || businessProfile?.logoUrl || '';
-
-            return {
-                invoice: {
-                    number: invoice.invoice_number,
-                    date: formatDate(invoice.invoice_date),
-                    dueDate: formatDate(invoice.due_date),
-                    customerName: invoice.customer_name,
-                    customerAddress: invoice.customer_address || '',
-                    customerPhone: invoice.customer_phone || '',
-                    customerEmail: invoice.customer_email || '',
-                    subtotal: invoice.subtotal || (invoice.total_amount - (invoice.tax || 0)),
-                    tax: invoice.tax || 0,
-                    shipping: invoice.shipping_cost || 0,
-                    discount: invoice.discount || 0,
-                    total: invoice.total_amount || invoice.grand_total || 0,
-                    notes: invoice.notes || ''
-                },
-                business: {
-                    name: businessName,
-                    address: businessAddress,
-                    phone: businessPhone,
-                    email: businessEmail,
-                    logo: businessLogo
-                },
-                items: items.map(item => ({
-                    name: item.productName,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    total: item.lineTotal,
-                    description: item.description || ''
-                }))
-            };
-        }
-
-        // Theme Configuration - Centralized styling management
-        function getThemeConfiguration(theme, businessProfile) {
-            const themes = {
-                aspree: {
-                    name: 'Aspree Professional',
-                    colors: {
-                        primary: '#6366f1',
-                        secondary: '#4f46e5',
-                        light: '#e0e7ff',
-                        text: '#1f2937',
-                        background: '#f8fafc'
-                    },
-                    branding: {
-                        showFooter: true,
-                        footerText: 'Powered by <strong>Aspree.id</strong> - Professional Invoice Management',
-                        headerStyle: 'gradient',
-                        borderRadius: '16px'
-                    },
-                    typography: {
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
-                        titleSize: '32px',
-                        headerSize: '28px'
-                    }
-                },
-                custom: {
-                    name: 'Custom Business',
-                    colors: {
-                        primary: businessProfile?.customColors?.primary || '#374151',
-                        secondary: businessProfile?.customColors?.secondary || '#4f46e5',
-                        light: '#f9fafb',
-                        text: '#111827',
-                        background: '#ffffff'
-                    },
-                    branding: {
-                        showFooter: false,
-                        footerText: '',
-                        headerStyle: 'flat',
-                        borderRadius: '8px'
-                    },
-                    typography: {
-                        fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
-                        titleSize: '28px',
-                        headerSize: '24px'
-                    }
-                }
-            };
-
-            return themes[theme] || themes.aspree;
-        }
-
-        // Template Builder - Generates HTML with theme configuration
-        function buildInvoiceTemplate(data, theme) {
-            const itemsHTML = generateItemsTable(data.items, theme);
-            const totalsHTML = generateTotalsSection(data.invoice, theme);
-            const headerHTML = generateHeaderSection(data, theme);
-            const partiesHTML = generatePartiesSection(data, theme);
-            const stylesCSS = generateThemeStyles(theme);
-
-            return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Invoice - ${data.invoice.number}</title>
-                    <style>${stylesCSS}</style>
-                </head>
-                <body>
-                    <div class="invoice-container">
-                        ${headerHTML}
-                        <div class="content-section">
-                            ${partiesHTML}
-                            ${itemsHTML}
-                            ${totalsHTML}
-                            ${data.invoice.notes ? generateNotesSection(data.invoice.notes, theme) : ''}
-                        </div>
-                        ${theme.branding.showFooter ? `<div class="footer">${theme.branding.footerText}</div>` : ''}
-                    </div>
-                </body>
-                </html>
-            `;
-        }
-
-        // Component Generators - Modular and reusable
-        function generateItemsTable(items, theme) {
-            const itemRows = items.map(item => `
-                <tr>
-                    <td class="item-cell">${item.name}</td>
-                    <td class="item-cell center">${item.quantity}</td>
-                    <td class="item-cell right">${formatCurrency(item.unitPrice)}</td>
-                    <td class="item-cell right">${formatCurrency(item.total)}</td>
-                </tr>
-            `).join('');
-
-            return `
-                <table class="items-table">
-                    <thead>
-                        <tr>
-                            <th class="header-cell">Item</th>
-                            <th class="header-cell center">Qty</th>
-                            <th class="header-cell right">Harga</th>
-                            <th class="header-cell right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>${itemRows}</tbody>
-                </table>
-            `;
-        }
-
-        function generateTotalsSection(invoice, theme) {
-            return `
-                <div class="totals">
-                    <table class="totals-table">
-                        ${invoice.tax > 0 ? `
-                        <tr>
-                            <td>Subtotal:</td>
-                            <td class="right">${formatCurrency(invoice.subtotal)}</td>
-                        </tr>
-                        <tr>
-                            <td>Pajak:</td>
-                            <td class="right">${formatCurrency(invoice.tax)}</td>
-                        </tr>
-                        ` : ''}
-                        ${invoice.shipping > 0 ? `
-                        <tr>
-                            <td>Ongkir:</td>
-                            <td class="right">${formatCurrency(invoice.shipping)}</td>
-                        </tr>
-                        ` : ''}
-                        ${invoice.discount > 0 ? `
-                        <tr>
-                            <td>Diskon:</td>
-                            <td class="right">-${formatCurrency(invoice.discount)}</td>
-                        </tr>
-                        ` : ''}
-                        <tr class="total-row">
-                            <td>TOTAL:</td>
-                            <td class="right">${formatCurrency(invoice.total)}</td>
-                        </tr>
-                    </table>
-                </div>
-            `;
-        }
-
-        function generateHeaderSection(data, theme) {
-            const isGradient = theme.branding.headerStyle === 'gradient';
-            const headerClass = isGradient ? 'header-gradient' : 'header-flat';
-
-            return `
-                <div class="${headerClass}">
-                    <div class="header-content">
-                        <div class="business-info">
-                            ${data.business.logo ? `<img src="${data.business.logo}" alt="Logo" class="business-logo">` : ''}
-                            <div class="business-name">${data.business.name}</div>
-                            <div class="business-details">
-                                ${data.business.address}<br>
-                                ${data.business.phone}<br>
-                                ${data.business.email}
-                            </div>
-                        </div>
-                        <div class="invoice-meta">
-                            <div class="invoice-title">FAKTUR</div>
-                            <div class="invoice-number">#${data.invoice.number}</div>
-                            <div class="invoice-dates">
-                                <div>Tanggal: ${data.invoice.date}</div>
-                                <div>Jatuh Tempo: ${data.invoice.dueDate}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function generatePartiesSection(data, theme) {
-            return `
-                <div class="parties">
-                    <div class="party">
-                        <h3>DARI</h3>
-                        <div class="party-name">${data.business.name}</div>
-                        <div>
-                            ${data.business.address}<br>
-                            ${data.business.phone}<br>
-                            ${data.business.email}
-                        </div>
-                    </div>
-                    <div class="party">
-                        <h3>KEPADA</h3>
-                        <div class="party-name">${data.invoice.customerName}</div>
-                        <div>
-                            ${data.invoice.customerAddress}<br>
-                            ${data.invoice.customerPhone}<br>
-                            ${data.invoice.customerEmail}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function generateNotesSection(notes, theme) {
-            return `
-                <div class="notes">
-                    <h3>Catatan:</h3>
-                    <p>${notes}</p>
-                </div>
-            `;
-        }
-
-        function generateThemeStyles(theme) {
-            return `
-                :root {
-                    --primary: ${theme.colors.primary};
-                    --secondary: ${theme.colors.secondary};
-                    --light: ${theme.colors.light};
-                    --text: ${theme.colors.text};
-                    --background: ${theme.colors.background};
-                }
-                
-                body {
-                    font-family: ${theme.typography.fontFamily};
-                    margin: 0;
-                    padding: 20px;
-                    color: var(--text);
-                    line-height: 1.6;
-                    background: var(--background);
-                }
-                
-                .invoice-container {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: ${theme.branding.borderRadius};
-                    overflow: hidden;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-                }
-                
-                .header-gradient {
-                    background: linear-gradient(135deg, var(--primary), var(--secondary));
-                    color: white;
-                    padding: 40px;
-                    position: relative;
-                }
-                
-                .header-flat {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    padding: 40px;
-                    background: var(--light);
-                    border-bottom: 1px solid #e5e7eb;
-                }
-                
-                .header-content {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                }
-                
-                .business-info { flex: 1; }
-                
-                .business-logo {
-                    max-height: 60px;
-                    max-width: 180px;
-                    margin-bottom: 16px;
-                    border-radius: 8px;
-                }
-                
-                .business-name {
-                    font-size: ${theme.typography.headerSize};
-                    font-weight: 800;
-                    margin-bottom: 8px;
-                    color: ${theme.branding.headerStyle === 'gradient' ? 'white' : 'var(--primary)'};
-                }
-                
-                .business-details {
-                    opacity: 0.9;
-                    font-size: 14px;
-                    line-height: 1.5;
-                }
-                
-                .invoice-meta {
-                    text-align: right;
-                    background: ${theme.branding.headerStyle === 'gradient' ? 'rgba(255, 255, 255, 0.1)' : 'white'};
-                    padding: 20px;
-                    border-radius: 6px;
-                    ${theme.branding.headerStyle === 'gradient' ? 'backdrop-filter: blur(10px);' : 'border: 1px solid #e5e7eb;'}
-                }
-                
-                .invoice-title {
-                    font-size: ${theme.typography.titleSize};
-                    font-weight: 900;
-                    margin-bottom: 12px;
-                    color: ${theme.branding.headerStyle === 'gradient' ? 'white' : 'var(--primary)'};
-                }
-                
-                .content-section { padding: 40px; }
-                
-                .parties {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 40px;
-                    margin-bottom: 40px;
-                }
-                
-                .party {
-                    background: var(--light);
-                    padding: 20px;
-                    border-radius: 6px;
-                    border-left: 3px solid var(--primary);
-                }
-                
-                .party h3 {
-                    margin: 0 0 12px 0;
-                    color: var(--primary);
-                    font-size: 12px;
-                    text-transform: uppercase;
-                    font-weight: 600;
-                    letter-spacing: 0.5px;
-                }
-                
-                .party-name {
-                    font-size: 16px;
-                    font-weight: 600;
-                    margin-bottom: 8px;
-                }
-                
-                .items-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 32px;
-                    border-radius: 6px;
-                    overflow: hidden;
-                    border: 1px solid #e5e7eb;
-                }
-                
-                .items-table thead {
-                    background: ${theme.branding.headerStyle === 'gradient' ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--primary)'};
-                    color: white;
-                }
-                
-                .header-cell {
-                    padding: 14px 12px;
-                    text-align: left;
-                    font-weight: 600;
-                    font-size: 13px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-                
-                .item-cell {
-                    padding: 12px 8px;
-                    border-bottom: 1px solid #e5e7eb;
-                }
-                
-                .items-table tbody tr:nth-child(even) {
-                    background: var(--light);
-                }
-                
-                .totals {
-                    background: var(--light);
-                    padding: 24px;
-                    border-radius: 6px;
-                    border: 1px solid #e5e7eb;
-                }
-                
-                .totals-table {
-                    width: 100%;
-                    max-width: 350px;
-                    margin-left: auto;
-                }
-                
-                .totals-table td {
-                    padding: 6px 0;
-                    border: none;
-                    font-size: 15px;
-                }
-                
-                .total-row td {
-                    font-weight: 700;
-                    font-size: 18px;
-                    padding-top: 12px;
-                    border-top: 2px solid var(--primary);
-                    color: var(--primary);
-                }
-                
-                .notes {
-                    background: #fef3cd;
-                    border: 1px solid #f59e0b;
-                    border-radius: 6px;
-                    padding: 20px;
-                    margin-top: 24px;
-                }
-                
-                .notes h3 {
-                    color: #92400e;
-                    margin-bottom: 8px;
-                    font-size: 16px;
-                }
-                
-                .footer {
-                    background: linear-gradient(135deg, #1f2937, #374151);
-                    color: white;
-                    padding: 24px 40px;
-                    text-align: center;
-                    font-size: 12px;
-                    opacity: 0.8;
-                }
-                
-                .center { text-align: center; }
-                .right { text-align: right; }
-                
-                @media print {
-                    body { margin: 0; padding: 0; background: white; }
-                    .invoice-container { box-shadow: none; border-radius: 0; }
-                }
-            `;
-        }
-
-        // Generate items HTML for legacy compatibility
-        function generateLegacyTemplate(invoice, items, businessProfile) {
-            const itemsHTML = items.map(item => `
-                <tr>
-                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.productName}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${formatCurrency(item.unitPrice)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${formatCurrency(item.lineTotal)}</td>
-                </tr>
-            `).join('');
-            
-            // Get business information
-            const businessName = businessProfile?.name || businessProfile?.businessName || 'Your Business Name';
-            const businessAddress = businessProfile?.address || 'Your Business Address';
-            const businessPhone = businessProfile?.phone || '';
-            const businessEmail = businessProfile?.email || '';
-            const businessLogo = businessProfile?.logo || businessProfile?.logoUrl || '';
-            
-            return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Invoice - ${invoice.invoice_number}</title>
-                    <style>
-                        body {
-                            font-family: 'Arial', sans-serif;
-                            margin: 0;
-                            padding: 20px;
-                            color: #333;
-                            line-height: 1.4;
-                        }
-                        .invoice-container {
-                            max-width: 800px;
-                            margin: 0 auto;
-                            background: white;
-                            padding: 30px;
-                            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                        }
-                        .header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-start;
-                            margin-bottom: 30px;
-                            border-bottom: 2px solid #eee;
-                            padding-bottom: 20px;
-                        }
-                        .business-info {
-                            flex: 1;
-                        }
-                        .business-logo {
-                            max-height: 80px;
-                            max-width: 200px;
-                            margin-bottom: 10px;
-                        }
-                        .invoice-title {
-                            font-size: 24px;
-                            font-weight: bold;
-                            color: #2c3e50;
-                            margin: 0;
-                        }
-                        .invoice-meta {
-                            text-align: right;
-                        }
-                        .parties {
-                            display: flex;
-                            justify-content: space-between;
-                            margin-bottom: 30px;
-                        }
-                        .party {
-                            flex: 1;
-                            margin-right: 20px;
-                        }
-                        .party:last-child {
-                            margin-right: 0;
-                        }
-                        .party h3 {
-                            margin: 0 0 10px 0;
-                            color: #2c3e50;
-                            font-size: 14px;
-                            text-transform: uppercase;
-                        }
-                        table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin-bottom: 20px;
-                        }
-                        th {
-                            background: #f8f9fa;
-                            padding: 12px 8px;
-                            text-align: left;
-                            border-bottom: 2px solid #ddd;
-                            font-weight: bold;
-                        }
-                        .totals {
-                            text-align: right;
-                            margin-top: 20px;
-                        }
-                        .totals table {
-                            margin-left: auto;
-                            width: 300px;
-                        }
-                        .totals td {
-                            padding: 5px 10px;
-                            border: none;
-                        }
-                        .total-row {
-                            font-weight: bold;
-                            font-size: 16px;
-                            border-top: 2px solid #333 !important;
-                        }
-                        @media print {
-                            body { margin: 0; padding: 0; }
-                            .invoice-container { box-shadow: none; padding: 0; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="invoice-container">
-                        <div class="header">
-                            <div class="business-info">
-                                ${businessLogo ? `<img src="${businessLogo}" alt="Logo" class="business-logo">` : ''}
-                                <h2>${businessName}</h2>
-                                <p>${businessAddress}<br>
-                                ${businessPhone}<br>
-                                ${businessEmail}</p>
-                            </div>
-                            <div class="invoice-meta">
-                                <h1 class="invoice-title">FAKTUR</h1>
-                                <p><strong>No:</strong> ${invoice.invoice_number}</p>
-                                <p><strong>Tanggal:</strong> ${formatDate(invoice.invoice_date)}</p>
-                                <p><strong>Jatuh Tempo:</strong> ${formatDate(invoice.due_date)}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="parties">
-                            <div class="party">
-                                <h3>DARI</h3>
-                                <strong>${businessName}</strong><br>
-                                ${businessAddress}<br>
-                                ${businessPhone}<br>
-                                ${businessEmail}
-                            </div>
-                            <div class="party">
-                                <h3>KEPADA</h3>
-                                <strong>${invoice.customer_name}</strong><br>
-                                ${invoice.customer_address || ''}<br>
-                                ${invoice.customer_phone || ''}<br>
-                                ${invoice.customer_email || ''}
-                            </div>
-                        </div>
-                        
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Produk/Layanan</th>
-                                    <th style="text-align: center; width: 80px;">Qty</th>
-                                    <th style="text-align: right; width: 120px;">Harga</th>
-                                    <th style="text-align: right; width: 120px;">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${itemsHTML}
-                            </tbody>
-                        </table>
-                        
-                        <div class="totals">
-                            <table>
-                                <tr>
-                                    <td>Subtotal:</td>
-                                    <td style="text-align: right;">${formatCurrency(invoice.subtotal || 0)}</td>
-                                </tr>
-                                ${invoice.tax_amount > 0 ? `
-                                <tr>
-                                    <td>Pajak:</td>
-                                    <td style="text-align: right;">${formatCurrency(invoice.tax_amount)}</td>
-                                </tr>
-                                ` : ''}
-                                ${invoice.shipping_cost > 0 ? `
-                                <tr>
-                                    <td>Ongkir:</td>
-                                    <td style="text-align: right;">${formatCurrency(invoice.shipping_cost)}</td>
-                                </tr>
-                                ` : ''}
-                                ${invoice.discount > 0 ? `
-                                <tr>
-                                    <td>Diskon:</td>
-                                    <td style="text-align: right;">-${formatCurrency(invoice.discount)}</td>
-                                </tr>
-                                ` : ''}
-                                <tr class="total-row">
-                                    <td><strong>TOTAL:</strong></td>
-                                    <td style="text-align: right;"><strong>${formatCurrency(invoice.total_amount || invoice.grand_total || 0)}</strong></td>
-                                </tr>
-                            </table>
-                        </div>
-                        
-                        ${invoice.notes ? `
-                        <div style="margin-top: 30px;">
-                            <h3>Catatan:</h3>
-                            <p>${invoice.notes}</p>
-                        </div>
-                        ` : ''}
-                    </div>
-                </body>
-                </html>
-            `;
-        }
-
-        // Legacy template functions removed - replaced by modular template engine above
-        // This reduces code duplication by ~600 lines while maintaining functionality
-
-        // DEPRECATED: Direct print function that generates unified invoice template
-        // Orphaned code removed to fix syntax errors
-
-        // Clean Custom Template without Aspree branding
-        function generateCustomBrandingTemplate(invoice, items, businessProfile) {
-            const itemsHTML = items.map(item => `
-                <tr>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e5e7eb;">${item.productName}</td>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.unitPrice)}</td>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.lineTotal)}</td>
-                </tr>
-            `).join('');
-            
-            const businessName = businessProfile?.name || businessProfile?.businessName || 'Your Business Name';
-            const businessAddress = businessProfile?.address || 'Your Business Address';
-            const businessPhone = businessProfile?.phone || '';
-            const businessEmail = businessProfile?.email || '';
-            const businessLogo = businessProfile?.logo || businessProfile?.logoUrl || '';
-            const primaryColor = businessProfile?.customColors?.primary || '#374151';
-            
-            return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Invoice - ${invoice.invoice_number}</title>
-                    <style>
-                        body {
-                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                            margin: 0;
-                            padding: 20px;
-                            color: #111827;
-                            line-height: 1.6;
-                            background: #ffffff;
-                        }
-                        .invoice-container {
-                            max-width: 800px;
-                            margin: 0 auto;
-                            background: white;
-                            border: 1px solid #e5e7eb;
-                            border-radius: 8px;
-                            overflow: hidden;
-                        }
-                        .header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-start;
-                            padding: 40px;
-                            background: #f9fafb;
-                            border-bottom: 1px solid #e5e7eb;
-                        }
-                        .business-info {
-                            flex: 1;
-                        }
-                        .business-logo {
-                            max-height: 80px;
-                            max-width: 200px;
-                            margin-bottom: 16px;
-                        }
-                        .business-name {
-                            font-size: 24px;
-                            font-weight: 700;
-                            color: ${primaryColor};
-                            margin-bottom: 8px;
-                        }
-                        .business-details {
-                            color: #6b7280;
-                            font-size: 14px;
-                            line-height: 1.5;
-                        }
-                        .invoice-meta {
-                            text-align: right;
-                            background: white;
-                            padding: 20px;
-                            border-radius: 6px;
-                            border: 1px solid #e5e7eb;
-                        }
-                        .invoice-title {
-                            font-size: 28px;
-                            font-weight: 800;
-                            color: ${primaryColor};
-                            margin-bottom: 12px;
-                        }
-                        .invoice-details {
-                            color: #6b7280;
-                            font-size: 14px;
-                        }
-                        .content-section {
-                            padding: 40px;
-                        }
-                        .parties {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 40px;
-                            margin-bottom: 40px;
-                        }
-                        .party {
-                            background: #f9fafb;
-                            padding: 20px;
-                            border-radius: 6px;
-                            border-left: 3px solid ${primaryColor};
-                        }
-                        .party h3 {
-                            margin: 0 0 12px 0;
-                            color: ${primaryColor};
-                            font-size: 12px;
-                            text-transform: uppercase;
-                            font-weight: 600;
-                            letter-spacing: 0.5px;
-                        }
-                        .party-name {
-                            font-size: 16px;
-                            font-weight: 600;
-                            color: #111827;
-                            margin-bottom: 8px;
-                        }
-                        .items-table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin-bottom: 32px;
-                            border: 1px solid #e5e7eb;
-                            border-radius: 6px;
-                            overflow: hidden;
-                        }
-                        .items-table thead {
-                            background: ${primaryColor};
-                            color: white;
-                        }
-                        .items-table th {
-                            padding: 14px 12px;
-                            text-align: left;
-                            font-weight: 600;
-                            font-size: 13px;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                        }
-                        .items-table th:nth-child(2) { text-align: center; }
-                        .items-table th:nth-child(3), .items-table th:nth-child(4) { text-align: right; }
-                        .items-table tbody tr:nth-child(even) {
-                            background: #f9fafb;
-                        }
-                        .totals {
-                            background: #f9fafb;
-                            padding: 24px;
-                            border-radius: 6px;
-                            border: 1px solid #e5e7eb;
-                        }
-                        .totals-table {
-                            width: 100%;
-                            max-width: 350px;
-                            margin-left: auto;
-                        }
-                        .totals-table td {
-                            padding: 6px 0;
-                            border: none;
-                            font-size: 15px;
-                        }
-                        .totals-table .total-row td {
-                            font-weight: 700;
-                            font-size: 18px;
-                            padding-top: 12px;
-                            border-top: 2px solid ${primaryColor};
-                            color: ${primaryColor};
-                        }
-                        .notes {
-                            background: #fef3cd;
-                            border: 1px solid #f59e0b;
-                            border-radius: 6px;
-                            padding: 20px;
-                            margin-top: 24px;
-                        }
-                        .notes h3 {
-                            color: #92400e;
-                            margin-bottom: 8px;
-                            font-size: 16px;
-                        }
-                        @media print {
-                            body { margin: 0; padding: 0; }
-                            .invoice-container { border: none; border-radius: 0; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="invoice-container">
-                        <div class="header">
-                            <div class="business-info">
-                                ${businessLogo ? `<img src="${businessLogo}" alt="Logo" class="business-logo">` : ''}
-                                <div class="business-name">${businessName}</div>
-                                <div class="business-details">
-                                    ${businessAddress}<br>
-                                    ${businessPhone}<br>
-                                    ${businessEmail}
-                                </div>
-                            </div>
-                            <div class="invoice-meta">
-                                <div class="invoice-title">FAKTUR</div>
-                                <div class="invoice-details">
-                                    <div><strong>No:</strong> ${invoice.invoice_number}</div>
-                                    <div><strong>Tanggal:</strong> ${formatDate(invoice.invoice_date)}</div>
-                                    <div><strong>Jatuh Tempo:</strong> ${formatDate(invoice.due_date)}</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="content-section">
-                            <div class="parties">
-                                <div class="party">
-                                    <h3>DARI</h3>
-                                    <div class="party-name">${businessName}</div>
-                                    <div>
-                                        ${businessAddress}<br>
-                                        ${businessPhone}<br>
-                                        ${businessEmail}
-                                    </div>
-                                </div>
-                                <div class="party">
-                                    <h3>KEPADA</h3>
-                                    <div class="party-name">${invoice.customer_name}</div>
-                                    <div>
-                                        ${invoice.customer_address || ''}<br>
-                                        ${invoice.customer_phone || ''}<br>
-                                        ${invoice.customer_email || ''}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <table class="items-table">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th>Qty</th>
-                                        <th>Harga</th>
-                                        <th>Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${itemsHTML}
-                                </tbody>
-                            </table>
-                            
-                            <div class="totals">
-                                <table class="totals-table">
-                                    ${invoice.tax > 0 ? `
-                                    <tr>
-                                        <td>Subtotal:</td>
-                                        <td style="text-align: right;">${formatCurrency(invoice.subtotal || (invoice.total_amount - invoice.tax))}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Pajak:</td>
-                                        <td style="text-align: right;">${formatCurrency(invoice.tax)}</td>
-                                    </tr>
-                                    ` : ''}
-                                    ${invoice.shipping_cost > 0 ? `
-                                    <tr>
-                                        <td>Ongkir:</td>
-                                        <td style="text-align: right;">${formatCurrency(invoice.shipping_cost)}</td>
-                                    </tr>
-                                    ` : ''}
-                                    ${invoice.discount > 0 ? `
-                                    <tr>
-                                        <td>Diskon:</td>
-                                        <td style="text-align: right;">-${formatCurrency(invoice.discount)}</td>
-                                    </tr>
-                                    ` : ''}
-                                    <tr class="total-row">
-                                        <td>TOTAL:</td>
-                                        <td style="text-align: right;">${formatCurrency(invoice.total_amount || invoice.grand_total || 0)}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                            
-                            ${invoice.notes ? `
-                            <div class="notes">
-                                <h3>Catatan:</h3>
-                                <p>${invoice.notes}</p>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `;
-        }
-
-        // DEPRECATED: Direct print function that generates unified invoice template
-        // Now using updated invoice view for consistent formatting
-        /* function directPrintInvoice(invoiceData) {
-            console.log('🖨️ Generating unified invoice template for direct printing');
-            
-            try {
-                // Generate the printable HTML using unified template
-                const printableHTML = generateUnifiedInvoiceForPrint(invoiceData);
-                
-                // Create new window and print immediately
-                const printWindow = window.open('', '_blank', 'width=800,height=600');
-                if (!printWindow) {
-                    alert('Popup blocked. Please allow popups for this site and try again.');
-                    return;
-                }
-                
-                printWindow.document.write(printableHTML);
-                printWindow.document.close();
-                
-                // Wait for content to load then print immediately
-                printWindow.onload = function() {
-                    setTimeout(() => {
-                        console.log('🖨️ Triggering print dialog');
-                        printWindow.print();
-                        // Close after printing (or user cancels)
-                        setTimeout(() => {
-                            printWindow.close();
-                        }, 100);
-                    }, 250); // Small delay to ensure styles are loaded
-                };
-                
-            } catch (error) {
-                console.error('Error generating invoice for direct printing:', error);
-                alert('Error generating invoice for printing: ' + error.message);
-            }
-        } */
-
-
-        // Payment Confirmation Functions
-        async function refreshPaymentConfirmations(invoiceId) {
-            try {
-                // Placeholder for payment confirmations API
-                // This would fetch payment confirmations uploaded by customers
-                const response = await fetch(`/api/invoices/${invoiceId}/payment-confirmations`);
-                const data = await response.json();
-                
-                const container = document.getElementById(`payment-confirmations-${invoiceId}`);
-                if (data.success && data.confirmations && data.confirmations.length > 0) {
-                    // Get current invoice to determine payment stage
-                    const invoice = invoices.find(inv => inv.id == invoiceId || inv.id === parseInt(invoiceId));
-                    const paymentStage = invoice ? invoice.payment_stage || 'full_payment' : 'full_payment';
-                    
-                    // Determine button text based on payment stage
-                    let approveButtonText = '✅ Approve';
-                    if (paymentStage === 'down_payment') {
-                        approveButtonText = '✅ Approve DP';
-                    } else if (paymentStage === 'final_payment') {
-                        approveButtonText = '✅ Approve Final';
-                    } else {
-                        approveButtonText = '✅ Approve Payment';
-                    }
-                    container.innerHTML = data.confirmations.map(conf => `
-                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                                <div>
-                                    <strong style="color: #2563eb;">Payment Confirmation</strong>
-                                    <div style="font-size: 0.9em; color: #666; margin-top: 4px;">
-                                        <div>Uploaded: ${conf.uploadDate ? formatDate(conf.uploadDate) : 'Unknown date'}</div>
-                                        <div>Status: <span style="color: ${conf.status === 'pending' ? '#f59e0b' : (conf.status === 'approved' ? '#10b981' : '#ef4444')}; font-weight: bold;">${conf.status || 'pending'}</span></div>
-                                        ${conf.notes ? `<div>Notes: ${conf.notes}</div>` : ''}
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 8px; flex-direction: column;">
-                                    <button class="btn btn-sm btn-info" onclick="viewPaymentProof('${conf.filePath}')">📄 View Proof</button>
-                                    ${conf.status === 'pending' ? `
-                                        <div style="display: flex; gap: 5px;">
-                                            <button class="btn btn-sm btn-success" onclick="approvePaymentConfirmation(${invoiceId}, '${conf.id}')" style="font-size: 0.8em;">${approveButtonText}</button>
-                                            <button class="btn btn-sm btn-danger" onclick="rejectPaymentConfirmation(${invoiceId}, '${conf.id}')" style="font-size: 0.8em;">❌ Reject</button>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-                            ${conf.status === 'approved' ? `
-                                <div style="background: #d1fae5; border: 1px solid #10b981; padding: 8px; border-radius: 4px; font-size: 0.85em; color: #065f46;">
-                                    ✅ Payment approved and converted to order
-                                </div>
-                            ` : ''}
-                            ${conf.status === 'rejected' ? `
-                                <div style="background: #fee2e2; border: 1px solid #ef4444; padding: 8px; border-radius: 4px; font-size: 0.85em; color: #991b1b;">
-                                    ❌ Payment rejected
-                                </div>
-                            ` : ''}
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = `
-                        <div style="background: white; padding: 10px; border-radius: 6px; text-align: center; color: #6c757d;">
-                            <em>No payment confirmations uploaded yet</em>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error refreshing payment confirmations:', error);
-                alert('Failed to refresh payment confirmations');
-            }
-        }
-
-        function viewPaymentProof(fileUrl) {
-            // Open payment proof in new window
-            window.open(fileUrl, '_blank');
-        }
-
-        // Approve payment confirmation
-        async function approvePaymentConfirmation(invoiceId, confirmationId) {
-            try {
-                // Get current invoice to determine payment stage
-                const invoice = invoices.find(inv => inv.id == invoiceId || inv.id === parseInt(invoiceId));
-                if (!invoice) {
-                    alert('Invoice not found');
-                    return;
-                }
-
-                const paymentStage = invoice.payment_stage || 'full_payment';
-                const merchantNotes = prompt('Add notes (optional):') || '';
-                
-                let endpoint, confirmMessage, successMessage;
-                
-                // Route to appropriate stage-specific endpoint
-                if (paymentStage === 'down_payment') {
-                    endpoint = `/api/invoices/${invoiceId}/confirm-down-payment`;
-                    confirmMessage = 'Approve down payment confirmation? This will generate a final payment link.';
-                    successMessage = '✅ Down payment confirmed! Final payment link generated for customer.';
-                } else if (paymentStage === 'final_payment') {
-                    endpoint = `/api/invoices/${invoiceId}/confirm-final-payment`;
-                    confirmMessage = 'Approve final payment confirmation? This will complete the invoice and create an order.';
-                    successMessage = '✅ Final payment confirmed! Invoice completed and order created.';
-                } else {
-                    endpoint = `/api/invoices/${invoiceId}/status`;
-                    confirmMessage = 'Approve payment confirmation? This will mark invoice as paid and create an order.';
-                    successMessage = '✅ Payment confirmed! Invoice marked as paid and order created.';
-                }
-
-                if (!confirm(confirmMessage)) {
-                    return;
-                }
-                
-                let requestBody;
-                if (paymentStage === 'down_payment' || paymentStage === 'final_payment') {
-                    requestBody = JSON.stringify({ merchantNotes });
-                } else {
-                    requestBody = JSON.stringify({ 
-                        status: 'paid',
-                        payment_confirmed_at: new Date().toISOString(),
-                        merchantNotes 
-                    });
-                }
-
-                const response = await fetch(endpoint, {
-                    method: paymentStage === 'down_payment' || paymentStage === 'final_payment' ? 'POST' : 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: requestBody
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Show appropriate success message
-                    if (result.orderNumber) {
-                        alert(`${successMessage}\n\nOrder created: ${result.orderNumber}`);
-                    } else {
-                        alert(successMessage);
-                    }
-                    
-                    // Close modal if open
-                    closeInvoiceModal();
-                    
-                    // Refresh data
-                    await loadInvoices();
-                    if (typeof loadOrders !== 'undefined') {
-                        loadOrders();
-                    }
-                } else {
-                    alert('Error approving payment: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error approving payment confirmation:', error);
-                alert('Error approving payment confirmation');
-            }
-        }
-
-        // Reject payment confirmation
-        async function rejectPaymentConfirmation(invoiceId, confirmationId) {
-            try {
-                const merchantNotes = prompt('Reason for rejection:') || '';
-                
-                if (!merchantNotes.trim()) {
-                    alert('Please provide a reason for rejection');
-                    return;
-                }
-                
-                const response = await fetch(`/api/invoices/${invoiceId}/payment-confirmations/reject`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ merchantNotes })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('❌ Payment confirmation rejected.');
-                    // Refresh payment confirmations to show updated status
-                    await refreshPaymentConfirmations(invoiceId);
-                    // Refresh the invoice list to update status
-                    loadInvoices();
-                } else {
-                    alert('Error rejecting payment: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error rejecting payment confirmation:', error);
-                alert('Error rejecting payment confirmation');
-            }
-        }
-
-        // Confirm Payment and Move to Orders
-        async function confirmPaymentAndMoveToOrders(invoiceId, paymentType) {
-            const invoice = invoices.find(inv => inv.id === invoiceId);
-            if (!invoice) {
-                alert('Invoice not found');
-                return;
-            }
-
-            let confirmMessage = '';
-            if (paymentType === 'down_payment') {
-                confirmMessage = 'Are you sure you want to confirm the down payment for this invoice?';
-            } else if (paymentType === 'final') {
-                confirmMessage = 'Are you sure you want to confirm the final payment for this invoice?';
-            } else {
-                confirmMessage = 'Are you sure you want to confirm payment for this invoice? This will mark it as paid and move it to Orders.';
-            }
-
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-
-            try {
-                // Update invoice status to paid
-                const response = await fetch(`/api/invoices/${invoiceId}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        status: 'paid',
-                        payment_confirmed_at: new Date().toISOString(),
-                        payment_type: paymentType
-                    })
-                });
-
-                const data = await response.json();
-                console.log('📊 Payment confirmation response:', data);
-                
-                if (data.success) {
-                    if (data.orderCreated || data.orderId) {
-                        alert(`✅ Payment confirmed! Invoice has been marked as paid and moved to Orders.\n\nOrder created: ${data.orderNumber || data.orderId}`);
-                    } else {
-                        alert('✅ Payment confirmed! Invoice has been marked as paid.');
-                        console.warn('⚠️ Order was not created automatically. Check server logs.');
-                    }
-                    
-                    // Close modal if open
-                    closeInvoiceModal();
-                    
-                    // Refresh invoices list
-                    await loadInvoices();
-                    
-                    // Refresh orders list if we're on that tab
-                    if (document.querySelector('.nav-btn.active')?.textContent?.includes('Orders')) {
-                        await loadOrders();
-                    }
-                    
-                } else {
-                    alert('❌ Failed to confirm payment: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error confirming payment:', error);
-                alert('❌ Error confirming payment: ' + error.message);
-            }
-        }
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.share-dropdown')) {
-                document.querySelectorAll('.share-menu.show').forEach(menu => {
-                    menu.classList.remove('show');
-                });
-            }
+      }
+
+      if (!agreeTerms) {
+        return res.status(400).json({
+          success: false,
+          error: 'You must agree to the terms and conditions'
         });
+      }
 
-        async function updateInvoiceStatus(invoiceId, newStatus) {
-            if (!confirm(`Are you sure you want to mark this invoice as ${newStatus}?`)) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ status: newStatus })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess(`Invoice status updated to ${newStatus}`);
-                    loadInvoices();
-                    loadInvoiceStats();
-                } else {
-                    showError('Failed to update invoice status: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error updating invoice status: ' + error.message);
-            }
-        }
+      // Register merchant
+      const result = await authService.registerMerchant({
+        fullName,
+        businessName,
+        email,
+        password
+      });
 
-        // Automatically update invoice status when sharing actions occur
-        async function updateStatusOnShare(invoice) {
-            if (!invoice) return;
-            
-            // Only auto-update if status is 'draft' - change to 'sent' when shared
-            if (invoice.status === 'draft') {
-                try {
-                    console.log(`📤 Auto-updating invoice ${invoice.invoice_number} status from 'draft' to 'sent' after sharing`);
-                    
-                    const response = await fetch(`/api/invoices/${invoice.id}/status`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ 
-                            status: 'sent',
-                            sent_at: new Date().toISOString()
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        console.log('✅ Invoice status automatically updated to sent');
-                        // Update the local invoice object
-                        invoice.status = 'sent';
-                        invoice.sent_at = new Date().toISOString();
-                        // Refresh the invoices list to show updated status
-                        loadInvoices();
-                        loadInvoiceStats();
-                    } else {
-                        console.error('❌ Failed to auto-update invoice status:', data.error);
-                    }
-                } catch (error) {
-                    console.error('❌ Error auto-updating invoice status:', error);
-                }
-            }
-        }
+      res.json(result);
 
-        async function confirmDownPayment(invoiceId) {
-            if (!confirm('Confirm that down payment has been received? This will generate a final payment link for the customer.')) {
-                return;
-            }
-            
-            console.log('💰 Confirming down payment for invoice ID:', invoiceId);
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}/confirm-down-payment`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                console.log('📡 DP confirmation response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('📡 DP confirmation response data:', data);
-                
-                if (data.success) {
-                    showSuccess('✅ Down payment confirmed! Final payment link generated.');
-                    
-                    // Validate we have the required data
-                    if (!data.finalPaymentToken) {
-                        showError('Warning: Final payment token not received from server');
-                        console.error('❌ Missing finalPaymentToken in response:', data);
-                    }
-                    
-                    // Refresh invoices list first to get updated data
-                    await loadInvoices();
-                    await loadInvoiceStats();
-                    
-                    // Show final payment link modal with updated invoice data
-                    if (data.finalPaymentToken) {
-                        try {
-                            const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`);
-                            console.log('📡 Invoice fetch response status:', invoiceResponse.status);
-                            
-                            if (!invoiceResponse.ok) {
-                                throw new Error(`Failed to fetch updated invoice: HTTP ${invoiceResponse.status}`);
-                            }
-                            
-                            const invoiceData = await invoiceResponse.json();
-                            console.log('📡 Updated invoice data:', invoiceData);
-                            
-                            if (invoiceData.success && invoiceData.invoice) {
-                                setTimeout(() => {
-                                    showFinalPaymentLink(invoiceData.invoice.invoice_number);
-                                }, 1000);
-                            } else {
-                                showError('Failed to fetch updated invoice data: ' + (invoiceData.error || 'Unknown error'));
-                            }
-                        } catch (invoiceError) {
-                            console.error('❌ Error fetching updated invoice:', invoiceError);
-                            showError('Warning: Could not show final payment link. Please refresh and try again.');
-                        }
-                    }
-                } else {
-                    showError('Failed to confirm down payment: ' + (data.error || 'Unknown error'));
-                    console.error('❌ DP confirmation failed:', data);
-                }
-            } catch (error) {
-                console.error('❌ Error confirming down payment:', error);
-                showError('Error confirming down payment: ' + error.message);
-            }
-        }
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Registration failed. Please try again.'
+      });
+    }
+  }
+);
 
-        async function confirmFinalPayment(invoiceId) {
-            if (!confirm('Confirm that final payment has been received? This will complete the invoice and move it to orders.')) {
-                return;
-            }
-            
-            console.log('💰 Confirming final payment for invoice ID:', invoiceId);
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}/confirm-final-payment`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                console.log('📡 Final payment confirmation response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('📡 Final payment confirmation response data:', data);
-                
-                if (data.success) {
-                    const orderMessage = data.orderNumber ? ` Order created: ${data.orderNumber}` : '';
-                    showSuccess(`✅ Final payment confirmed! Invoice completed and moved to orders.${orderMessage}`);
-                    
-                    console.log('✅ Final payment confirmed successfully:', {
-                        invoiceId: invoiceId,
-                        orderNumber: data.orderNumber,
-                        orderResult: data.orderResult
-                    });
-                    
-                    // Refresh data
-                    await loadInvoices();
-                    await loadInvoiceStats();
-                    
-                    // If on orders tab, refresh orders too
-                    if (document.querySelector('.nav-btn.active')?.textContent?.includes('Orders')) {
-                        await loadOrders();
-                    }
-                    
-                    // Optional: Navigate to orders section after a delay
-                    if (data.orderNumber) {
-                        setTimeout(() => {
-                            if (confirm('Would you like to view the new order?')) {
-                                document.querySelector('[data-section="orders"]')?.click();
-                            }
-                        }, 2000);
-                    }
-                } else {
-                    showError('Failed to confirm final payment: ' + (data.error || 'Unknown error'));
-                    console.error('❌ Final payment confirmation failed:', data);
-                }
-            } catch (error) {
-                console.error('❌ Error confirming final payment:', error);
-                showError('Error confirming final payment: ' + error.message);
-            }
-        }
+// Login merchant
+app.post('/api/auth/login',
+  authMiddleware.logAuthEvent('LOGIN'),
+  async (req, res) => {
+    try {
+      const { email, password, rememberMe } = req.body;
 
-        function showFinalPaymentLink(invoiceNumber) {
-            const invoice = invoices.find(inv => inv.invoice_number === invoiceNumber);
-            
-            console.log('🔗 Showing final payment link for invoice:', invoiceNumber);
-            console.log('📄 Invoice data:', invoice);
-            
-            if (!invoice) {
-                showError('Invoice not found for final payment link');
-                return;
-            }
-            
-            if (!invoice.final_payment_token) {
-                showError('Final payment token not found. Please try confirming the down payment again.');
-                return;
-            }
-            
-            const finalPaymentUrl = `${window.location.origin}/final-payment?token=${invoice.final_payment_token}`;
-            console.log('🔗 Generated final payment URL:', finalPaymentUrl);
-            
-            // Show modal with final payment link
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>🔗 Invoice Link for Final Payment</h3>
-                        <button class="modal-close" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Send this invoice link to the customer for final payment:</p>
-                        <div class="link-box">
-                            <input type="text" value="${finalPaymentUrl}" readonly onclick="this.select()" class="link-input">
-                            <button onclick="copyToClipboard('${finalPaymentUrl}'); showSuccess('Link copied to clipboard!')" class="btn btn-sm btn-primary">📋 Copy</button>
-                        </div>
-                        
-                        <!-- Email Section -->
-                        <div class="email-section" style="margin-top: 20px; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; background-color: #f8f9fa;">
-                            <h5 style="margin-bottom: 10px;">📧 Send via Email</h5>
-                            <div class="email-input-group" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                                <input type="email" id="finalPaymentEmail" placeholder="Customer email address" 
-                                       value="${invoice?.customer_email || ''}" 
-                                       style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                                <button onclick="sendFinalPaymentEmail(${invoice?.id}, document.getElementById('finalPaymentEmail').value)" 
-                                        class="btn btn-sm btn-success">📧 Send Email</button>
-                            </div>
-                            <small style="color: #6c757d;">This will send a professional email with the invoice link for final payment completion.</small>
-                        </div>
-                        
-                        <div class="share-buttons" style="margin-top: 15px;">
-                            <button onclick="shareViaWhatsAppLink('${invoiceUrl}')" class="btn btn-sm btn-success">📱 WhatsApp</button>
-                            <button onclick="shareViaMailto('${invoiceUrl}')" class="btn btn-sm btn-secondary">📧 Mailto</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-        }
-        
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log('Link copied to clipboard');
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-            });
-        }
-        
-        function shareViaWhatsAppLink(url) {
-            const whatsappUrl = `https://api.whatsapp.com/send?text=Silakan selesaikan pembayaran akhir invoice Anda: ${encodeURIComponent(url)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-        
-        function shareViaMailto(url) {
-            const subject = 'Final Payment Required - Invoice';
-            const body = `Please complete your final payment using this link: ${url}`;
-            const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            window.open(mailtoUrl);
-        }
-        
-        function getFinalPaymentToken(invoiceNumber) {
-            const invoice = invoices.find(inv => inv.invoice_number === invoiceNumber);
-            return invoice?.final_payment_token || '';
-        }
-        
-        async function sendFinalPaymentEmail(invoiceId, customerEmail) {
-            if (!customerEmail) {
-                alert('Please enter a customer email address');
-                return;
-            }
-            
-            // Validate email format
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(customerEmail)) {
-                alert('Please enter a valid email address');
-                return;
-            }
-            
-            const confirmSend = confirm(`Send final payment email to ${customerEmail}?`);
-            if (!confirmSend) return;
-            
-            try {
-                const response = await fetch('/api/final-payment/send-email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        invoiceId: invoiceId,
-                        customerEmail: customerEmail
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSuccess('✅ Final payment email sent successfully!');
-                    
-                    // Close the modal
-                    const modal = document.querySelector('.modal-overlay');
-                    if (modal) {
-                        modal.remove();
-                    }
-                } else {
-                    showError('Failed to send final payment email: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error sending final payment email:', error);
-                showError('Error sending final payment email: ' + error.message);
-            }
-        }
-
-        async function sendInvoiceEmail(invoiceId, customerEmail) {
-            if (!customerEmail) {
-                alert('No customer email available for this invoice');
-                return;
-            }
-            
-            const confirmSend = confirm(`Send invoice email to ${customerEmail}?`);
-            if (!confirmSend) return;
-            
-            try {
-                const response = await fetch('/api/notifications/send-invoice', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        invoice_id: invoiceId,
-                        customer_email: customerEmail,
-                        include_pdf: true
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('Invoice email sent successfully!');
-                    
-                    // Update status after successful email send
-                    const invoice = invoices.find(inv => inv.id === invoiceId);
-                    await updateStatusOnShare(invoice);
-                } else {
-                    alert('Failed to send invoice email: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error sending invoice email:', error);
-                alert('Error sending invoice email: ' + error.message);
-            }
-        }
-
-        async function deleteInvoice(invoiceId) {
-            if (!confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`, {
-                    method: 'DELETE'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Invoice deleted successfully');
-                    loadInvoices();
-                    loadInvoiceStats();
-                } else {
-                    showError('Failed to delete invoice: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error deleting invoice: ' + error.message);
-            }
-        }
-
-        async function downloadInvoicePDF(invoiceNumber) {
-            try {
-                // First get the invoice by number to get the ID
-                const invoiceResponse = await fetch(`/api/invoices/number/${invoiceNumber}`);
-                const invoiceResult = await invoiceResponse.json();
-                
-                if (!invoiceResult.success) {
-                    alert('Failed to fetch invoice data: ' + invoiceResult.error);
-                    return;
-                }
-
-                const invoice = invoiceResult.invoice;
-                
-                // Try the PDF endpoint that takes invoice ID
-                const response = await fetch(`/api/invoices/pdf/${invoice.id}`);
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Invoice-${invoiceNumber}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    
-                    console.log('✅ PDF downloaded successfully');
-                } else {
-                    console.warn('PDF endpoint not available, using fallback method');
-                    // Fallback: Open invoice view in new window for printing
-                    fallbackPrintInvoice(invoice);
-                }
-            } catch (error) {
-                console.error('PDF Download Error:', error);
-                console.log('Using fallback print method');
-                // Try to get invoice data and use fallback
-                try {
-                    const invoiceResponse = await fetch(`/api/invoices/number/${invoiceNumber}`);
-                    const invoiceResult = await invoiceResponse.json();
-                    if (invoiceResult.success) {
-                        fallbackPrintInvoice(invoiceResult.invoice);
-                    } else {
-                        alert('Could not load invoice for printing');
-                    }
-                } catch (fallbackError) {
-                    alert('Error generating PDF: ' + error.message);
-                }
-            }
-        }
-
-        function fallbackPrintInvoice(invoice) {
-            if (!invoice.customer_token) {
-                alert('Cannot print: Invoice does not have a customer token. Please regenerate the invoice.');
-                return;
-            }
-
-            // Open invoice view in new window
-            const baseUrl = window.location.origin;
-            const invoiceUrl = `${baseUrl}/simple-invoice-view.html?id=${invoice.invoice_number}&from=dashboard`;
-            
-            // Show user a helpful message
-            const userConfirm = confirm(
-                'PDF generation is not available. Would you like to open the invoice in a new window where you can print it manually?\n\n' +
-                'Click OK to open invoice, or Cancel to copy the link instead.'
-            );
-            
-            if (userConfirm) {
-                const printWindow = window.open(invoiceUrl, '_blank');
-                
-                if (printWindow) {
-                    // Additional instruction after window opens
-                    setTimeout(() => {
-                        alert('Invoice opened! Use Ctrl+P (or Cmd+P on Mac) to print.');
-                    }, 1000);
-                } else {
-                    // Popup blocked
-                    alert('Popup was blocked. Copying invoice link to clipboard instead...');
-                    copyInvoiceLink(invoice.customer_token);
-                }
-            } else {
-                // User chose to copy link
-                copyInvoiceLink(invoice.customer_token);
-            }
-        }
-
-        function refreshInvoices() {
-            loadInvoices();
-            loadInvoiceStats();
-        }
-
-        function showInvoiceError(message) {
-            const errorDiv = document.getElementById('invoices-error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return 'No date';
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Invalid date';
-            return date.toLocaleDateString('id-ID', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        }
-
-        // Order Print Functions
-        function printShippingLabel(orderId) {
-            const baseUrl = window.location.origin;
-            const labelUrl = `${baseUrl}/shipping-label.html?id=${orderId}`;
-            
-            const userConfirm = confirm(
-                'Open shipping label in a new window?\n\n' +
-                'Click OK to open label for printing, or Cancel to copy the link.'
-            );
-            
-            if (userConfirm) {
-                const printWindow = window.open(labelUrl, '_blank');
-                
-                if (printWindow) {
-                    setTimeout(() => {
-                        alert('📦 Shipping label opened! Use Ctrl+P (or Cmd+P on Mac) to print.');
-                    }, 1000);
-                } else {
-                    alert('Popup blocked. Copying link to clipboard...');
-                    navigator.clipboard?.writeText(labelUrl).then(() => {
-                        alert('📋 Shipping label link copied to clipboard!');
-                    }).catch(() => {
-                        alert('Link: ' + labelUrl);
-                    });
-                }
-            } else {
-                navigator.clipboard?.writeText(labelUrl).then(() => {
-                    alert('📋 Shipping label link copied to clipboard!');
-                }).catch(() => {
-                    alert('Link: ' + labelUrl);
-                });
-            }
-        }
-
-        function printServiceTicket(orderId) {
-            openServiceTicketModal(orderId);
-        }
-
-        async function openServiceTicketModal(orderId) {
-            try {
-                const response = await fetch(`/api/orders/${orderId}`);
-                const data = await response.json();
-                
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to load order');
-                }
-                
-                const businessResponse = await fetch('/api/business-settings');
-                const businessData = await businessResponse.json();
-                const businessSettings = businessData.success ? businessData.settings : businessData;
-                
-                const modalContent = document.getElementById('serviceTicketModalContent');
-                modalContent.innerHTML = generateServiceTicketHTML(data.order, businessSettings);
-                
-                // Store data for printing
-                const modal = document.getElementById('serviceTicketModal');
-                modal._orderData = data.order;
-                modal._businessSettings = businessSettings;
-                
-                modal.style.display = 'block';
-            } catch (error) {
-                console.error('Error loading service ticket:', error);
-                alert('Error loading service ticket: ' + error.message);
-            }
-        }
-
-        function closeServiceTicketModal() {
-            document.getElementById('serviceTicketModal').style.display = 'none';
-            document.getElementById('serviceTicketModalContent').innerHTML = '';
-        }
-
-        function generateServiceTicketHTML(order, businessSettings) {
-            // Add null checks for order properties
-            
-            // Comprehensive address fallback chain
-            const customerAddress = order.customer_address || 
-                                  order.home_address || 
-                                  order.address || 
-                                  order.shipping_address || 
-                                  order.billing_address;
-            
-            // Group items by name and sum quantities for simplified display
-            const itemGroups = {};
-            if (order.items && order.items.length > 0) {
-                order.items.forEach(item => {
-                    const name = item.product_name || item.description || 'Unknown Item';
-                    const quantity = item.quantity || 1;
-                    
-                    if (itemGroups[name]) {
-                        itemGroups[name] += quantity;
-                    } else {
-                        itemGroups[name] = quantity;
-                    }
-                });
-            }
-            
-            return `
-                <div class="service-ticket-modal">
-                    <div class="service-ticket">
-                        <!-- Header Section -->
-                        <div class="ticket-header">
-                            <h1 class="company-name">${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Business Name'}</h1>
-                            <div class="order-info">
-                                <div class="order-number">${order.order_number || `Order #${order.id}`}</div>
-                                <div class="order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                }) : 'N/A'}</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Ship To Section -->
-                        <div class="ship-to-section">
-                            <h2 class="section-title">Ship To</h2>
-                            <div class="address-info">
-                                <div class="customer-name">${order.customer_name || 'Walk-in Customer'}</div>
-                                <div>${customerAddress || 'Address not provided'}</div>
-                                <div>${order.customer_phone || 'Phone not provided'}</div>
-                                <div>${order.customer_email || 'Email not provided'}</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Items Section -->
-                        <div class="items-section">
-                            <div class="items-header">
-                                <h2 class="section-title">Items</h2>
-                                <div class="quantity-header">Quantity</div>
-                            </div>
-                            <ul class="items-list">
-                                ${Object.keys(itemGroups).length > 0 
-                                    ? Object.entries(itemGroups).map(([name, totalQuantity]) => `
-                                        <li class="item-row">
-                                            <div class="item-name">${name}</div>
-                                            <div class="item-quantity">${totalQuantity}</div>
-                                        </li>
-                                    `).join('')
-                                    : `<li class="item-row">
-                                        <div class="item-name">No items found</div>
-                                        <div class="item-quantity">0</div>
-                                    </li>`
-                                }
-                            </ul>
-                        </div>
-                        
-                        <!-- Footer Section -->
-                        <div class="ticket-footer">
-                            <div class="thank-you">Thank you for shopping with us!</div>
-                            <div class="company-info">
-                                <strong>${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Your Business'}</strong>
-                                <div>${businessSettings.address || 'Business Address'}</div>
-                                <div>${businessSettings.phone || 'Phone'} | ${businessSettings.email || 'business@email.com'}</div>
-                                <div>${businessSettings.website || 'company.com'}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button class="print-button" onclick="printServiceTicketModal()">
-                        🖨️ Print Ticket
-                    </button>
-                </div>
-            `;
-        }
-
-        function printServiceTicketModal() {
-            const modal = document.getElementById('serviceTicketModal');
-            const order = modal._orderData;
-            const businessSettings = modal._businessSettings;
-            
-            if (!order || !businessSettings) {
-                alert('Unable to print - ticket data not available');
-                return;
-            }
-            
-            const thermalContent = generateThermalTicketHTML(order, businessSettings);
-            
-            const printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Thermal Ticket</title>
-                    <style>
-                        @page {
-                            size: 10cm 15cm;
-                            margin: 0.2cm;
-                        }
-                        
-                        body {
-                            font-family: Arial, sans-serif;
-                            font-size: 10px;
-                            line-height: 1.3;
-                            margin: 0;
-                            padding: 0.2cm;
-                            width: 9.6cm;
-                            box-sizing: border-box;
-                        }
-                        
-                        .thermal-ticket {
-                            width: 100%;
-                            border: 1px solid #333;
-                            padding: 12px 16px;
-                            background: white;
-                        }
-                        
-                        .thermal-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-start;
-                            border-bottom: 1px solid #333;
-                            padding-bottom: 8px;
-                            margin-bottom: 12px;
-                        }
-                        
-                        .thermal-title {
-                            font-size: 16px;
-                            font-weight: bold;
-                            margin: 0;
-                        }
-                        
-                        .thermal-order-info {
-                            text-align: right;
-                            font-size: 10px;
-                            line-height: 1.3;
-                        }
-                        
-                        .thermal-order-number {
-                            font-weight: normal;
-                            margin-bottom: 2px;
-                        }
-                        
-                        .thermal-order-date {
-                            color: #666;
-                        }
-                        
-                        .thermal-section {
-                            margin-bottom: 6px;
-                            font-size: 9px;
-                        }
-                        
-                        .thermal-section h4 {
-                            font-size: 10px;
-                            margin: 0 0 3px 0;
-                            font-weight: bold;
-                            text-decoration: underline;
-                        }
-                        
-                        .thermal-row {
-                            margin-bottom: 1px;
-                            word-wrap: break-word;
-                            overflow-wrap: break-word;
-                        }
-                        
-                        .thermal-label {
-                            font-weight: bold;
-                            display: inline-block;
-                            width: 2.2cm;
-                            vertical-align: top;
-                        }
-                        
-                        .thermal-address {
-                            font-size: 7px;
-                            line-height: 1.0;
-                        }
-                        
-                        .thermal-items-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            margin-bottom: 8px;
-                            padding-bottom: 4px;
-                            border-bottom: 1px solid #333;
-                        }
-                        
-                        .thermal-items-header h4 {
-                            margin: 0;
-                            font-size: 11px;
-                            font-weight: bold;
-                        }
-                        
-                        .thermal-items-list {
-                            margin-top: 6px;
-                        }
-                        
-                        .thermal-item-row {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            padding: 3px 0;
-                            line-height: 1.3;
-                        }
-                        
-                        .thermal-item-name {
-                            font-size: 10px;
-                            color: #000;
-                            flex-grow: 1;
-                            padding-right: 20px;
-                        }
-                        
-                        .thermal-item-quantity {
-                            font-size: 10px;
-                            color: #000;
-                            text-align: right;
-                            min-width: 30px;
-                        }
-                        
-                        .thermal-notes {
-                            font-size: 8px;
-                            border-top: 1px dashed #000;
-                            padding-top: 3px;
-                            margin-top: 5px;
-                        }
-                        
-                        .thermal-footer {
-                            text-align: center;
-                            margin-top: 20px;
-                            padding-top: 16px;
-                        }
-                        
-                        .thermal-thank-you {
-                            font-size: 12px;
-                            margin-bottom: 12px;
-                            font-weight: normal;
-                        }
-                        
-                        .thermal-business-info {
-                            font-size: 10px;
-                            line-height: 1.3;
-                        }
-                        
-                        .thermal-business-info strong {
-                            font-weight: bold;
-                            font-size: 11px;
-                            margin-bottom: 4px;
-                            display: block;
-                        }
-                        
-                        /* Mobile thermal ticket adjustments */
-                        @media screen and (max-width: 768px) {
-                            body {
-                                width: 100%;
-                                max-width: 100%;
-                                padding: 0.1cm;
-                                font-size: 9px;
-                            }
-                            
-                            .thermal-ticket {
-                                border-width: 1px;
-                                padding: 8px;
-                            }
-                            
-                            .thermal-title {
-                                font-size: 12px;
-                            }
-                            
-                            .thermal-section h4 {
-                                font-size: 9px;
-                            }
-                            
-                            .thermal-row {
-                                flex-direction: column;
-                                gap: 2px;
-                            }
-                            
-                            .thermal-total {
-                                font-size: 10px;
-                            }
-                        }
-
-                        @media print {
-                            body {
-                                margin: 0 !important;
-                                padding: 0 !important;
-                                width: 9.6cm;
-                            }
-                            
-                            .thermal-ticket {
-                                page-break-inside: avoid;
-                            }
-                        }
-                        
-                        /* Mobile print-specific adjustments */
-                        @media print and (max-width: 768px) {
-                            body {
-                                width: 100% !important;
-                                max-width: 100% !important;
-                                font-size: 8px;
-                            }
-                            
-                            .thermal-ticket {
-                                width: 100%;
-                                max-width: 100%;
-                                border-width: 1px;
-                                padding: 6px;
-                                margin: 0;
-                            }
-                            
-                            .thermal-title {
-                                font-size: 11px;
-                            }
-                            
-                            .thermal-subtitle {
-                                font-size: 8px;
-                            }
-                            
-                            .thermal-section h4 {
-                                font-size: 8px;
-                            }
-                            
-                            .thermal-row {
-                                font-size: 7px;
-                            }
-                            
-                            .thermal-total {
-                                font-size: 9px;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${thermalContent}
-                </body>
-                </html>
-            `);
-            
-            printWindow.document.close();
-            printWindow.focus();
-            
-            // Delay print to ensure styles are loaded
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
-        }
-
-        function generateThermalTicketHTML(order, businessSettings) {
-            // Add null checks for order properties
-            
-            // Comprehensive address fallback chain
-            const customerAddress = order.customer_address || 
-                                  order.home_address || 
-                                  order.address || 
-                                  order.shipping_address || 
-                                  order.billing_address;
-            
-            return `
-                <div class="thermal-ticket">
-                    <div class="thermal-header">
-                        <div class="thermal-title">${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Business Name'}</div>
-                        <div class="thermal-order-info">
-                            <div class="thermal-order-number">${order.order_number || 'ORD-' + new Date().getFullYear() + String(Math.random()).substring(2, 8)}</div>
-                            <div class="thermal-order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long', 
-                                day: 'numeric'
-                            }) : new Date().toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="thermal-section ship-to-section">
-                        <h4>SHIP TO</h4>
-                        <div class="thermal-row">
-                            <span class="thermal-label">Name:</span>
-                            <span>${order.customer_name || 'Walk-in Customer'}</span>
-                        </div>
-                        ${order.customer_phone ? `
-                        <div class="thermal-row">
-                            <span class="thermal-label">Phone:</span>
-                            <span>${order.customer_phone}</span>
-                        </div>
-                        ` : ''}
-                        ${order.customer_email ? `
-                        <div class="thermal-row">
-                            <span class="thermal-label">Email:</span>
-                            <span>${order.customer_email}</span>
-                        </div>
-                        ` : ''}
-                        ${customerAddress ? `
-                        <div class="thermal-row">
-                            <span class="thermal-label">Address:</span>
-                            <span class="thermal-address">${customerAddress}</span>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    ${order.items && order.items.length > 0 ? `
-                    <div class="thermal-section items-section">
-                        <div class="thermal-items-header">
-                            <h4>ITEMS</h4>
-                            <h4>QUANTITY</h4>
-                        </div>
-                        <div class="thermal-items-list">
-                            ${order.items.map(item => `
-                                <div class="thermal-item-row">
-                                    <div class="thermal-item-name">${item.product_name || item.description || 'Item'}</div>
-                                    <div class="thermal-item-quantity">${item.quantity || 1}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : `
-                    <div class="thermal-section items-section">
-                        <div class="thermal-items-header">
-                            <h4>ITEMS</h4>
-                            <h4>QUANTITY</h4>
-                        </div>
-                        <div class="thermal-items-list">
-                            <div class="thermal-item-row">
-                                <div class="thermal-item-name">No items found</div>
-                                <div class="thermal-item-quantity">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    `}
-                    
-                    ${order.notes ? `
-                    <div class="thermal-notes">
-                        <strong>Notes:</strong><br>
-                        ${order.notes}
-                    </div>
-                    ` : ''}
-                    
-                    <div class="thermal-footer">
-                        <div class="thermal-thank-you">Thank you for shopping with us!</div>
-                        <div class="thermal-business-info">
-                            <strong>${businessSettings.company_name || businessSettings.business_name || businessSettings.name || 'Your Business'}</strong>
-                            <div>${businessSettings.address || 'Business Address'}</div>
-                            <div>${businessSettings.phone || 'Phone'} | ${businessSettings.email || 'business@email.com'}</div>
-                            <div>${businessSettings.website || 'company.com'}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Order Selection Mode Functions
-        let selectedOrders = new Set();
-        let isSelectionMode = false;
-
-        function toggleOrderSelectionMode() {
-            const btn = document.getElementById('select-orders-btn');
-            const printBtn = document.getElementById('print-orders-btn');
-            const statusBtn = document.getElementById('change-status-btn');
-            const ordersContainer = document.getElementById('orders-grid');
-
-            if (!isSelectionMode) {
-                // Enter selection mode
-                isSelectionMode = true;
-                btn.textContent = '❌ Cancel Selection';
-                btn.className = 'btn btn-secondary';
-                
-                // Show bulk action buttons
-                printBtn.style.display = 'inline-block';
-                statusBtn.style.display = 'inline-block';
-                
-                // Show all checkboxes
-                ordersContainer.classList.add('selection-mode');
-                const checkboxes = ordersContainer.querySelectorAll('.order-selection');
-                checkboxes.forEach(checkbox => {
-                    checkbox.style.display = 'block';
-                });
-            } else {
-                // Exit selection mode
-                isSelectionMode = false;
-                selectedOrders.clear();
-                btn.textContent = '📋 Select Orders';
-                btn.className = 'btn btn-primary';
-                
-                // Hide bulk action buttons
-                printBtn.style.display = 'none';
-                statusBtn.style.display = 'none';
-                
-                // Hide all checkboxes and uncheck them
-                ordersContainer.classList.remove('selection-mode');
-                const checkboxes = ordersContainer.querySelectorAll('.order-selection');
-                checkboxes.forEach(checkbox => {
-                    checkbox.style.display = 'none';
-                    const input = checkbox.querySelector('input[type="checkbox"]');
-                    if (input) input.checked = false;
-                });
-            }
-        }
-
-        function toggleOrderSelection(orderId, isChecked) {
-            if (isChecked) {
-                selectedOrders.add(orderId);
-            } else {
-                selectedOrders.delete(orderId);
-            }
-        }
-
-        async function printSelectedOrders() {
-            if (selectedOrders.size === 0) {
-                alert('Please select at least one order to print.');
-                return;
-            }
-            const selectedOrdersList = orders.filter(order => selectedOrders.has(order.id));
-            
-            // Get business settings for thermal tickets
-            let businessSettings = null;
-            try {
-                const response = await fetch('/api/business-settings');
-                if (response.ok) {
-                    const data = await response.json();
-                    businessSettings = data;
-                }
-            } catch (error) {
-                console.warn('Could not load business settings for printing, trying business profile...');
-                try {
-                    const profileResponse = await fetch('/api/business-profile');
-                    if (profileResponse.ok) {
-                        const profileData = await profileResponse.json();
-                        businessSettings = profileData.profile;
-                    }
-                } catch (profileError) {
-                    console.warn('Could not load business profile either');
-                }
-            }
-            
-            // Ensure consistent fallback structure
-            if (!businessSettings) {
-                businessSettings = {
-                    name: 'Your Business',
-                    address: 'Business address not provided',
-                    phone: 'Phone not provided'
-                };
-            }
-            
-            // Use the same thermal ticket styling as individual prints
-            let printContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Service Tickets</title>
-                    <style>
-                        @page {
-                            size: 10cm 15cm;
-                            margin: 0.2cm;
-                        }
-                        
-                        body {
-                            font-family: 'Courier New', monospace;
-                            font-size: 10px;
-                            line-height: 1.1;
-                            margin: 0;
-                            padding: 0.2cm;
-                            width: 9.6cm;
-                            box-sizing: border-box;
-                        }
-                        
-                        .thermal-ticket {
-                            width: 100%;
-                            border: 2px solid #000;
-                            padding: 10px;
-                            page-break-after: always;
-                            box-sizing: border-box;
-                        }
-                        
-                        .thermal-ticket:last-child {
-                            page-break-after: auto;
-                        }
-                        
-                        .thermal-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-start;
-                            border-bottom: 1px solid #333;
-                            padding-bottom: 8px;
-                            margin-bottom: 12px;
-                        }
-                        
-                        .thermal-title {
-                            font-size: 16px;
-                            font-weight: bold;
-                            margin: 0;
-                        }
-                        
-                        .thermal-order-info {
-                            text-align: right;
-                            font-size: 10px;
-                            line-height: 1.3;
-                        }
-                        
-                        .thermal-order-number {
-                            font-weight: normal;
-                            margin-bottom: 2px;
-                        }
-                        
-                        .thermal-order-date {
-                            color: #666;
-                        }
-                        
-                        .thermal-section {
-                            margin-bottom: 8px;
-                            padding-bottom: 5px;
-                            border-bottom: 1px solid #ccc;
-                        }
-                        
-                        .thermal-section:last-child {
-                            border-bottom: none;
-                        }
-                        
-                        .thermal-section h4 {
-                            font-size: 10px;
-                            margin: 0 0 3px 0;
-                            font-weight: bold;
-                            text-decoration: underline;
-                        }
-                        
-                        .thermal-row {
-                            display: flex;
-                            margin-bottom: 2px;
-                        }
-                        
-                        .thermal-label {
-                            width: 60px;
-                            font-weight: bold;
-                            flex-shrink: 0;
-                        }
-                        
-                        .thermal-address {
-                            font-size: 9px;
-                            line-height: 1.2;
-                        }
-                        
-                        .thermal-items {
-                            width: 100%;
-                            border-collapse: collapse;
-                            font-size: 8px;
-                            margin-top: 3px;
-                        }
-                        
-                        .thermal-items th,
-                        .thermal-items td {
-                            border: 1px solid #000;
-                            padding: 2px;
-                            text-align: left;
-                        }
-                        
-                        .thermal-items th {
-                            background: #f0f0f0;
-                            font-weight: bold;
-                        }
-                        
-                        .thermal-notes {
-                            margin-top: 8px;
-                            padding: 5px;
-                            background: #f9f9f9;
-                            border: 1px solid #ddd;
-                            font-size: 9px;
-                        }
-                        
-                        .thermal-business-contact {
-                            margin: 6px 0;
-                            font-size: 9px;
-                            line-height: 1.2;
-                        }
-                        
-                        .thermal-business-address {
-                            margin-bottom: 2px;
-                            font-weight: normal;
-                        }
-                        
-                        .thermal-business-phone {
-                            font-weight: normal;
-                        }
-                    </style>
-                </head>
-                <body>`;
-            
-            // Generate thermal ticket for each selected order
-            for (const order of selectedOrdersList) {
-                printContent += generateThermalTicketHTML(order, businessSettings);
-            }
-            
-            printContent += `
-                </body>
-                </html>`;
-            
-            const printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes');
-            printWindow.document.write(printContent);
-            printWindow.document.close();
-            printWindow.focus();
-            
-            // Delay print to ensure styles are loaded
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
-        }
-
-        async function changeSelectedOrdersStatus() {
-            if (selectedOrders.size === 0) {
-                alert('Please select at least one order to update.');
-                return;
-            }
-
-            // Populate the modal with selected orders info
-            updateBulkStatusModal();
-            
-            // Show the modal
-            document.getElementById('bulkStatusModal').style.display = 'block';
-        }
-
-        function updateBulkStatusModal() {
-            const selectedOrdersList = orders.filter(order => selectedOrders.has(order.id));
-            const count = selectedOrdersList.length;
-            
-            // Update count
-            document.getElementById('selected-orders-count').textContent = `${count} order${count !== 1 ? 's' : ''} selected`;
-            
-            // Update orders list
-            const ordersList = document.getElementById('selected-orders-list');
-            ordersList.innerHTML = selectedOrdersList.map(order => 
-                `<div style="margin: 2px 0; padding: 2px 5px; background: white; border-radius: 2px; font-size: 0.8rem;">
-                    ${order.order_number || `#${order.id}`} - ${order.customer_name || 'Walk-in Customer'}
-                </div>`
-            ).join('');
-            
-            // Reset form
-            document.getElementById('bulk-new-status').value = '';
-            document.getElementById('bulk-tracking-number').value = '';
-            document.getElementById('bulk-status-notes').value = '';
-            document.getElementById('bulk-tracking-group').style.display = 'none';
-        }
-
-        function closeBulkStatusModal() {
-            document.getElementById('bulkStatusModal').style.display = 'none';
-        }
-
-        // Bulk Status Modal Event Handlers
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle bulk status form submission
-            document.getElementById('bulkStatusForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const newStatus = document.getElementById('bulk-new-status').value;
-                const trackingNumber = document.getElementById('bulk-tracking-number').value;
-                const notes = document.getElementById('bulk-status-notes').value;
-                
-                if (!newStatus) {
-                    alert('Please select a status');
-                    return;
-                }
-
-                // Show loading state
-                const btnText = document.getElementById('bulk-update-btn-text');
-                const loading = document.getElementById('bulk-update-loading');
-                btnText.style.display = 'none';
-                loading.style.display = 'inline';
-                
-                try {
-                    const updateData = { status: newStatus };
-                    if (trackingNumber) updateData.tracking_number = trackingNumber;
-                    if (notes) updateData.notes = notes;
-
-                    const updatePromises = Array.from(selectedOrders).map(orderId => 
-                        fetch(`/api/orders/${orderId}/status`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(updateData)
-                        })
-                    );
-
-                    await Promise.all(updatePromises);
-                    
-                    alert(`Successfully updated ${selectedOrders.size} orders to "${newStatus}"`);
-                    
-                    // Close modal and refresh
-                    closeBulkStatusModal();
-                    loadOrders();
-                    selectedOrders.clear();
-                    toggleOrderSelectionMode();
-                    
-                } catch (error) {
-                    alert('Error updating orders: ' + error.message);
-                } finally {
-                    // Reset loading state
-                    btnText.style.display = 'inline';
-                    loading.style.display = 'none';
-                }
-            });
-
-            // Show/hide tracking number field based on status
-            document.getElementById('bulk-new-status').addEventListener('change', function() {
-                const trackingGroup = document.getElementById('bulk-tracking-group');
-                if (this.value === 'shipped') {
-                    trackingGroup.style.display = 'block';
-                } else {
-                    trackingGroup.style.display = 'none';
-                }
-            });
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email and password are required'
         });
+      }
 
-        // Customer Management Functions
-        async function loadCustomers() {
-            try {
-                document.getElementById('customers-loading').style.display = 'block';
-                const searchTerm = document.getElementById('customer-search').value;
-                
-                let url = '/api/customers?limit=100';
-                if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.success) {
-                    customers = data.customers;
-                    displayCustomers(customers);
-                    // Load customer stats after loading customers
-                    loadCustomerStats();
-                } else {
-                    showCustomerError('Failed to load customers: ' + data.error);
-                }
-            } catch (error) {
-                showCustomerError('Error loading customers: ' + error.message);
-            } finally {
-                document.getElementById('customers-loading').style.display = 'none';
-            }
+      // Login merchant
+      const result = await authService.loginMerchant(email, password, rememberMe);
+      
+      // Set secure cookie if successful
+      if (result.success && result.token) {
+        const cookieOptions = {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000 // 30 days or 7 days
+        };
+        
+        res.cookie('merchantToken', result.token, cookieOptions);
+      }
+
+      res.json(result);
+
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Login failed. Please try again.'
+      });
+    }
+  }
+);
+
+// Verify token
+app.get('/api/auth/verify',
+  authMiddleware.authenticateMerchant,
+  async (req, res) => {
+    try {
+      // Get full merchant profile
+      const profileResult = await authService.getMerchantProfile(req.merchant.id);
+      
+      if (profileResult.success) {
+        res.json({
+          success: true,
+          merchant: profileResult.profile,
+          token: req.token
+        });
+      } else {
+        res.status(404).json(profileResult);
+      }
+
+    } catch (error) {
+      console.error('Token verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Token verification failed'
+      });
+    }
+  }
+);
+
+// Logout
+app.post('/api/auth/logout',
+  authMiddleware.logAuthEvent('LOGOUT'),
+  async (req, res) => {
+    try {
+      // Clear all possible token cookies
+      res.clearCookie('merchantToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/'
+      });
+      res.clearCookie('authToken');
+      res.clearCookie('token');
+      
+      // Get merchant info from token if available
+      let merchantInfo = null;
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.split(' ')[1] || req.cookies?.merchantToken;
+      
+      if (token) {
+        const tokenResult = authService.verifyToken(token);
+        if (tokenResult.success) {
+          merchantInfo = tokenResult.payload;
+          console.log(`👋 Merchant logout: ${merchantInfo.email}`);
         }
+      }
+      
+      // Clear any server-side session data if implemented
+      // (For future use with Redis or database sessions)
+      
+      // Set security headers
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      const result = authService.logout();
+      
+      // Enhanced response with cleanup confirmation and redirect URL
+      res.json({
+        ...result,
+        message: 'Successfully logged out. All sessions cleared.',
+        redirectUrl: '/auth/login?from=merchant',
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Logout failed',
+        message: 'An error occurred during logout. Please clear your browser data.'
+      });
+    }
+  }
+);
 
-        async function loadCustomerStats() {
-            try {
-                const response = await fetch('/api/customers/stats', {
-                    headers: getAuthHeaders()
-                });
+// Verify email
+app.post('/api/auth/verify-email',
+  authMiddleware.logAuthEvent('EMAIL_VERIFICATION'),
+  async (req, res) => {
+    try {
+      const { verificationToken } = req.body;
+      if (!verificationToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'Verification token is required'
+        });
+      }
 
-                if (!response.ok) {
-                    if (handleAuthError(response)) return;
-                    throw new Error(`HTTP ${response.status}`);
-                }
+      const result = await authService.verifyEmail(verificationToken);
+      res.json(result);
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Email verification failed'
+      });
+    }
+  }
+);
 
-                const data = await response.json();
-                
-                if (data.success) {
-                    const stats = data.stats;
-                    document.getElementById('total-customers').textContent = stats.total_customers || 0;
-                    document.getElementById('active-customers').textContent = stats.active_customers || 0;
-                    document.getElementById('repeat-customers').textContent = stats.repeat_customers || 0;
-                    document.getElementById('new-customers').textContent = stats.new_customers_this_month || 0;
-                    document.getElementById('average-clv').textContent = formatCurrency(stats.average_clv || 0);
-                }
-            } catch (error) {
-                console.error('Error loading customer stats:', error);
-            }
+// Resend email verification
+app.post('/api/auth/resend-verification',
+  authMiddleware.logAuthEvent('RESEND_EMAIL_VERIFICATION'),
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email address is required'
+        });
+      }
+
+      const result = await authService.resendEmailVerification(email);
+      res.json(result);
+    } catch (error) {
+      console.error('Resend email verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to resend email verification'
+      });
+    }
+  }
+);
+
+// Change password
+app.post('/api/auth/change-password',
+  authMiddleware.authenticateMerchant,
+  authMiddleware.logAuthEvent('PASSWORD_CHANGE'),
+  async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Current password and new password are required'
+        });
+      }
+
+      const result = await authService.changePassword(
+        req.merchant.id,
+        currentPassword,
+        newPassword
+      );
+
+      res.json(result);
+
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Password change failed. Please try again.'
+      });
+    }
+  }
+);
+
+// Request password reset
+app.post('/api/auth/forgot-password',
+  authMiddleware.logAuthEvent('PASSWORD_RESET_REQUEST'),
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email address is required'
+        });
+      }
+
+      const result = await authService.requestPasswordReset(email);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Password reset request failed. Please try again.'
+      });
+    }
+  }
+);
+
+// Reset password with token
+app.post('/api/auth/reset-password',
+  authMiddleware.logAuthEvent('PASSWORD_RESET'),
+  async (req, res) => {
+    try {
+      const { resetToken, newPassword } = req.body;
+
+      if (!resetToken || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Reset token and new password are required'
+        });
+      }
+
+      const result = await authService.resetPassword(resetToken, newPassword);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Password reset error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Password reset failed. Please try again.'
+      });
+    }
+  }
+);
+
+// Get merchant profile
+app.get('/api/auth/profile',
+  authMiddleware.authenticateMerchant,
+  async (req, res) => {
+    try {
+      const result = await authService.getMerchantProfile(req.merchant.id);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Get profile error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get profile'
+      });
+    }
+  }
+);
+
+// Update merchant profile
+app.put('/api/auth/profile',
+  authMiddleware.authenticateMerchant,
+  authMiddleware.logAuthEvent('PROFILE_UPDATE'),
+  async (req, res) => {
+    try {
+      const result = await authService.updateMerchantProfile(req.merchant.id, req.body);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update profile'
+      });
+    }
+  }
+);
+
+// ==========================================
+// MERCHANT DASHBOARD ROUTES (Protected)
+// ==========================================
+
+// Redirect old invoice dashboard to merchant dashboard
+app.get('/dashboard', (req, res) => {
+  res.redirect('/merchant#invoices');
+});
+
+// Serve the merchant dashboard (Protected)
+app.get('/merchant', authMiddleware.authenticateMerchant, (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(__dirname, 'merchant-dashboard.html'));
+});
+
+// Direct access to merchant-dashboard.html (for navigation buttons) (Protected)
+app.get('/merchant-dashboard.html', authMiddleware.authenticateMerchant, (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(__dirname, 'merchant-dashboard.html'));
+});
+
+// Serve the business settings page (Protected)
+app.get('/business-settings', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(__dirname, 'business-settings.html'));
+});
+
+// Serve the main invoice generator interface (Protected)
+app.get('/generator', authMiddleware.authenticateMerchant, (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(__dirname, 'web-interface-indonesian.html'));
+});
+
+// Serve the customer portal (legacy - for backwards compatibility)
+app.get('/customer', (req, res) => {
+  res.sendFile(path.join(__dirname, 'customer-portal.html'));
+});
+
+// Serve specific invoice for customer (with token) - NEW SIMPLIFIED VIEW
+app.get('/customer/invoice/:token', (req, res) => {
+  res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
+});
+
+// Simple invoice view (direct link from emails)
+app.get('/invoice', (req, res) => {
+  res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
+});
+
+// Public invoice viewing route
+app.get('/invoice/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
+});
+
+// Direct access to simple-invoice-view.html (for generated URLs)
+app.get('/simple-invoice-view.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
+});
+
+// Service ticket printing page
+app.get('/service-ticket', (req, res) => {
+  res.sendFile(path.join(__dirname, 'service-ticket.html'));
+});
+
+// Final payment page
+app.get('/final-payment', (req, res) => {
+  res.sendFile(path.join(__dirname, 'final-payment.html'));
+});
+
+// API endpoint to get business profile
+app.get('/api/business-profile', authMiddleware.authenticateMerchant, (req, res) => {
+  res.json({
+    success: true,
+    profile: {
+      businessName: config.merchant.businessName,
+      address: config.merchant.address,
+      phone: config.merchant.phone,
+      email: config.merchant.email,
+      website: config.merchant.website,
+      taxId: config.merchant.taxId,
+      defaultTaxRate: config.merchant.taxRate || 0,
+      additionalNotes: ""
+    }
+  });
+});
+
+// API endpoint to save business profile
+app.post('/api/business-profile', authMiddleware.authenticateMerchant, (req, res) => {
+  try {
+    const { profile } = req.body;
+    // In a real app, this would save to database
+    // For now, we'll just return success
+    res.json({
+      success: true,
+      message: 'Business profile saved successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save business profile'
+    });
+  }
+});
+
+// Business settings API endpoints
+app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🔍 Loading business settings for merchant:', req.merchant.id, req.merchant.email);
+    const settings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Raw settings from database:', settings);
+    console.log('🔍 Settings object keys:', Object.keys(settings || {}));
+    
+    // If no settings in database, return config defaults
+    if (!settings || Object.keys(settings).length === 0) {
+      console.log('🔍 No settings found, returning defaults');
+      const defaults = {
+        name: config.merchant.businessName,
+        email: config.merchant.email,
+        address: config.merchant.address,
+        phone: config.merchant.phone,
+        website: config.merchant.website,
+        taxId: config.merchant.taxId,
+        taxRate: config.merchant.taxRate || 0,
+        taxEnabled: config.merchant.taxRate > 0,
+        taxName: 'PPN',
+        taxDescription: '',
+        termsAndConditions: '',
+        // Include empty logo fields so frontend doesn't get undefined
+        logoUrl: null,
+        logoPublicId: null,
+        logoFilename: null
+      };
+      console.log('🔍 Returning default settings:', defaults);
+      return res.json(defaults);
+    }
+    
+    console.log('🔍 Returning actual settings:', settings);
+    res.json(settings);
+  } catch (error) {
+    console.error('Error loading business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load business settings'
+    });
+  }
+});
+
+app.post('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('🏢 Updating business settings for merchant:', req.merchant.id, req.merchant.email);
+    console.log('🏢 Settings payload:', JSON.stringify(settings, null, 2));
+    
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
+    console.log('🏢 Database update result:', updatedSettings ? 'Success' : 'Failed');
+    console.log('🏢 Updated settings returned:', updatedSettings);
+    
+    res.json({
+      success: true,
+      message: 'Business settings saved successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error saving business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save business settings'
+    });
+  }
+});
+
+// Route aliases to handle frontend calls to /api/business/settings (with slash)
+app.get('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🏢 Loading business settings for merchant:', req.merchant.id);
+    const settings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🏢 Loaded settings - Premium active:', settings?.premiumActive);
+    
+    // If no settings in database, return config defaults
+    if (!settings || Object.keys(settings).length === 0) {
+      console.log('🏢 No settings found, returning defaults');
+      return res.json({
+        success: true,
+        settings: {
+          name: config.merchant.businessName,
+          email: config.merchant.email,
+          address: config.merchant.address,
+          phone: config.merchant.phone,
+          website: config.merchant.website,
+          taxId: config.merchant.taxId,
+          taxRate: config.merchant.taxRate || 0,
+          taxEnabled: config.merchant.taxRate > 0,
+          taxName: 'PPN',
+          taxDescription: '',
+          termsAndConditions: '',
+          logoUrl: null,
+          logoPublicId: null,
+          logoFilename: null,
+          premiumActive: false
         }
+      });
+    }
+    
+    // Return settings wrapped in success object for consistent API response
+    res.json({
+      success: true,
+      settings: settings
+    });
+  } catch (error) {
+    console.error('❌ Error loading business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load business settings'
+    });
+  }
+});
 
-        function displayCustomers(customersToShow) {
-            const container = document.getElementById('customers-grid');
-            container.innerHTML = '';
+app.post('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('🏢 Updating business settings via /api/business/settings for merchant:', req.merchant.id, settings);
+    
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Business settings saved successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error saving business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save business settings'
+    });
+  }
+});
 
-            if (customersToShow.length === 0) {
-                container.innerHTML = '<div class="loading">No customers found</div>';
-                return;
-            }
+app.put('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('🏢 Updating business settings via PUT /api/business/settings for merchant', req.merchant.id, ':', settings);
+    
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Business settings updated successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error updating business settings via PUT:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update business settings'
+    });
+  }
+});
 
-            // Group customers by activity level
-            const groupedCustomers = groupCustomersByActivity(customersToShow);
-            
-            // Display each activity group
-            Object.keys(groupedCustomers).forEach(activityKey => {
-                const activityGroup = createCustomerActivityGroup(activityKey, groupedCustomers[activityKey]);
-                container.appendChild(activityGroup);
+// Premium Branding API Endpoints
+app.get('/api/premium/status', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    const brandingSettings = isPremium ? await database.getPremiumBrandingSettings(req.merchant.id) : null;
+    
+    res.json({
+      success: true,
+      isPremium: isPremium,
+      brandingSettings: brandingSettings
+    });
+  } catch (error) {
+    console.error('Error checking premium status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check premium status'
+    });
+  }
+});
+
+app.post('/api/premium/activate', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { premiumSettings = {} } = req.body;
+    
+    console.log('🏆 Activating premium branding for merchant:', req.merchant.id);
+    console.log('🏆 Premium settings to apply:', premiumSettings);
+    
+    // Check if business settings exist first
+    let existingSettings;
+    try {
+      existingSettings = await database.getBusinessSettings(req.merchant.id);
+      console.log('🏢 Existing business settings:', existingSettings ? 'Found' : 'Not found');
+    } catch (error) {
+      console.log('⚠️ Error getting existing settings:', error.message);
+      // Create default business settings if they don't exist
+      existingSettings = {};
+    }
+    
+    // Activate premium branding
+    console.log('🏆 Calling activatePremiumBranding...');
+    const result = await database.activatePremiumBranding(premiumSettings, req.merchant.id);
+    console.log('🏆 Premium activation result:', result);
+    
+    // Verify the activation worked by checking the database
+    const verifySettings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Verification - Premium active after update:', verifySettings?.premiumActive);
+    
+    res.json({
+      success: true,
+      message: 'Premium branding activated successfully',
+      settings: result
+    });
+  } catch (error) {
+    console.error('❌ Error activating premium branding:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to activate premium branding: ' + error.message
+    });
+  }
+});
+
+app.post('/api/premium/deactivate', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deactivatePremiumBranding(req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Premium branding deactivated successfully',
+      settings: result
+    });
+  } catch (error) {
+    console.error('Error deactivating premium branding:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to deactivate premium branding'
+    });
+  }
+});
+
+app.put('/api/premium/branding', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    if (!isPremium) {
+      return res.status(403).json({
+        success: false,
+        error: 'Premium subscription required for custom branding'
+      });
+    }
+    
+    const brandingSettings = req.body;
+    console.log('🎨 Updating premium branding settings:', brandingSettings);
+    
+    // Update the business settings with the new branding
+    const result = await database.updateBusinessSettings({
+      ...brandingSettings,
+      premiumActive: true // Ensure premium remains active
+    }, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Premium branding settings updated successfully',
+      settings: result
+    });
+  } catch (error) {
+    console.error('Error updating premium branding:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update premium branding settings'
+    });
+  }
+});
+
+// Premium Logo Upload Endpoints
+app.post('/api/premium/upload/header-logo', authMiddleware.authenticateMerchant, logoUpload.single('headerLogo'), async (req, res) => {
+  try {
+    console.log('📤 Header logo upload request from merchant:', req.merchant?.id);
+    console.log('📄 File info:', req.file);
+    
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    if (!isPremium) {
+      console.log('❌ Premium not active for merchant:', req.merchant.id);
+      return res.status(403).json({
+        success: false,
+        error: 'Premium subscription required for custom logos'
+      });
+    }
+    
+    if (!req.file) {
+      console.log('❌ No file provided in request');
+      return res.status(400).json({
+        success: false,
+        error: 'No header logo file provided'
+      });
+    }
+    
+    // Get current settings to check for existing logo
+    const currentSettings = await database.getBusinessSettings(req.merchant.id);
+    
+    // Upload to Cloudinary instead of local storage
+    const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, {
+      filename: `merchant_${req.merchant.id}_header_logo_${Date.now()}`,
+      merchantId: req.merchant.id,
+      folder: 'ai-invoice-generator/premium-headers'
+    });
+    
+    // Delete old header logo from Cloudinary if it exists
+    if (currentSettings.customHeaderLogoPublicId) {
+      console.log('🗑️  Deleting old header logo from Cloudinary:', currentSettings.customHeaderLogoPublicId);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.customHeaderLogoPublicId);
+      if (deleteResult.success) {
+        console.log('✅ Old header logo deleted successfully');
+      } else {
+        console.warn('⚠️  Failed to delete old header logo:', deleteResult.error);
+      }
+    }
+    
+    if (!uploadResult.success) {
+      console.error('❌ Cloudinary upload failed:', uploadResult.error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upload header logo to cloud storage'
+      });
+    }
+    
+    console.log('📍 Logo URL generated:', uploadResult.url);
+    
+    // Update business settings with Cloudinary URL
+    const result = await database.updateBusinessSettings({
+      customHeaderLogoUrl: uploadResult.url,
+      customHeaderLogoPublicId: uploadResult.publicId // Store for deletion later
+    }, req.merchant.id);
+    
+    console.log('✅ Header logo upload successful:', uploadResult.url);
+    res.json({
+      success: true,
+      message: 'Header logo uploaded successfully to cloud storage',
+      logoUrl: uploadResult.url,
+      publicId: uploadResult.publicId,
+      settings: result
+    });
+  } catch (error) {
+    console.error('❌ Error uploading header logo:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload header logo: ' + error.message
+    });
+  }
+});
+
+app.post('/api/premium/upload/footer-logo', authMiddleware.authenticateMerchant, logoUpload.single('footerLogo'), async (req, res) => {
+  try {
+    console.log('📤 Footer logo upload request from merchant:', req.merchant?.id);
+    console.log('📄 File info:', req.file);
+    
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    if (!isPremium) {
+      console.log('❌ Premium not active for merchant:', req.merchant.id);
+      return res.status(403).json({
+        success: false,
+        error: 'Premium subscription required for custom logos'
+      });
+    }
+    
+    if (!req.file) {
+      console.log('❌ No file provided in request');
+      return res.status(400).json({
+        success: false,
+        error: 'No footer logo file provided'
+      });
+    }
+    
+    // Get current settings to check for existing logo
+    const currentSettings = await database.getBusinessSettings(req.merchant.id);
+    
+    // Upload to Cloudinary instead of local storage
+    const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, {
+      filename: `merchant_${req.merchant.id}_footer_logo_${Date.now()}`,
+      merchantId: req.merchant.id,
+      folder: 'ai-invoice-generator/premium-footers'
+    });
+    
+    // Delete old footer logo from Cloudinary if it exists
+    if (currentSettings.customFooterLogoPublicId) {
+      console.log('🗑️  Deleting old footer logo from Cloudinary:', currentSettings.customFooterLogoPublicId);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.customFooterLogoPublicId);
+      if (deleteResult.success) {
+        console.log('✅ Old footer logo deleted successfully');
+      } else {
+        console.warn('⚠️  Failed to delete old footer logo:', deleteResult.error);
+      }
+    }
+    
+    if (!uploadResult.success) {
+      console.error('❌ Cloudinary upload failed:', uploadResult.error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upload footer logo to cloud storage'
+      });
+    }
+    
+    console.log('📍 Logo URL generated:', uploadResult.url);
+    
+    // Update business settings with Cloudinary URL
+    const result = await database.updateBusinessSettings({
+      customFooterLogoUrl: uploadResult.url,
+      customFooterLogoPublicId: uploadResult.publicId // Store for deletion later
+    }, req.merchant.id);
+    
+    console.log('✅ Footer logo upload successful:', uploadResult.url);
+    res.json({
+      success: true,
+      message: 'Footer logo uploaded successfully to cloud storage',
+      logoUrl: uploadResult.url,
+      publicId: uploadResult.publicId,
+      settings: result
+    });
+  } catch (error) {
+    console.error('❌ Error uploading footer logo:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload footer logo: ' + error.message
+    });
+  }
+});
+
+// Payment methods API endpoint
+app.get('/api/settings/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
+    
+    res.json({
+      success: true,
+      paymentMethods: paymentMethods
+    });
+  } catch (error) {
+    console.error('Error loading payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load payment methods'
+    });
+  }
+});
+
+// Alternative payment methods API endpoint (without /settings/)
+app.get('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
+    
+    res.json({
+      success: true,
+      paymentMethods: paymentMethods
+    });
+  } catch (error) {
+    console.error('Error loading payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load payment methods'
+    });
+  }
+});
+
+// Business logo upload endpoint
+app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoUpload.single('logo'), async (req, res) => {
+  try {
+    console.log('📸 Logo upload request received for merchant:', req.merchant?.id);
+    
+    if (!req.file) {
+      console.log('❌ No logo file in request');
+      return res.status(400).json({
+        success: false,
+        error: 'No logo file uploaded'
+      });
+    }
+
+    console.log('📸 Business logo uploading to Cloudinary...', {
+      originalName: req.file.originalname,
+      size: req.file.size,
+      mimeType: req.file.mimetype
+    });
+    
+    // Upload to Cloudinary with merchant isolation and old logo cleanup
+    const currentSettings = await database.getBusinessSettings(req.merchant.id) || {};
+    const businessName = currentSettings.name || 'business';
+    const oldPublicId = currentSettings.logo_public_id || currentSettings.logoPublicId;
+    
+    console.log('🏢 Uploading logo for merchant:', {
+      merchantId: req.merchant.id,
+      businessName: businessName,
+      oldPublicId: oldPublicId
+    });
+    
+    const uploadResult = await cloudinaryService.uploadBusinessLogo(
+      req.file.buffer, 
+      businessName,
+      req.merchant.id,  // Add merchant ID for isolation
+      oldPublicId       // Add old public ID for cleanup
+    );
+    
+    if (!uploadResult.success) {
+      console.error('❌ Cloudinary upload failed:', uploadResult.error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upload logo to cloud storage: ' + uploadResult.error
+      });
+    }
+
+    console.log('✅ Logo uploaded to Cloudinary:', {
+      publicId: uploadResult.publicId,
+      url: uploadResult.url,
+      width: uploadResult.width,
+      height: uploadResult.height
+    });
+    
+    // Delete old logo from Cloudinary if it exists
+    if (currentSettings.logo_public_id) {
+      console.log('🗑️  Deleting old logo from Cloudinary:', currentSettings.logo_public_id);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.logo_public_id);
+      if (deleteResult.success) {
+        console.log('✅ Old logo deleted successfully');
+      } else {
+        console.error('⚠️  Failed to delete old logo:', deleteResult.error);
+      }
+    }
+    
+    // Update business settings with the new Cloudinary URL
+    const updatedSettings = {
+      ...currentSettings,
+      logo_url: uploadResult.url,
+      logo_public_id: uploadResult.publicId,
+      logo_filename: uploadResult.publicId
+    };
+    
+    console.log('📋 Updating business settings with logo:', {
+      merchantId: req.merchant.id,
+      merchantEmail: req.merchant.email,
+      logo_url: updatedSettings.logo_url,
+      logo_public_id: updatedSettings.logo_public_id,
+      updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
+    });
+    
+    const updateResult = await database.updateBusinessSettings(updatedSettings, req.merchant.id);
+    console.log('✅ Database update result:', { 
+      success: !!updateResult,
+      merchantId: req.merchant.id,
+      resultData: updateResult 
+    });
+    
+    res.json({
+      success: true,
+      message: 'Logo uploaded successfully to cloud storage',
+      logoUrl: uploadResult.url,
+      publicId: uploadResult.publicId,
+      cloudinary: {
+        width: uploadResult.width,
+        height: uploadResult.height,
+        format: uploadResult.format,
+        bytes: uploadResult.bytes
+      },
+      debug: {
+        oldLogoDeleted: !!currentSettings.logo_public_id,
+        updatedDatabase: true
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error uploading business logo:', error);
+    console.error('❌ Error stack:', error.stack);
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload logo: ' + error.message
+    });
+  }
+});
+
+// Remove business logo endpoint
+app.delete('/api/remove-business-logo', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🗑️  Logo removal request received for merchant:', req.merchant?.id);
+    
+    const currentSettings = await database.getBusinessSettings(req.merchant.id) || {};
+    console.log('📋 Current business settings:', {
+      hasLogoUrl: !!currentSettings.logo_url,
+      hasLogoPublicId: !!currentSettings.logo_public_id,
+      hasLogoFilename: !!currentSettings.logo_filename,
+      logoUrl: currentSettings.logo_url,
+      logoPublicId: currentSettings.logo_public_id
+    });
+    
+    // Delete from Cloudinary if it exists
+    if (currentSettings.logo_public_id) {
+      console.log('🗑️  Deleting logo from Cloudinary:', currentSettings.logo_public_id);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.logo_public_id);
+      
+      if (deleteResult.success) {
+        console.log('✅ Logo deleted from Cloudinary successfully');
+      } else {
+        console.error('⚠️  Failed to delete logo from Cloudinary:', deleteResult.error);
+        // Continue with database update even if Cloudinary deletion fails
+      }
+    } else {
+      console.log('ℹ️  No logo_public_id found, skipping Cloudinary deletion');
+    }
+    
+    // Remove logo info from database
+    const updatedSettings = {
+      ...currentSettings,
+      logo_url: null,
+      logo_public_id: null,
+      logo_filename: null
+    };
+    
+    console.log('📋 Removing logo from business settings:', {
+      before_logo_url: currentSettings.logo_url,
+      before_logo_public_id: currentSettings.logo_public_id,
+      after_logo_url: updatedSettings.logo_url,
+      updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
+    });
+    
+    const updateResult = await database.updateBusinessSettings(updatedSettings, req.merchant.id);
+    console.log('✅ Database update result:', { success: !!updateResult });
+    
+    res.json({
+      success: true,
+      message: 'Logo removed successfully from cloud storage',
+      debug: {
+        hadLogo: !!currentSettings.logo_url,
+        removedFromCloudinary: !!currentSettings.logo_public_id,
+        updatedDatabase: true
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error removing business logo:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to remove logo: ' + error.message
+    });
+  }
+});
+
+// Account Settings API endpoints
+app.get('/api/account-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = await database.getAccountSettings(req.merchant.id);
+    res.json(settings || {});
+  } catch (error) {
+    console.error('Error loading account settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load account settings'
+    });
+  }
+});
+
+app.post('/api/account-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('👤 Updating account settings for merchant:', req.merchant.id, settings);
+    
+    const updatedSettings = await database.updateAccountSettings(settings, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Account settings saved successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error saving account settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save account settings'
+    });
+  }
+});
+
+// Usage Statistics API endpoint
+app.get('/api/usage-stats', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const stats = await database.getUsageStatistics(req.merchant.id);
+    res.json(stats);
+  } catch (error) {
+    console.error('Error loading usage statistics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load usage statistics'
+    });
+  }
+});
+
+// Subscription Info API endpoint
+app.get('/api/subscription-info', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const subscription = await database.getSubscriptionInfo();
+    res.json(subscription || {
+      plan: 'free',
+      planName: 'Free Plan',
+      features: [
+        'Unlimited invoices',
+        'Up to 100 customers',
+        'Basic payment methods',
+        'Email support',
+        'Standard templates'
+      ],
+      limits: {
+        customers: 100,
+        invoices: -1, // unlimited
+        emailsPerMonth: 1000
+      }
+    });
+  } catch (error) {
+    console.error('Error loading subscription info:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load subscription info'
+    });
+  }
+});
+
+// Data Export API endpoint
+app.get('/api/export-data', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('📥 Exporting account data for merchant:', req.merchant.id);
+    
+    const data = await database.exportAllData(req.merchant.id);
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=account-data.json');
+    res.json(data);
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export data'
+    });
+  }
+});
+
+// Backup API endpoint  
+app.get('/api/backup-data', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('💾 Creating backup...');
+    
+    const backupData = await database.createBackup();
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename=backup.zip');
+    res.send(backupData);
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create backup'
+    });
+  }
+});
+
+// Account Reset API endpoint
+app.post('/api/reset-account', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🔄 Resetting account data...');
+    
+    await database.resetAccountData();
+    
+    res.json({
+      success: true,
+      message: 'Account reset successfully'
+    });
+  } catch (error) {
+    console.error('Error resetting account:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset account'
+    });
+  }
+});
+
+// Payment Methods API endpoints
+app.get('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
+    res.json(paymentMethods);
+  } catch (error) {
+    console.error('Error loading payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load payment methods'
+    });
+  }
+});
+
+app.post('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const methods = req.body;
+    console.log('💳 Updating payment methods for merchant', req.merchant.id, ':', methods);
+    
+    const updatedMethods = await database.updatePaymentMethods(methods, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Payment methods saved successfully',
+      data: updatedMethods
+    });
+  } catch (error) {
+    console.error('Error saving payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save payment methods'
+    });
+  }
+});
+
+// Xendit API endpoints
+app.post('/api/xendit/test', async (req, res) => {
+  try {
+    const { secretKey, environment, amount } = req.body;
+    
+    if (!secretKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Secret key is required'
+      });
+    }
+    
+    console.log('🧪 Testing Xendit connection...', environment);
+    const result = await xenditService.testConnection(secretKey, environment);
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Xendit test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to test Xendit connection'
+    });
+  }
+});
+
+app.post('/api/xendit/create-payment', async (req, res) => {
+  try {
+    const { invoiceId, paymentData } = req.body;
+    
+    if (!invoiceId || !paymentData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and payment data are required'
+      });
+    }
+    
+    // Get Xendit credentials from database
+    const credentials = await database.getXenditCredentials();
+    if (!credentials || !credentials.secretKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Xendit is not configured. Please configure Xendit in business settings.'
+      });
+    }
+    
+    // Get invoice details
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Create Xendit invoice
+    const xenditInvoiceData = {
+      externalId: `${invoice.invoice_number}-${Date.now()}`,
+      amount: invoice.grand_total,
+      description: `Payment for Invoice ${invoice.invoice_number}`,
+      customer: {
+        name: invoice.customer_name,
+        email: invoice.customer_email,
+        phone: invoice.customer_phone
+      },
+      successUrl: `${req.protocol}://${req.get('host')}/customer?token=${invoice.customer_token}&payment=success`,
+      failureUrl: `${req.protocol}://${req.get('host')}/customer?token=${invoice.customer_token}&payment=failed`,
+      currency: 'IDR',
+      paymentMethods: xenditService.getPaymentMethodsForInvoice(credentials.paymentMethods)
+    };
+    
+    const result = await xenditService.createInvoice(
+      credentials.secretKey,
+      credentials.environment,
+      xenditInvoiceData
+    );
+    
+    if (result.success) {
+      // Store Xendit invoice reference in database
+      // This could be added to invoice metadata or a separate xendit_payments table
+      console.log('✅ Xendit payment created:', result.data.id);
+      
+      res.json({
+        success: true,
+        paymentUrl: result.data.invoice_url,
+        xenditInvoiceId: result.data.id,
+        externalId: result.data.external_id
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error creating Xendit payment:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create Xendit payment'
+    });
+  }
+});
+
+app.post('/api/xendit/webhook', async (req, res) => {
+  try {
+    const signature = req.headers['x-callback-token'] || req.headers['x-xendit-callback-token'];
+    const rawBody = JSON.stringify(req.body);
+    
+    // Get webhook token from database
+    const credentials = await database.getXenditCredentials();
+    
+    // Verify webhook signature if token is configured
+    if (credentials && credentials.webhookToken) {
+      const isValid = xenditService.verifyWebhookSignature(rawBody, signature, credentials.webhookToken);
+      if (!isValid) {
+        console.warn('❌ Invalid webhook signature from Xendit');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+    }
+    
+    // Parse webhook event
+    const event = xenditService.parseWebhookEvent(req.body);
+    if (!event) {
+      return res.status(400).json({ error: 'Invalid webhook data' });
+    }
+    
+    console.log('📨 Xendit webhook received:', event.event, event.externalId, event.status);
+    
+    // Find the corresponding invoice by external ID
+    // The external ID format is: {invoice_number}-{timestamp}
+    const invoiceNumber = event.externalId.split('-')[0];
+    const invoice = await database.getInvoiceByNumber(invoiceNumber);
+    
+    if (!invoice) {
+      console.warn(`⚠️ Invoice not found for Xendit webhook: ${invoiceNumber}`);
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+    
+    // Update invoice status based on Xendit event
+    if (event.status === 'PAID') {
+      await database.updateInvoiceStatus(invoice.id, 'paid', invoice.merchant_id);
+      console.log(`✅ Invoice ${invoice.invoice_number} marked as paid via Xendit`);
+      
+      // You could add additional logic here:
+      // - Send payment confirmation email
+      // - Update inventory
+      // - Trigger order fulfillment
+    } else if (event.status === 'EXPIRED') {
+      console.log(`⏰ Xendit payment expired for invoice ${invoice.invoice_number}`);
+    }
+    
+    // Always respond with 200 to acknowledge receipt
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Xendit webhook error:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+// Payment confirmation upload endpoint
+app.post('/api/invoices/:id/payment-confirmation', upload.single('paymentProof'), async (req, res) => {
+  try {
+    const invoiceId = req.params.id;
+    const notes = req.body.notes || '';
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded'
+      });
+    }
+
+    // Server-side file validation
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid file type. Please upload JPG, PNG, or PDF files only.'
+      });
+    }
+
+    // File size validation (10MB limit)
+    if (req.file.size > 10 * 1024 * 1024) {
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: 'File too large. Maximum size is 10MB.'
+      });
+    }
+
+    // Very small file validation
+    if (req.file.size < 1024) {
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: 'File too small or corrupted. Please upload a valid file.'
+      });
+    }
+    
+    // Save payment confirmation to database
+    const confirmationData = {
+      filePath: req.file.path,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      notes: notes
+    };
+    
+    const updatedInvoice = await database.addPaymentConfirmation(invoiceId, confirmationData);
+    
+    if (!updatedInvoice) {
+      // Clean up uploaded file if invoice not found
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    console.log('✅ Payment confirmation uploaded for invoice:', invoiceId);
+    
+    res.json({
+      success: true,
+      message: 'Payment confirmation uploaded successfully',
+      invoice: updatedInvoice
+    });
+  } catch (error) {
+    console.error('Error uploading payment confirmation:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('Error cleaning up file:', cleanupError);
+      }
+    }
+    
+    // Provide more specific error messages based on error type
+    let errorMessage = 'Failed to upload payment confirmation';
+    let statusCode = 500;
+    
+    if (error.message && error.message.includes('Invoice not found')) {
+      errorMessage = 'Invoice not found. Please verify the invoice ID.';
+      statusCode = 404;
+    } else if (error.code === 'ENOENT') {
+      errorMessage = 'File upload failed. Please try again.';
+      statusCode = 400;
+    } else if (error.code === 'PGRST204' || error.message?.includes('does not exist')) {
+      errorMessage = 'Database schema issue. Missing payment confirmation columns. Please contact support.';
+      statusCode = 500;
+    } else if (error.message && error.message.includes('timeout')) {
+      errorMessage = 'Database connection timeout. Please try again.';
+      statusCode = 503;
+    } else if (error.message) {
+      errorMessage = `Upload failed: ${error.message}`;
+    }
+    
+    res.status(statusCode).json({
+      success: false,
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Down Payment Confirmation API
+app.post('/api/invoices/:id/confirm-down-payment', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoiceId = req.params.id;
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    
+    if (!invoice) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Invoice not found' 
+      });
+    }
+
+    // Check if invoice is in down payment stage
+    if (invoice.payment_stage !== 'down_payment') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invoice is not in down payment stage. Current stage: ' + invoice.payment_stage 
+      });
+    }
+
+    // Check if invoice has payment schedule
+    const paymentSchedule = typeof invoice.payment_schedule_json === 'string' 
+      ? JSON.parse(invoice.payment_schedule_json || 'null') 
+      : (invoice.payment_schedule_json || null);
+    if (!paymentSchedule || paymentSchedule.scheduleType !== 'down_payment') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invoice does not have down payment schedule' 
+      });
+    }
+
+    // Calculate final payment amount (grand total minus down payment)
+    const finalPaymentAmount = invoice.grand_total - paymentSchedule.downPayment.amount;
+    
+    // Generate final payment token
+    const finalPaymentToken = database.generateCustomerToken();
+    
+    // Extract final payment due date from payment schedule
+    const finalPaymentDueDate = paymentSchedule.remainingBalance.dueDate;
+    
+    // Update invoice to down payment confirmed stage
+    const updatedInvoice = {
+      ...invoice,
+      status: 'dp_paid',
+      payment_stage: 'final_payment',
+      payment_status: 'partial',
+      final_payment_token: finalPaymentToken,
+      final_payment_amount: finalPaymentAmount,
+      due_date: finalPaymentDueDate,                // Update due date to final payment due date
+      original_due_date: invoice.due_date,          // Preserve original due date
+      dp_confirmed_date: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Update payment schedule to mark down payment as paid
+    paymentSchedule.downPayment.status = 'paid';
+    paymentSchedule.downPayment.paidDate = new Date().toISOString();
+    
+    // Update remaining balance to reflect the correct final payment amount
+    paymentSchedule.remainingBalance.amount = finalPaymentAmount;
+    paymentSchedule.remainingBalance.status = 'pending';
+    
+    updatedInvoice.payment_schedule_json = JSON.stringify(paymentSchedule);
+
+    // Save changes to Supabase database
+    await database.updateInvoice(invoiceId, updatedInvoice, req.merchant.id);
+    
+    console.log(`✅ Down payment confirmed for invoice ${invoice.invoice_number}`);
+    
+    res.json({
+      success: true,
+      message: 'Down payment confirmed successfully',
+      finalPaymentToken: finalPaymentToken,
+      finalPaymentAmount: finalPaymentAmount,
+      finalPaymentLink: `${req.protocol}://${req.get('host')}/final-payment?token=${finalPaymentToken}`,
+      invoice: updatedInvoice
+    });
+    
+  } catch (error) {
+    console.error('Error confirming down payment:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to confirm down payment: ' + error.message 
+    });
+  }
+});
+
+// Final Payment Confirmation API
+app.post('/api/invoices/:id/confirm-final-payment', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoiceId = req.params.id;
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    
+    if (!invoice) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Invoice not found' 
+      });
+    }
+
+    // Check if invoice is in final payment stage (should be 'final_payment' for this endpoint)
+    if (invoice.payment_stage !== 'final_payment') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invoice is not in final payment stage. Current stage: ' + invoice.payment_stage 
+      });
+    }
+
+    // Update invoice to fully paid
+    const updatedInvoice = {
+      ...invoice,
+      status: 'paid',
+      payment_stage: 'completed',
+      payment_status: 'paid',
+      final_payment_confirmed_date: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Update payment schedule to mark remaining balance as paid
+    const paymentSchedule = typeof invoice.payment_schedule_json === 'string' 
+      ? JSON.parse(invoice.payment_schedule_json || 'null') 
+      : (invoice.payment_schedule_json || null);
+    if (paymentSchedule) {
+      paymentSchedule.remainingBalance.status = 'paid';
+      paymentSchedule.remainingBalance.paidDate = new Date().toISOString();
+      updatedInvoice.payment_schedule_json = JSON.stringify(paymentSchedule);
+    }
+
+    // Save changes to Supabase database
+    await database.updateInvoice(invoiceId, updatedInvoice, req.merchant.id);
+    
+    // Auto-create order from fully paid invoice
+    let orderResult = null;
+    try {
+      orderResult = await database.createOrderFromInvoice(invoiceId, req.merchant.id);
+      console.log(`✅ Order ${orderResult.orderNumber} auto-created from fully paid invoice ${invoice.invoice_number}`);
+    } catch (orderError) {
+      console.error('Failed to auto-create order:', orderError);
+      // Don't fail the payment confirmation if order creation fails
+    }
+
+    console.log(`✅ Final payment confirmed for invoice ${invoice.invoice_number}`);
+    
+    res.json({
+      success: true,
+      message: 'Final payment confirmed successfully, invoice moved to orders',
+      orderId: orderResult?.lastInsertRowid,
+      orderNumber: orderResult?.orderNumber,
+      invoice: updatedInvoice
+    });
+    
+  } catch (error) {
+    console.error('Error confirming final payment:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to confirm final payment: ' + error.message 
+    });
+  }
+});
+
+// Final payment confirmation upload (token-based)
+app.post('/api/final-payment/:token/payment-confirmation', upload.single('paymentProof'), async (req, res) => {
+  try {
+    const token = req.params.token;
+    const notes = req.body.notes || '';
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded'
+      });
+    }
+    
+    // Find invoice by final payment token
+    const invoice = await database.getInvoiceByFinalPaymentToken(token);
+    if (!invoice) {
+      // Clean up uploaded file if invoice not found
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({
+        success: false,
+        error: 'Final payment link not found or expired'
+      });
+    }
+
+    // Check if invoice is in correct stage
+    if (invoice.payment_stage !== 'final_payment') {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice is not in final payment stage'
+      });
+    }
+    
+    // Save payment confirmation to database
+    const confirmationData = {
+      filePath: req.file.path,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      notes: notes,
+      paymentType: 'final_payment'
+    };
+    
+    const updatedInvoice = await database.addPaymentConfirmation(invoice.id, confirmationData);
+    
+    if (!updatedInvoice) {
+      // Clean up uploaded file if update failed
+      fs.unlinkSync(req.file.path);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to save payment confirmation'
+      });
+    }
+    
+    console.log(`✅ Final payment confirmation uploaded for invoice: ${invoice.invoice_number}`);
+    
+    res.json({
+      success: true,
+      message: 'Final payment confirmation uploaded successfully',
+      invoice: updatedInvoice
+    });
+    
+  } catch (error) {
+    console.error('Error uploading final payment confirmation:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('Error cleaning up file:', cleanupError);
+      }
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload payment confirmation'
+    });
+  }
+});
+
+// Get final payment token details
+app.get('/api/final-payment/:token', async (req, res) => {
+  try {
+    const token = req.params.token;
+    const invoice = await database.getInvoiceByFinalPaymentToken(token);
+    
+    if (!invoice) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Final payment link not found or expired' 
+      });
+    }
+
+    // Check if already paid
+    if (invoice.payment_stage === 'completed') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Final payment already completed' 
+      });
+    }
+
+    const paymentSchedule = typeof invoice.payment_schedule_json === 'string' 
+      ? JSON.parse(invoice.payment_schedule_json || 'null') 
+      : (invoice.payment_schedule_json || null);
+    
+    res.json({
+      success: true,
+      invoice: {
+        id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        customer_name: invoice.customer_name,
+        grand_total: invoice.grand_total,
+        currency: invoice.currency,
+        final_payment_amount: invoice.final_payment_amount,
+        down_payment_amount: paymentSchedule?.downPayment?.amount || 0,
+        payment_schedule: paymentSchedule
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error getting final payment details:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get payment details' 
+    });
+  }
+});
+
+// Serve uploaded payment confirmation files (protected)
+app.get('/api/payment-confirmations/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, '..', 'uploads', 'payment-confirmations', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('Error serving payment confirmation file:', error);
+    res.status(500).json({ error: 'Failed to load file' });
+  }
+});
+
+// Email settings API endpoints
+app.get('/api/email-settings', (req, res) => {
+  const status = emailService.getStatus();
+  res.json({
+    success: true,
+    settings: {
+      host: status.host || 'smtp.gmail.com',
+      port: emailService.config?.port || 587,
+      secure: emailService.config?.secure || false,
+      user: status.user || ''
+      // Don't return password for security
+    },
+    status: status
+  });
+});
+
+app.post('/api/email-settings', async (req, res) => {
+  try {
+    const settings = req.body;
+    
+    console.log('📧 Updating email settings:', { user: settings.user, host: settings.host });
+    
+    // Update email service configuration
+    const success = await emailService.updateConfig(settings);
+    
+    if (success) {
+      res.json({
+        success: true,
+        message: 'Email settings saved and tested successfully',
+        status: emailService.getStatus()
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Email configuration test failed - please check your credentials',
+        status: emailService.getStatus()
+      });
+    }
+  } catch (error) {
+    console.error('Error updating email settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save email settings: ' + error.message
+    });
+  }
+});
+
+// Email status API endpoint
+app.get('/api/email-status', (req, res) => {
+  const status = emailService.getStatus();
+  
+  res.json({
+    success: true,
+    saasConfigured: status.configured,
+    customConfigured: status.configured,
+    configured: status.configured,
+    mockMode: status.mockMode,
+    isInitialized: status.configured,
+    ...status
+  });
+});
+
+// Test email API endpoint
+app.post('/api/test-email', async (req, res) => {
+  try {
+    const { testEmail } = req.body;
+    
+    if (!testEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Test email address is required'
+      });
+    }
+    
+    console.log('🧪 Testing email to:', testEmail);
+    
+    // Use the email service to send test email
+    const result = await emailService.sendTestEmail(testEmail);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        messageId: result.messageId,
+        message: result.message || 'Test email sent successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to send test email'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Email test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Test email failed: ' + error.message
+    });
+  }
+});
+
+// STAGE 1: Preview-only invoice generation (no database save)
+app.post('/api/preview-invoice', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { message, businessProfile } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required'
+      });
+    }
+
+    console.log('🔍 Generating invoice preview:', message.substring(0, 100) + '...');
+
+    // Get current business settings including logo
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+
+    // Performance optimization: Cache product catalog to avoid database calls
+    const catalogCacheKey = getCacheKey('catalog', 'all');
+    let catalog = getFromCache(catalogCacheKey);
+    
+    if (!catalog) {
+      const products = await database.getAllProducts(100, 0, null, true, req.merchant.id);
+      catalog = products.map(product => ({
+        id: `prod_${product.id}`,
+        name: product.name,
+        description: product.description,
+        sku: product.sku,
+        category: product.category,
+        price: product.unit_price,
+        tags: [product.name.toLowerCase(), product.category.toLowerCase(), product.sku.toLowerCase()]
+      }));
+      
+      // Cache the catalog for 5 minutes
+      setCache(catalogCacheKey, catalog);
+      console.log('📦 Catalog cached for performance');
+    } else {
+      console.log('📦 Using cached catalog');
+    }
+
+    // Use business profile if provided, otherwise use default config
+    const currentMerchantConfig = businessProfile ? {
+      businessName: businessProfile.name || businessProfile.businessName || currentBusinessSettings.name,
+      address: businessProfile.address || currentBusinessSettings.address,
+      phone: businessProfile.phone || currentBusinessSettings.phone,
+      email: businessProfile.email || currentBusinessSettings.email,
+      website: businessProfile.website || currentBusinessSettings.website,
+      logo: businessProfile.logo || currentBusinessSettings.logoUrl || config.merchant.logo || "/assets//assets/aspree2-logo.png?v=2",
+      category: businessProfile.category || 'general',
+      taxId: currentBusinessSettings.taxId,
+      paymentTerms: "NET_30",
+      catalog: catalog.length > 0 ? catalog : merchantConfig.catalog,
+      // Custom business settings
+      defaultTaxRate: businessProfile.taxRate || currentBusinessSettings.taxRate || 0,
+      additionalNotes: businessProfile.additionalNotes || "",
+      hideBusinessName: businessProfile.hideBusinessName !== undefined ? businessProfile.hideBusinessName : currentBusinessSettings.hideBusinessName
+    } : {
+      ...merchantConfig,
+      businessName: currentBusinessSettings.name,
+      address: currentBusinessSettings.address,
+      phone: currentBusinessSettings.phone,
+      hideBusinessName: currentBusinessSettings.hideBusinessName,
+      email: currentBusinessSettings.email,
+      website: currentBusinessSettings.website,
+      logo: currentBusinessSettings.logoUrl || config.merchant.logo || "",
+      taxId: currentBusinessSettings.taxId,
+      catalog: catalog.length > 0 ? catalog : merchantConfig.catalog,
+      category: 'general',
+      // Default settings
+      defaultTaxRate: currentBusinessSettings.taxRate || 0,
+      additionalNotes: ""
+    };
+
+    console.log('📦 Using catalog with', catalog.length, 'products');
+
+    // Process the message for PREVIEW ONLY
+    const result = await generator.processWhatsAppMessage(
+      message,
+      currentMerchantConfig,
+      null, // No default shipping - extract from message
+      "Preview dari web interface"
+    );
+
+    if (result.success) {
+      console.log('✅ Invoice preview generated successfully:', result.invoice.header.invoiceNumber);
+      
+      // Check for missing prices and provide helpful feedback
+      const itemsWithoutPrice = result.invoice.items.filter(item => 
+        item.unitPrice === 0 && item.productName && item.quantity > 0
+      );
+      
+      if (itemsWithoutPrice.length > 0) {
+        console.log('⚠️ Warning: Items found without prices:', itemsWithoutPrice.map(item => item.productName));
+        
+        // Add warning to the result
+        result.warnings = result.warnings || [];
+        result.warnings.push({
+          type: 'missing_prices',
+          message: `Beberapa item tidak memiliki harga: ${itemsWithoutPrice.map(item => item.productName).join(', ')}. Tambahkan "harga [nominal]" setelah nama produk untuk mendapatkan total yang akurat.`,
+          items: itemsWithoutPrice.map(item => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            suggestion: `${item.productName} ${item.quantity}pcs harga [nominal]`
+          })),
+          helpText: 'Contoh: "lolly 13pcs harga 50000" atau "laptop 1pc harga 15000000"'
+        });
+      }
+      
+      // Calculate processing time
+      const processingTime = Date.now() - startTime;
+      console.log(`⏱️ Preview generation completed in ${processingTime}ms`);
+      
+      // Return preview data (no database save)
+      const previewResult = {
+        ...result,
+        preview: true,
+        isPreview: true,
+        processingTime: processingTime,
+        // Generate temporary preview ID for editing reference
+        previewId: `preview_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      };
+      
+      res.json(previewResult);
+      
+    } else {
+      console.error('❌ Invoice preview generation failed:', result.error);
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to generate invoice preview'
+      });
+    }
+    
+  } catch (error) {
+    console.error('💥 Preview generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Preview generation failed: ' + error.message
+    });
+  }
+});
+
+// STAGE 2: Final invoice generation with database save 
+app.post('/api/confirm-invoice', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { invoiceData, businessProfile, previewId } = req.body;
+
+    if (!invoiceData || !invoiceData.invoice) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice data is required'
+      });
+    }
+
+    console.log('✅ Confirming invoice for final generation:', invoiceData.invoice.header.invoiceNumber);
+
+    // AI AUTO-LEARNING: DISABLED to prevent product name modifications
+    // This was causing "linea 28 sumba" to become "sumba blue jeans" due to AI enhancements
+    let autoLearningResults = null;
+    console.log('🧠 AI auto-learning disabled - preserving original product names from user input');
+    
+    // Save invoice to database
+    try {
+      // Get current business settings to ensure logo is included
+      console.log('🔧 Step 1: Getting current business settings...');
+      let currentBusinessSettings;
+      try {
+        currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+        console.log('✅ Business settings retrieved:', {
+          hasName: !!currentBusinessSettings.name,
+          hasLogoUrl: !!currentBusinessSettings.logoUrl,
+          hasAddress: !!currentBusinessSettings.address,
+          hasPhone: !!currentBusinessSettings.phone
+        });
+      } catch (settingsError) {
+        console.error('💥 Failed to get business settings:', settingsError);
+        throw new Error(`Business settings retrieval failed: ${settingsError.message}`);
+      }
+      
+      // Merge business profile with current settings to ensure logo is included
+      const mergedBusinessProfile = businessProfile ? {
+        ...businessProfile,
+        logoUrl: businessProfile.logoUrl || currentBusinessSettings.logoUrl,
+        logo: businessProfile.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2',
+        hideBusinessName: businessProfile.hideBusinessName !== undefined ? businessProfile.hideBusinessName : currentBusinessSettings.hideBusinessName
+      } : {
+        name: currentBusinessSettings.name || 'Business Name',
+        email: currentBusinessSettings.email || 'business@example.com',
+        address: currentBusinessSettings.address || 'Business Address',
+        phone: currentBusinessSettings.phone || 'Business Phone',
+        website: currentBusinessSettings.website || '',
+        logoUrl: currentBusinessSettings.logoUrl || null,
+        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
+        logo: currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2',
+        taxId: currentBusinessSettings.taxId || '',
+        taxRate: currentBusinessSettings.taxRate || 0,
+        taxEnabled: currentBusinessSettings.taxEnabled || false,
+        taxName: currentBusinessSettings.taxName || 'PPN'
+      };
+      
+      console.log('🔧 Step 2: Business profile merged successfully');
+      
+      // Include business profile data and set initial payment stage
+      const invoiceWithProfile = {
+        ...invoiceData.invoice,
+        businessProfile: mergedBusinessProfile
+      };
+      
+      console.log('🔧 Step 3: Invoice with profile created, logo path:', mergedBusinessProfile.logo);
+      
+      // Initialize payment stage based on payment schedule
+      if (invoiceWithProfile.paymentSchedule && invoiceWithProfile.paymentSchedule.scheduleType === 'down_payment') {
+        invoiceWithProfile.payment_stage = 'down_payment';
+        invoiceWithProfile.payment_status = 'pending';
+        console.log('🎯 Setting initial payment stage to down_payment for scheduled payment invoice');
+      } else {
+        invoiceWithProfile.payment_stage = 'full_payment';
+        invoiceWithProfile.payment_status = 'pending';
+        console.log('🎯 Setting initial payment stage to full_payment for regular invoice');
+      }
+      
+      let savedInvoice;
+      const { invoiceId } = req.body; // Check if this is an update
+      
+      if (invoiceId) {
+        // UPDATE existing invoice
+        console.log('🔧 Step 4: Updating existing invoice with ID:', invoiceId);
+        try {
+          savedInvoice = await database.updateInvoice(invoiceId, invoiceWithProfile, req.merchant.id);
+          if (!savedInvoice) {
+            console.error('❌ Invoice not found for update:', invoiceId);
+            return res.status(404).json({
+              success: false,
+              error: 'Invoice not found for update'
             });
+          }
+          console.log('✅ Invoice updated successfully:', savedInvoice.invoiceNumber);
+        } catch (updateError) {
+          console.error('💥 Invoice update failed:', updateError);
+          throw new Error(`Invoice update failed: ${updateError.message}`);
         }
-
-        function groupCustomersByActivity(customers) {
-            const groups = {};
-            
-            customers.forEach(customer => {
-                const totalOrders = customer.total_orders || 0;
-                const totalSpent = customer.total_spent || 0;
-                
-                let activityLevel;
-                if (totalOrders === 0) {
-                    activityLevel = 'New Customers';
-                } else if (totalOrders >= 10 || totalSpent >= 10000000) { // 10M IDR
-                    activityLevel = 'VIP Customers';
-                } else if (totalOrders >= 3 || totalSpent >= 1000000) { // 1M IDR
-                    activityLevel = 'Regular Customers';
-                } else {
-                    activityLevel = 'Occasional Customers';
-                }
-                
-                if (!groups[activityLevel]) {
-                    groups[activityLevel] = {
-                        displayName: activityLevel,
-                        customers: []
-                    };
-                }
-                groups[activityLevel].customers.push(customer);
-            });
-            
-            // Sort each group's customers by total spent (highest first)
-            Object.keys(groups).forEach(key => {
-                groups[key].customers.sort((a, b) => (b.total_spent || 0) - (a.total_spent || 0));
-            });
-            
-            // Define order of groups
-            const orderedGroups = {};
-            const groupOrder = ['VIP Customers', 'Regular Customers', 'Occasional Customers', 'New Customers'];
-            groupOrder.forEach(groupName => {
-                if (groups[groupName]) {
-                    orderedGroups[groupName] = groups[groupName];
-                }
-            });
-            
-            return orderedGroups;
+      } else {
+        // CREATE new invoice
+        console.log('🔧 Step 4: Creating new invoice');
+        try {
+          savedInvoice = await database.saveInvoice(invoiceWithProfile, req.merchant.id);
+          console.log('✅ New invoice created successfully:', savedInvoice.invoiceNumber);
+        } catch (saveError) {
+          console.error('💥 Invoice save failed:', saveError);
+          throw new Error(`Invoice save failed: ${saveError.message}`);
         }
-
-        function createCustomerActivityGroup(activityKey, group) {
-            const activityGroup = document.createElement('div');
-            activityGroup.className = 'customer-activity-group';
-            
-            const activityHeader = document.createElement('div');
-            activityHeader.className = 'activity-group-header';
-            activityHeader.innerHTML = `
-                <h3>${group.displayName}</h3>
-                <span class="customer-count">${group.customers.length} customer${group.customers.length !== 1 ? 's' : ''}</span>
-            `;
-            
-            const customersList = document.createElement('div');
-            customersList.className = 'customers-list';
-            
-            group.customers.forEach(customer => {
-                const listItem = createCustomerListItem(customer);
-                customersList.appendChild(listItem);
-            });
-            
-            activityGroup.appendChild(activityHeader);
-            activityGroup.appendChild(customersList);
-            
-            return activityGroup;
+      }
+      
+      console.log('🔧 Step 5: Invoice processing completed, ID:', savedInvoice.id);
+      
+      // Calculate processing time
+      const processingTime = Date.now() - startTime;
+      console.log(`⏱️ Final invoice generation completed in ${processingTime}ms`);
+      
+      // Update the result with the new invoice number and auto-learning results
+      const finalResult = {
+        ...invoiceData,
+        success: true,
+        invoice: {
+          ...invoiceData.invoice,
+          header: {
+            ...invoiceData.invoice.header,
+            invoiceNumber: savedInvoice.invoiceNumber
+          }
+        },
+        databaseId: savedInvoice.id,
+        customerToken: savedInvoice.customerToken,
+        customerPortalUrl: `${config.server.baseUrl}/customer/invoice/${savedInvoice.customerToken}`,
+        customerGeneralPortalUrl: `${config.server.baseUrl}/customer`,
+        // AI Auto-learning results
+        autoLearning: autoLearningResults,
+        newCustomerDetected: autoLearningResults?.confirmationsNeeded.some(c => c.type === 'customer') || false,
+        newProductDetected: autoLearningResults?.confirmationsNeeded.some(c => c.type === 'product') || false,
+        customerData: autoLearningResults?.confirmationsNeeded.find(c => c.type === 'customer')?.data || null,
+        productData: autoLearningResults?.confirmationsNeeded.filter(c => c.type === 'product').map(c => c.data) || [],
+        processingTime: processingTime,
+        finalInvoice: true,
+        previewId: previewId // Reference to original preview
+      };
+      
+      // Send response immediately to reduce perceived latency
+      res.json(finalResult);
+      
+      // Queue heavy operations (email sending, PDF generation) for async processing
+      heavyOperationQueue.push(async () => {
+        try {
+          if (savedInvoice.customer_email) {
+            console.log('📧 Invoice ready for sharing - email not sent automatically');
+            console.log('💡 Use the sharing options to send via email, WhatsApp, or link');
+          }
+        } catch (error) {
+          console.error('💥 Heavy operation error:', error);
         }
+      });
+      
+    } catch (databaseError) {
+      console.error('💾 Database operation failed:', databaseError);
+      console.error('💾 Stack trace:', databaseError.stack);
+      console.error('💾 Error type:', databaseError.constructor.name);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to save invoice: ' + databaseError.message,
+        errorType: databaseError.constructor.name
+      });
+    }
+    
+  } catch (error) {
+    console.error('💥 Final invoice generation error:', error);
+    console.error('💥 Stack trace:', error.stack);
+    console.error('💥 Error type:', error.constructor.name);
+    console.error('💥 Request body keys:', Object.keys(req.body || {}));
+    res.status(500).json({
+      success: false,
+      error: 'Final invoice generation failed: ' + error.message,
+      errorType: error.constructor.name
+    });
+  }
+});
 
-        function createCustomerListItem(customer) {
-            const listItem = document.createElement('div');
-            listItem.className = 'customer-list-item';
-            
-            const totalSpentFormatted = formatCurrency(customer.total_spent || 0);
-            const totalOrders = customer.total_orders || 0;
-            const totalInvoices = customer.total_invoices || 0;
-            
-            listItem.innerHTML = `
-                <div class="customer-list-content">
-                    <div class="customer-avatar">
-                        <div class="customer-avatar-circle">
-                            ${customer.name ? customer.name.charAt(0).toUpperCase() : '👤'}
-                        </div>
-                    </div>
-                    
-                    <div class="customer-main-info">
-                        <div class="customer-header">
-                            <div class="customer-name">
-                                <strong>${customer.name || 'Unnamed Customer'}</strong>
-                            </div>
-                        </div>
-                        
-                        <div class="customer-details">
-                            <div class="customer-contact">
-                                <span class="customer-email">📧 ${customer.email || 'No email'}</span>
-                                <span class="customer-phone">📞 ${customer.phone || 'No phone'}</span>
-                                ${customer.address ? `<span class="customer-address">🏠 ${customer.address}</span>` : ''}
-                            </div>
-                            
-                            <div class="customer-stats">
-                                <span class="orders-count">📦 ${totalOrders} orders</span>
-                                <span class="invoices-count">📄 ${totalInvoices} invoices</span>
-                                <span class="total-spent">${totalSpentFormatted}</span>
-                                ${customer.last_order_date ? `<span class="last-order">📅 Last: ${formatDate(customer.last_order_date)}</span>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="customer-actions">
-                        ${getCustomerActionButtons(customer)}
-                    </div>
-                </div>
-            `;
-            
-            return listItem;
+// LEGACY: Original process-message API (redirects to preview-only mode)
+app.post('/api/process-message', authMiddleware.authenticateMerchant, async (req, res) => {
+  console.log('⚠️  Legacy API called - redirecting to preview-only mode');
+  console.log('💡 This API now generates previews only. Use /api/confirm-invoice to finalize.');
+  
+  // Redirect to the new preview API
+  try {
+    const { message, businessProfile } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required'
+      });
+    }
+
+    console.log('🔄 Redirecting to preview-only API...');
+    
+    // Make internal request to preview API
+    const previewResponse = await fetch(`${config.server.baseUrl}/api/preview-invoice`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message, businessProfile })
+    });
+
+    if (!previewResponse.ok) {
+      return res.status(previewResponse.status).json({
+        success: false,
+        error: 'Preview generation failed'
+      });
+    }
+
+    const previewData = await previewResponse.json();
+    
+    // Add legacy compatibility flag
+    const legacyResponse = {
+      ...previewData,
+      legacyMode: true,
+      message: 'This is a preview only. Use "Generate Final Invoice" button to create the final invoice.'
+    };
+
+    res.json(legacyResponse);
+    
+  } catch (error) {
+    console.error('💥 Legacy API redirect error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Legacy API redirect failed: ' + error.message
+    });
+  }
+});
+
+// PDF generation removed - replaced with Print functionality
+/*
+app.post('/api/generate-pdf', async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { invoiceData } = req.body;
+
+    if (!invoiceData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Data faktur diperlukan'
+      });
+    }
+
+    console.log('📄 Generating PDF for invoice:', invoiceData.invoice.header.invoiceNumber);
+
+    // Performance optimization: Check cache for recently generated PDFs
+    const pdfCacheKey = getCacheKey('pdf', invoiceData.invoice.header.invoiceNumber);
+    let pdfBuffer = getFromCache(pdfCacheKey);
+    
+    if (!pdfBuffer) {
+      // Generate PDF (with fallback to HTML)
+      pdfBuffer = await pdfGenerator.generateInvoicePDF(invoiceData);
+      
+      // Cache the PDF for 1 minute (shorter TTL for PDFs)
+      setCache(pdfCacheKey, pdfBuffer);
+      console.log('📄 PDF cached for performance');
+    } else {
+      console.log('📄 Using cached PDF');
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`⏱️ PDF generation completed in ${processingTime}ms`);
+
+    // Check if we got HTML fallback instead of PDF
+    if (pdfBuffer.isHTML) {
+      // Set headers for HTML download
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `attachment; filename="Faktur-${invoiceData.invoice.header.invoiceNumber}.html"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      console.log('📄 Generated HTML invoice (fallback mode):', pdfBuffer.fileName);
+      res.send(pdfBuffer);
+    } else {
+      // Set headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Faktur-${invoiceData.invoice.header.invoiceNumber}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+
+      // Send PDF buffer
+      res.send(pdfBuffer);
+      console.log('✅ PDF generated successfully');
+    }
+
+  } catch (error) {
+    console.error('💥 PDF generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Gagal membuat PDF: ' + error.message
+    });
+  }
+});
+
+// API endpoint to download PDF by invoice ID
+app.get('/api/invoices/pdf/:invoiceId', async (req, res) => {
+  try {
+    const invoiceId = req.params.invoiceId;
+    
+    // Get invoice from database
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Create invoice data structure for PDF generation
+    const invoiceData = {
+      invoice: {
+        header: {
+          invoiceNumber: invoice.invoice_number,
+          invoiceDate: invoice.invoice_date,
+          dueDate: invoice.due_date,
+          status: invoice.status
+        },
+        merchant: {
+          businessName: invoice.merchant_name,
+          address: invoice.merchant_address,
+          phone: invoice.merchant_phone,
+          email: invoice.merchant_email,
+          website: invoice.merchant_website || ''
+        },
+        customer: {
+          name: invoice.customer_name,
+          email: invoice.customer_email,
+          address: invoice.customer_address
+        },
+        items: invoice.items_json || [],
+        calculations: {
+          subtotal: invoice.subtotal,
+          totalTax: invoice.tax_amount,
+          shippingCost: invoice.shipping_cost,
+          grandTotal: invoice.grand_total,
+          currency: invoice.currency || 'IDR'
+        },
+        payment: {
+          paymentTerms: invoice.payment_terms || 'NET_30',
+          paymentMethods: ['Bank Transfer', 'QRIS'],
+          notes: invoice.notes || ''
         }
+      }
+    };
+    
+    // Generate PDF
+    const pdfBuffer = await pdfGenerator.generateInvoicePDF(invoiceData);
+    
+    // Check if we got HTML fallback instead of PDF
+    if (pdfBuffer.isHTML) {
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `attachment; filename="Invoice-${invoice.invoice_number}.html"`);
+      res.send(pdfBuffer);
+    } else {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Invoice-${invoice.invoice_number}.pdf"`);
+      res.send(pdfBuffer);
+    }
+    
+  } catch (error) {
+    console.error('💥 PDF download error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate PDF: ' + error.message
+    });
+  }
+});
 
+// API endpoint to generate bulk PDF export of invoices
+app.post('/api/export/invoices/pdf', async (req, res) => {
+  try {
+    const { invoiceIds, dateRange, status } = req.body;
+    
+    console.log('📄 Starting bulk PDF export for invoices');
+    
+    let invoices = [];
+    
+    // Get invoices based on provided criteria
+    if (invoiceIds && invoiceIds.length > 0) {
+      // Export specific invoices
+      invoices = await Promise.all(
+        invoiceIds.map(async (id) => {
+          const invoice = await database.getInvoice(id);
+          return invoice;
+        })
+      );
+      invoices = invoices.filter(Boolean); // Remove null entries
+    } else {
+      // Export all invoices with filters
+      invoices = await database.getAllInvoices();
+      
+      // Apply date range filter
+      if (dateRange && dateRange.start && dateRange.end) {
+        const startDate = new Date(dateRange.start);
+        const endDate = new Date(dateRange.end);
+        invoices = invoices.filter(invoice => {
+          const invoiceDate = new Date(invoice.invoice_date);
+          return invoiceDate >= startDate && invoiceDate <= endDate;
+        });
+      }
+      
+      // Apply status filter
+      if (status && status !== 'all') {
+        invoices = invoices.filter(invoice => invoice.status === status);
+      }
+    }
+    
+    if (invoices.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No invoices found matching criteria'
+      });
+    }
+    
+    console.log(`📄 PDF Export disabled - returning JSON data instead`);
+    
+    // PDF generation disabled - return JSON data instead
+    const reportData = {
+      title: 'Invoice Export Report',
+      dateRange: dateRange,
+      status: status,
+      invoices: invoices,
+      exportedAt: new Date().toISOString()
+    };
+    
+    res.json({
+      success: true,
+      message: 'PDF export disabled - returning JSON data',
+      data: reportData
+    });
+    console.log(`✅ JSON report generated: ${invoices.length} invoices`);
+    
+  } catch (error) {
+    console.error('💥 Bulk PDF export error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export invoices: ' + error.message
+    });
+  }
+});
 
-        function getCustomerActionButtons(customer) {
-            let actions = [];
-
-            // View button - always available
-            actions.push(`<button class="btn btn-sm btn-primary" onclick="viewCustomer(${customer.id})" title="View customer details">👁️ View</button>`);
-
-            // Edit button - always available
-            actions.push(`<button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})" title="Edit customer information">✏️ Edit</button>`);
-
-            // Delete button - always available
-            actions.push(`<button class="btn btn-sm btn-danger" onclick="deleteCustomer(${customer.id})" title="Delete this customer">🗑️ Delete</button>`);
-
-            return actions.join('');
-        }
-
-        function createCustomerCard(customer) {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            
-            const statusClass = customer.status === 'active' ? 'stock-high' : 'stock-low';
-            const statusText = customer.status === 'active' ? 'Active' : 'Inactive';
-            const totalSpentFormatted = formatCurrency(customer.total_spent || 0);
-            
-            card.innerHTML = `
-                <div class="product-header">
-                    <div>
-                        <div class="product-name">${customer.name || 'Unknown'}</div>
-                        <div class="product-sku">Email: ${customer.email}</div>
-                    </div>
-                    <div class="stock-badge ${statusClass}">${statusText}</div>
-                </div>
-                <div class="product-price">${totalSpentFormatted}</div>
-                <div class="product-stock">
-                    <span>Orders: ${customer.total_orders || 0}</span>
-                    <span>Invoices: ${customer.total_invoices || 0}</span>
-                </div>
-                <div>Phone: ${customer.phone || 'N/A'}</div>
-                ${customer.last_order_date ? `<div>Last Order: ${formatDate(customer.last_order_date)}</div>` : ''}
-                <div class="product-actions">
-                    <button class="btn btn-sm btn-primary" onclick="viewCustomer(${customer.id})">👁️ View</button>
-                    <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">✏️ Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteCustomer(${customer.id})">🗑️ Delete</button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        function filterCustomers() {
-            const searchTerm = document.getElementById('customer-search').value.toLowerCase();
-            const sortOption = document.getElementById('customer-sort').value;
-            
-            let filtered = customers.filter(customer => {
-                return !searchTerm || 
-                    (customer.name && customer.name.toLowerCase().includes(searchTerm)) ||
-                    (customer.email && customer.email.toLowerCase().includes(searchTerm)) ||
-                    (customer.phone && customer.phone.toLowerCase().includes(searchTerm)) ||
-                    (customer.address && customer.address.toLowerCase().includes(searchTerm));
-            });
-            
-            // Sort customers based on selected option
-            filtered.sort((a, b) => {
-                switch (sortOption) {
-                    case 'name':
-                        const nameA = (a.name || '').toLowerCase();
-                        const nameB = (b.name || '').toLowerCase();
-                        return nameA.localeCompare(nameB);
-                    case 'orders':
-                        return (b.total_orders || 0) - (a.total_orders || 0);
-                    case 'spent':
-                        return (b.total_spent || 0) - (a.total_spent || 0);
-                    case 'recent':
-                        const dateA = a.last_order_date ? new Date(a.last_order_date) : new Date(0);
-                        const dateB = b.last_order_date ? new Date(b.last_order_date) : new Date(0);
-                        return dateB - dateA;
-                    default:
-                        return 0;
-                }
-            });
-            
-            displayCustomers(filtered);
-        }
-
-        async function viewCustomer(customerId) {
-            try {
-                const response = await fetch(`/api/customers/${customerId}`);
-                const data = await response.json();
-                
-                if (data.success && data.customer) {
-                    showCustomerModal(data.customer);
-                } else {
-                    alert('Failed to load customer details: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error loading customer details: ' + error.message);
+// API endpoint to generate comprehensive analytics report
+app.post('/api/export/analytics/pdf', async (req, res) => {
+  try {
+    const { reportType, dateRange, includeCharts = true } = req.body;
+    
+    console.log('📊 Generating analytics report PDF');
+    
+    // Gather analytics data
+    const invoices = await database.getAllInvoices();
+    const orders = await database.getAllOrders();
+    const customers = await database.getAllCustomers();
+    const products = await database.getAllProducts();
+    
+    // Filter data by date range if provided
+    let filteredInvoices = invoices;
+    let filteredOrders = orders;
+    
+    if (dateRange && dateRange.start && dateRange.end) {
+      const startDate = new Date(dateRange.start);
+      const endDate = new Date(dateRange.end);
+      
+      filteredInvoices = invoices.filter(invoice => {
+        const invoiceDate = new Date(invoice.invoice_date);
+        return invoiceDate >= startDate && invoiceDate <= endDate;
+      });
+      
+      filteredOrders = orders.filter(order => {
+        const orderDate = new Date(order.order_date);
+        return orderDate >= startDate && orderDate <= endDate;
+      });
+    }
+    
+    // Calculate top products
+    const calculateTopProducts = (invoices, products) => {
+      const productSales = {};
+      
+      invoices.forEach(invoice => {
+        try {
+          const items = JSON.parse(invoice.items_json || '[]');
+          items.forEach(item => {
+            const key = item.productName || item.name;
+            if (!productSales[key]) {
+              productSales[key] = { name: key, quantity: 0, revenue: 0 };
             }
+            productSales[key].quantity += item.quantity || 0;
+            productSales[key].revenue += (item.quantity || 0) * (item.unitPrice || 0);
+          });
+        } catch (error) {
+          console.error('Error parsing items for invoice:', invoice.invoice_number, error);
         }
+      });
+      
+      return Object.values(productSales).sort((a, b) => b.revenue - a.revenue);
+    };
+    
+    // Calculate analytics
+    const analytics = {
+      revenue: {
+        totalRevenue: filteredInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0),
+        totalInvoices: filteredInvoices.length,
+        avgInvoiceValue: filteredInvoices.length > 0 ? 
+          filteredInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0) / filteredInvoices.length : 0,
+        paidInvoices: filteredInvoices.filter(inv => inv.status === 'paid').length,
+        unpaidInvoices: filteredInvoices.filter(inv => inv.status === 'sent').length,
+        overdueInvoices: filteredInvoices.filter(inv => inv.status === 'overdue').length
+      },
+      customers: {
+        totalCustomers: customers.length,
+        newCustomers: customers.filter(customer => {
+          if (!dateRange) return true;
+          const customerDate = new Date(customer.created_at);
+          return customerDate >= new Date(dateRange.start) && customerDate <= new Date(dateRange.end);
+        }).length,
+        repeatCustomers: customers.filter(customer => {
+          const customerInvoices = filteredInvoices.filter(inv => inv.customer_email === customer.email);
+          return customerInvoices.length > 1;
+        }).length
+      },
+      products: {
+        totalProducts: products.length,
+        topProducts: calculateTopProducts(filteredInvoices, products).slice(0, 10)
+      },
+      orders: {
+        totalOrders: filteredOrders.length,
+        shippedOrders: filteredOrders.filter(order => order.status === 'shipped').length,
+        deliveredOrders: filteredOrders.filter(order => order.status === 'delivered').length,
+        pendingOrders: filteredOrders.filter(order => order.status === 'pending').length
+      },
+      dateRange: dateRange,
+      generatedAt: new Date().toISOString()
+    };
+    
+    // PDF generation disabled - return JSON analytics data
+    const reportData = {
+      reportType: reportType || 'comprehensive',
+      includeCharts: includeCharts,
+      analytics: analytics,
+      generatedAt: new Date().toISOString()
+    };
+    
+    res.json({
+      success: true,
+      message: 'PDF export disabled - returning JSON analytics data',
+      data: reportData
+    });
+    console.log('✅ Analytics report JSON generated successfully');
+    
+  } catch (error) {
+    console.error('💥 Analytics report generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate analytics report: ' + error.message
+    });
+  }
+});
+*/
 
-        function showCustomerModal(customer) {
-            const modal = document.getElementById('customerModal');
-            const content = document.getElementById('customerModalContent');
-            
-            content.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h3>${customer.name || 'Unknown Customer'}</h3>
-                    <p><strong>Email:</strong> ${customer.email}</p>
-                    <p><strong>Phone:</strong> ${customer.phone || 'N/A'}</p>
-                    <p><strong>Address:</strong> ${customer.address || 'N/A'}</p>
-                    <p><strong>Status:</strong> <span class="status-badge ${customer.status === 'active' ? 'status-paid' : 'status-draft'}">${customer.status}</span></p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Customer Statistics</h4>
-                    <p><strong>Total Spent:</strong> ${formatCurrency(customer.total_spent || 0)}</p>
-                    <p><strong>Total Orders:</strong> ${customer.total_orders || 0}</p>
-                    <p><strong>Total Invoices:</strong> ${customer.total_invoices || 0}</p>
-                    <p><strong>Average Order Value:</strong> ${formatCurrency(customer.avg_order_value || 0)}</p>
-                    <p><strong>Customer Since:</strong> ${formatDate(customer.created_at)}</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4>Recent Orders</h4>
-                    ${customer.orders && customer.orders.length > 0 ? 
-                        `<table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: #f8f9fa;">
-                                    <th style="padding: 8px; text-align: left;">Order #</th>
-                                    <th style="padding: 8px; text-align: left;">Date</th>
-                                    <th style="padding: 8px; text-align: right;">Amount</th>
-                                    <th style="padding: 8px; text-align: left;">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${customer.orders.slice(0, 5).map(order => `
-                                    <tr>
-                                        <td style="padding: 8px;">${order.order_number}</td>
-                                        <td style="padding: 8px;">${formatDate(order.order_date)}</td>
-                                        <td style="padding: 8px; text-align: right;">${formatCurrency(order.total_amount)}</td>
-                                        <td style="padding: 8px;">${order.status}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>` 
-                        : '<p>No orders found</p>'
-                    }
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <button class="btn btn-primary" onclick="editCustomer(${customer.id})">✏️ Edit Customer</button>
-                    <button class="btn btn-secondary" onclick="closeCustomerModal()">Close</button>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
+// API endpoint to get export status and options
+app.get('/api/export/options', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const customers = await database.getAllCustomers(1000, 0, null, req.merchant.id);
+    const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
+    
+    res.json({
+      success: true,
+      exportOptions: {
+        invoices: {
+          total: invoices.length,
+          formats: ['pdf', 'csv', 'xlsx'],
+          bulkOptions: ['single'],
+          filters: ['dateRange', 'status', 'customer']
+        },
+        customers: {
+          total: customers.length,
+          formats: ['csv', 'xlsx', 'pdf']
+        },
+        products: {
+          total: products.length,
+          formats: ['csv', 'xlsx', 'pdf']
+        },
+        analytics: {
+          reportTypes: ['comprehensive', 'revenue', 'customers', 'products'],
+          formats: ['pdf', 'xlsx'],
+          chartOptions: ['includeCharts', 'chartsOnly']
         }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching export options:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch export options'
+    });
+  }
+});
 
-        function closeCustomerModal() {
-            document.getElementById('customerModal').style.display = 'none';
+// API endpoint to send invoice by email
+app.post('/api/invoices/send-email', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { invoiceId, customerEmail, businessProfile } = req.body;
+    
+    if (!invoiceId || !customerEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and customer email are required'
+      });
+    }
+    
+    // Get invoice from database
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    console.log('📧 Sending invoice email for:', invoice.invoice_number);
+    
+    // Send email without PDF attachment
+    // Use the merchant data from the invoice itself to ensure consistency
+    // Include logo from business profile if available
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+    const businessSettings = {
+      name: invoice.merchant_name,
+      email: invoice.merchant_email,
+      address: invoice.merchant_address,
+      phone: invoice.merchant_phone,
+      website: currentBusinessSettings.website,
+      taxId: currentBusinessSettings.taxId,
+      logo: businessProfile?.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2',
+      category: businessProfile?.category || 'general'
+    };
+    await emailService.sendInvoiceEmail(invoice, customerEmail, null, businessSettings);
+    
+    res.json({
+      success: true,
+      message: 'Invoice sent successfully'
+    });
+    
+  } catch (error) {
+    console.error('💥 Email send error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send email: ' + error.message
+    });
+  }
+});
+
+// API endpoint to send final payment email
+app.post('/api/final-payment/send-email', async (req, res) => {
+  try {
+    const { invoiceId, customerEmail, businessProfile } = req.body;
+    
+    if (!invoiceId || !customerEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and customer email are required'
+      });
+    }
+
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+
+    // Check if invoice has final payment token and is in correct stage
+    if (invoice.payment_stage !== 'final_payment' || !invoice.final_payment_token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice is not in final payment stage or missing payment token'
+      });
+    }
+    
+    console.log('📧 Sending final payment email for:', invoice.invoice_number);
+    
+    // Construct final payment URL
+    const finalPaymentUrl = `${req.protocol}://${req.get('host')}/final-payment?token=${invoice.final_payment_token}`;
+    
+    // Use the merchant data from the invoice itself to ensure consistency
+    // Include logo from business profile if available
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+    const businessSettings = {
+      name: invoice.merchant_name,
+      email: invoice.merchant_email,
+      address: invoice.merchant_address,
+      phone: invoice.merchant_phone,
+      website: currentBusinessSettings.website,
+      taxId: currentBusinessSettings.taxId,
+      logo: businessProfile?.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2',
+      category: businessProfile?.category || 'general'
+    };
+    
+    const emailResult = await emailService.sendFinalPaymentEmail(invoice, customerEmail, finalPaymentUrl, businessSettings);
+    
+    res.json({
+      success: emailResult.success,
+      message: emailResult.success ? 'Final payment email sent successfully' : 'Failed to send final payment email',
+      error: emailResult.error || null,
+      messageId: emailResult.messageId || null
+    });
+    
+  } catch (error) {
+    console.error('💥 Final payment email send error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send final payment email: ' + error.message
+    });
+  }
+});
+
+// Email Notification API endpoints
+app.post('/api/notifications/payment-reminder', async (req, res) => {
+  try {
+    const { invoiceId, daysToDue } = req.body;
+    
+    if (!invoiceId || daysToDue === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and daysToDue are required'
+      });
+    }
+    
+    // Get invoice from database
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Send payment reminder email
+    const result = await emailService.sendPaymentReminderEmail(
+      invoice,
+      invoice.customer_email,
+      daysToDue
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Payment reminder error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/notifications/invoice-overdue', async (req, res) => {
+  try {
+    const { invoiceId, daysPastDue } = req.body;
+    
+    if (!invoiceId || daysPastDue === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and daysPastDue are required'
+      });
+    }
+    
+    // Get invoice from database
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Send overdue notification email
+    const result = await emailService.sendInvoiceOverdueNotification(
+      invoice,
+      invoice.customer_email,
+      daysPastDue
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Overdue notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/notifications/order-shipped', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Order ID is required'
+      });
+    }
+    
+    // Get order from database (using existing orders structure)
+    const order = await database.getOrder(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    // Send shipping notification email
+    const result = await emailService.sendOrderShippedNotification(
+      order,
+      order.customer_email
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Shipping notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/notifications/order-delivered', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Order ID is required'
+      });
+    }
+    
+    // Get order from database
+    const order = await database.getOrder(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    // Send delivery notification email
+    const result = await emailService.sendOrderDeliveredNotification(
+      order,
+      order.customer_email
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Delivery notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/notifications/merchant', async (req, res) => {
+  try {
+    const { type, data, merchantEmail } = req.body;
+    
+    if (!type || !data || !merchantEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Type, data, and merchantEmail are required'
+      });
+    }
+    
+    // Send merchant notification email
+    const result = await emailService.sendMerchantNotification(
+      type,
+      data,
+      merchantEmail
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Merchant notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// AI Auto-learning API endpoints
+app.post('/api/auto-learning/confirm-customer', async (req, res) => {
+  try {
+    const { customerData, action } = req.body;
+    
+    if (!customerData || !action) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer data and action are required'
+      });
+    }
+
+    if (action === 'add') {
+      await database.findOrCreateCustomer(customerData);
+      console.log('✅ Customer manually confirmed and added:', customerData.name);
+      
+      res.json({
+        success: true,
+        message: 'Customer added successfully',
+        customer: customerData
+      });
+    } else if (action === 'skip') {
+      console.log('⏭️ Customer addition skipped for:', customerData.name);
+      
+      res.json({
+        success: true,
+        message: 'Customer addition skipped'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid action. Use "add" or "skip"'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error confirming customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process customer confirmation: ' + error.message
+    });
+  }
+});
+
+app.post('/api/auto-learning/confirm-product', async (req, res) => {
+  try {
+    const { productData, action } = req.body;
+    
+    if (!productData || !action) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product data and action are required'
+      });
+    }
+
+    if (action === 'add') {
+      await database.createProduct(productData);
+      console.log('✅ Product manually confirmed and added:', productData.name);
+      
+      res.json({
+        success: true,
+        message: 'Product added successfully',
+        product: productData
+      });
+    } else if (action === 'skip') {
+      console.log('⏭️ Product addition skipped for:', productData.name);
+      
+      res.json({
+        success: true,
+        message: 'Product addition skipped'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid action. Use "add" or "skip"'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error confirming product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process product confirmation: ' + error.message
+    });
+  }
+});
+
+app.post('/api/auto-learning/edit-customer', async (req, res) => {
+  try {
+    const { customerData } = req.body;
+    
+    if (!customerData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer data is required'
+      });
+    }
+
+    await database.findOrCreateCustomer(customerData);
+    console.log('✅ Customer edited and added:', customerData.name);
+    
+    res.json({
+      success: true,
+      message: 'Customer edited and added successfully',
+      customer: customerData
+    });
+
+  } catch (error) {
+    console.error('❌ Error editing customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to edit customer: ' + error.message
+    });
+  }
+});
+
+app.post('/api/auto-learning/edit-product', async (req, res) => {
+  try {
+    const { productData } = req.body;
+    
+    if (!productData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product data is required'
+      });
+    }
+
+    await database.createProduct(productData);
+    console.log('✅ Product edited and added:', productData.name);
+    
+    res.json({
+      success: true,
+      message: 'Product edited and added successfully',
+      product: productData
+    });
+
+  } catch (error) {
+    console.error('❌ Error editing product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to edit product: ' + error.message
+    });
+  }
+});
+
+// API endpoint to get merchant catalog
+app.get('/api/catalog', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const products = await database.getAllProducts(100, 0, null, true, req.merchant.id);
+    
+    // Convert database products to catalog format for compatibility
+    const catalog = products.map(product => ({
+      id: `prod_${product.id}`,
+      name: product.name,
+      description: product.description,
+      sku: product.sku,
+      category: product.category,
+      price: product.unit_price,
+      tags: [product.name.toLowerCase(), product.category.toLowerCase(), product.sku.toLowerCase()]
+    }));
+    
+    res.json({
+      success: true,
+      catalog: catalog
+    });
+  } catch (error) {
+    console.error('Error fetching catalog:', error);
+    // Fallback to static catalog if database fails
+    res.json({
+      success: true,
+      catalog: merchantConfig.catalog
+    });
+  }
+});
+
+// Invoice Management API Endpoints
+app.get('/api/invoices', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { limit = 50, offset = 0, status, customerEmail, dateFrom, dateTo } = req.query;
+    const invoices = await database.getAllInvoices(
+      parseInt(limit), 
+      parseInt(offset), 
+      status, 
+      customerEmail,
+      dateFrom,
+      dateTo,
+      req.merchant.id
+    );
+    
+    res.json({
+      success: true,
+      invoices,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: invoices.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching invoices:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoices'
+    });
+  }
+});
+
+app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
+  try {
+    const idParam = req.params.id;
+    let invoice;
+    
+    console.log('🔒 Invoice access attempt for ID:', idParam);
+    console.log('🔒 Request merchant:', req.merchant?.id || 'anonymous');
+    console.log('🔒 Request source IP:', req.ip);
+    
+    // Check if the parameter is a numeric ID or an invoice number
+    if (/^\d+$/.test(idParam)) {
+      // Numeric ID - use original method
+      console.log('🔍 Loading invoice by numeric ID:', parseInt(idParam));
+      invoice = await database.getInvoice(parseInt(idParam));
+    } else {
+      // Invoice number - use invoice number lookup
+      console.log('🔍 Loading invoice by invoice number:', idParam);
+      invoice = await database.getInvoiceByNumber(idParam);
+    }
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+
+    console.log('🔒 Invoice found with merchant_id:', invoice.merchant_id);
+    
+    // SECURITY CHECK: If request is from an authenticated merchant, ensure they can only access their own invoices
+    if (req.merchant && req.merchant.id !== invoice.merchant_id) {
+      console.log('🚨 SECURITY: Merchant', req.merchant.id, 'attempted to access invoice belonging to merchant', invoice.merchant_id);
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own invoices'
+      });
+    }
+    
+    console.log('🔒 Access validated - Invoice details:', {
+      id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      merchant_id: invoice.merchant_id,
+      accessing_merchant: req.merchant?.id || 'public',
+      access_type: req.merchant ? 'merchant' : 'public'
+    });
+
+    // Get current business settings for the invoice's merchant to ensure consistent display
+    const currentBusinessSettings = await getCurrentBusinessSettings(invoice.merchant_id);
+    console.log('✅ Business settings loaded for merchant_id', invoice.merchant_id);
+    
+    // Data consistency check
+    if (currentBusinessSettings.email && currentBusinessSettings.email !== invoice.merchant_email) {
+      console.log('⚠️  Data inconsistency detected between invoice and business settings for merchant', invoice.merchant_id);
+    }
+    
+    // Enhance invoice with business settings for consistent template rendering
+    const enhancedInvoice = {
+      ...invoice,
+      // Ensure business information is available
+      merchant_logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+      merchant_name: invoice.merchant_name || currentBusinessSettings.name,
+      merchant_address: invoice.merchant_address || currentBusinessSettings.address,
+      merchant_phone: invoice.merchant_phone || currentBusinessSettings.phone,
+      merchant_email: invoice.merchant_email || currentBusinessSettings.email,
+      merchant_website: invoice.merchant_website || currentBusinessSettings.website,
+      
+      // Add metadata for business profile (needed for template logic)
+      businessProfile: {
+        name: invoice.merchant_name || currentBusinessSettings.name,
+        address: invoice.merchant_address || currentBusinessSettings.address,
+        phone: invoice.merchant_phone || currentBusinessSettings.phone,
+        email: invoice.merchant_email || currentBusinessSettings.email,
+        website: invoice.merchant_website || currentBusinessSettings.website,
+        logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+        logoUrl: currentBusinessSettings.logoUrl || invoice.merchant_logo, // Ensure both fields are set for compatibility
+        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
+        taxEnabled: currentBusinessSettings.taxEnabled || false,
+        taxRate: currentBusinessSettings.taxRate || 0,
+        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
+      }
+    };
+    
+    console.log('📄 Enhanced invoice data for consistent display:', {
+      invoice_number: enhancedInvoice.invoice_number,
+      hasLogo: !!enhancedInvoice.merchant_logo,
+      hasBusinessProfile: !!enhancedInvoice.businessProfile
+    });
+    
+    res.json({
+      success: true,
+      invoice: enhancedInvoice
+    });
+  } catch (error) {
+    console.error('Error fetching invoice:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoice'
+    });
+  }
+});
+
+// Get payment confirmations for an invoice
+app.get('/api/invoices/:id/payment-confirmations', authMiddleware.authenticateMerchant, async (req, res) => {
+  console.log(`🔍 Payment confirmations request for invoice: ${req.params.id}`);
+  
+  try {
+    const invoiceId = parseInt(req.params.id);
+    console.log(`📋 Parsed invoice ID: ${invoiceId}`);
+    
+    // Step 1: Get invoice from database
+    console.log('🔄 Fetching invoice from database...');
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    console.log(`📊 Invoice data received:`, invoice ? 'Found' : 'Not found');
+    
+    if (!invoice) {
+      console.log('❌ Invoice not found in database');
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    console.log('✅ Invoice found, checking payment confirmation fields...');
+    console.log(`  - payment_confirmation_file: ${invoice.payment_confirmation_file || 'NOT SET'}`);
+    console.log(`  - confirmation_status: ${invoice.confirmation_status || 'NOT SET'}`);
+    console.log(`  - payment_confirmation_date: ${invoice.payment_confirmation_date || 'NOT SET'}`);
+    console.log(`  - payment_confirmation_notes: ${invoice.payment_confirmation_notes || 'NOT SET'}`);
+    
+    // Step 2: Build payment confirmations array from invoice data
+    const confirmations = [];
+    
+    if (invoice.payment_confirmation_file) {
+      console.log('🔄 Processing payment confirmation file...');
+      
+      try {
+        // Fix Windows file path to web-accessible path through API endpoint
+        let webPath = invoice.payment_confirmation_file;
+        
+        // Extract just the filename from the full path
+        const filename = webPath.split(/[\\\/]/).pop();
+        
+        // Use the API endpoint to serve the file
+        webPath = `/api/payment-confirmations/${filename}`;
+        console.log(`📁 Original path: ${invoice.payment_confirmation_file}`);
+        console.log(`🌐 Web path: ${webPath}`);
+        
+        const confirmation = {
+          id: 1, // Simple ID for now
+          filePath: webPath,
+          originalName: invoice.payment_confirmation_file.split(/[\\\/]/).pop(),
+          notes: invoice.payment_confirmation_notes || '',
+          uploadDate: invoice.payment_confirmation_date || invoice.updated_at,
+          status: invoice.confirmation_status || 'pending',
+          paymentType: invoice.paymentType || 'regular'
+        };
+        
+        console.log('✅ Payment confirmation object created:', confirmation);
+        confirmations.push(confirmation);
+      } catch (confirmationError) {
+        console.error('❌ Error processing payment confirmation:', confirmationError);
+        throw confirmationError;
+      }
+    } else {
+      console.log('ℹ️ No payment confirmation file found for this invoice');
+    }
+    
+    console.log(`📤 Returning ${confirmations.length} payment confirmation(s)`);
+    res.json({
+      success: true,
+      confirmations: confirmations
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching payment confirmations:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch payment confirmations',
+      details: error.message
+    });
+  }
+});
+
+// Approve payment confirmation
+app.put('/api/invoices/:id/payment-confirmations/approve', async (req, res) => {
+  try {
+    const invoiceId = parseInt(req.params.id);
+    const { merchantNotes } = req.body;
+    
+    const result = await database.updatePaymentConfirmationStatus(invoiceId, 'approved', merchantNotes || '');
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Payment confirmation approved successfully',
+      invoice: result
+    });
+    
+  } catch (error) {
+    console.error('Error approving payment confirmation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve payment confirmation'
+    });
+  }
+});
+
+// Reject payment confirmation
+app.put('/api/invoices/:id/payment-confirmations/reject', async (req, res) => {
+  try {
+    const invoiceId = parseInt(req.params.id);
+    const { merchantNotes } = req.body;
+    
+    const result = await database.updatePaymentConfirmationStatus(invoiceId, 'rejected', merchantNotes || '');
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Payment confirmation rejected',
+      invoice: result
+    });
+    
+  } catch (error) {
+    console.error('Error rejecting payment confirmation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reject payment confirmation'
+    });
+  }
+});
+
+app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const invoiceNumber = req.params.invoiceNumber;
+    
+    console.log(`🔍 Fetching invoice ${invoiceNumber} for merchant ${merchantId}`);
+    
+    // Get invoice with merchant isolation
+    const invoice = await database.getInvoiceByNumber(invoiceNumber, merchantId);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      invoice
+    });
+  } catch (error) {
+    console.error('❌ Error fetching invoice by number:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoice: ' + error.message
+    });
+  }
+});
+
+app.put('/api/invoices/:id/status', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['draft', 'sent', 'paid'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be draft, sent, or paid'
+      });
+    }
+    
+    const result = await database.updateInvoiceStatus(parseInt(req.params.id), status, req.merchant.id);
+    
+    // Check if order was created (if status was updated to paid)
+    let orderInfo = null;
+    if (status === 'paid' && result && result.orderCreated) {
+      orderInfo = {
+        orderCreated: true,
+        orderId: result.orderId,
+        orderNumber: result.orderNumber
+      };
+      console.log(`✅ Order ${result.orderNumber} created from paid invoice`);
+    }
+    
+    res.json({
+      success: true,
+      message: `Invoice status updated to ${status}${orderInfo ? ` and order ${orderInfo.orderNumber} created` : ''}`,
+      result,
+      ...orderInfo
+    });
+  } catch (error) {
+    console.error('Error updating invoice status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update invoice status'
+    });
+  }
+});
+
+// Payment stage management
+app.put('/api/invoices/:id/payment-stage', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { action, status } = req.body;
+    const invoiceId = parseInt(req.params.id);
+    
+    console.log(`🎯 Payment stage action: ${action} for invoice ${invoiceId}`);
+    
+    if (!['confirm_down_payment', 'confirm_final_payment'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid action. Must be confirm_down_payment or confirm_final_payment'
+      });
+    }
+    
+    // Get current invoice to check payment stage
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    let newStage, newStatus, message;
+    
+    if (action === 'confirm_down_payment') {
+      if (invoice.payment_stage !== 'down_payment') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invoice is not in down payment stage'
+        });
+      }
+      newStage = 'final_payment';
+      newStatus = 'partial';
+      message = 'Down payment confirmed, moved to final payment stage';
+    } else if (action === 'confirm_final_payment') {
+      if (invoice.payment_stage !== 'final_payment') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invoice is not in final payment stage'
+        });
+      }
+      newStage = 'completed';
+      newStatus = 'completed';
+      message = 'Final payment confirmed, invoice completed';
+    }
+    
+    // Update the payment stage
+    const result = await database.updatePaymentStage(invoiceId, newStage, newStatus);
+    
+    res.json({
+      success: true,
+      message: message,
+      paymentStage: newStage,
+      paymentStatus: newStatus,
+      result
+    });
+  } catch (error) {
+    console.error('Error updating payment stage:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update payment stage: ' + error.message
+    });
+  }
+});
+
+app.delete('/api/invoices/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deleteInvoice(parseInt(req.params.id), req.merchant.id);
+    res.json({
+      success: true,
+      message: 'Invoice deleted successfully',
+      result
+    });
+  } catch (error) {
+    console.error('Error deleting invoice:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete invoice'
+    });
+  }
+});
+
+// Bulk delete invoices endpoint
+app.post('/api/invoices/bulk-delete', async (req, res) => {
+  try {
+    const { invoiceIds } = req.body;
+    
+    if (!invoiceIds || !Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid invoiceIds array provided'
+      });
+    }
+
+    const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const invoiceId of invoiceIds) {
+      try {
+        await database.deleteInvoice(parseInt(invoiceId));
+        results.push({ invoiceId, success: true });
+        successCount++;
+      } catch (error) {
+        results.push({ invoiceId, success: false, error: error.message });
+        errorCount++;
+      }
+    }
+
+    res.json({
+      success: errorCount === 0,
+      message: `Successfully deleted ${successCount} invoice(s). ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+      results,
+      summary: {
+        total: invoiceIds.length,
+        successful: successCount,
+        failed: errorCount
+      }
+    });
+  } catch (error) {
+    console.error('Error in bulk delete invoices:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete invoices'
+    });
+  }
+});
+
+// Customer Portal API Endpoints
+app.get('/api/customer/invoice/:token', async (req, res) => {
+  try {
+    const invoice = await database.getInvoiceByCustomerToken(req.params.token);
+    const clientIP = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    
+    if (!invoice) {
+      // Log failed access attempt
+      await database.logAccess({
+        ip: clientIP,
+        userAgent: userAgent,
+        type: 'token',
+        email: null,
+        invoiceId: null,
+        success: false
+      });
+      
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found or invalid token'
+      });
+    }
+    
+    // Log successful access
+    await database.logAccess({
+      ip: clientIP,
+      userAgent: userAgent,
+      type: 'token',
+      email: invoice.customer_email,
+      invoiceId: invoice.id,
+      success: true
+    });
+    
+    // Get current business settings to ensure consistent display (same as main invoice endpoint)
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+    
+    // Enhance invoice with business settings for consistent template rendering
+    const enhancedInvoice = {
+      ...invoice,
+      // Ensure business information is available
+      merchant_logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+      merchant_name: invoice.merchant_name || currentBusinessSettings.name,
+      merchant_address: invoice.merchant_address || currentBusinessSettings.address,
+      merchant_phone: invoice.merchant_phone || currentBusinessSettings.phone,
+      merchant_email: invoice.merchant_email || currentBusinessSettings.email,
+      merchant_website: invoice.merchant_website || currentBusinessSettings.website,
+      
+      // Add metadata for business profile (needed for template logic)
+      businessProfile: {
+        name: invoice.merchant_name || currentBusinessSettings.name,
+        address: invoice.merchant_address || currentBusinessSettings.address,
+        phone: invoice.merchant_phone || currentBusinessSettings.phone,
+        email: invoice.merchant_email || currentBusinessSettings.email,
+        website: invoice.merchant_website || currentBusinessSettings.website,
+        logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+        logoUrl: currentBusinessSettings.logoUrl || invoice.merchant_logo, // Ensure both fields are set for compatibility
+        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
+        taxEnabled: currentBusinessSettings.taxEnabled || false,
+        taxRate: currentBusinessSettings.taxRate || 0,
+        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
+      }
+    };
+    
+    console.log('📄 Enhanced customer invoice data for consistent display:', {
+      invoice_number: enhancedInvoice.invoice_number,
+      token: req.params.token,
+      hasLogo: !!enhancedInvoice.merchant_logo,
+      hasBusinessProfile: !!enhancedInvoice.businessProfile
+    });
+    
+    res.json({
+      success: true,
+      invoice: enhancedInvoice
+    });
+  } catch (error) {
+    console.error('Error fetching customer invoice:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoice'
+    });
+  }
+});
+
+app.get('/api/customer/invoices/:email', async (req, res) => {
+  try {
+    const email = req.params.email;
+    const invoices = await database.getCustomerInvoices(email);
+    const clientIP = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    
+    // Log access attempt
+    await database.logAccess({
+      ip: clientIP,
+      userAgent: userAgent,
+      type: 'email',
+      email: email,
+      invoiceId: null,
+      success: invoices.length > 0
+    });
+    
+    res.json({
+      success: true,
+      invoices
+    });
+  } catch (error) {
+    console.error('Error fetching customer invoices:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer invoices'
+    });
+  }
+});
+
+// Product Management API Endpoints
+app.post('/api/products', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('Creating product with data:', req.body);
+    
+    // Validate required fields
+    if (!req.body.name || !req.body.sku || !req.body.unit_price) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: name, sku, and unit_price are required'
+      });
+    }
+    
+    const result = await database.createProduct(req.body, req.merchant.id);
+    console.log('Product created successfully:', result);
+    
+    res.json({
+      success: true,
+      message: 'Product created successfully',
+      productId: result.lastInsertRowid
+    });
+  } catch (error) {
+    console.error('Error creating product:', error);
+    let errorMessage = 'Failed to create product';
+    
+    if (error.message.includes('UNIQUE constraint failed')) {
+      errorMessage = 'Product SKU already exists';
+    } else if (error.message.includes('NOT NULL constraint failed')) {
+      errorMessage = 'Missing required field';
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: errorMessage + ': ' + error.message
+    });
+  }
+});
+
+app.get('/api/products', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { limit = 50, offset = 0, category, active_only = 'true' } = req.query;
+    const products = await database.getAllProducts(
+      parseInt(limit),
+      parseInt(offset),
+      category,
+      active_only === 'true',
+      req.merchant.id
+    );
+    
+    res.json({
+      success: true,
+      products,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: products.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch products'
+    });
+  }
+});
+
+app.get('/api/products/categories', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const categories = await database.getProductCategories(req.merchant.id);
+    res.json({
+      success: true,
+      categories
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch categories'
+    });
+  }
+});
+
+app.get('/api/products/low-stock', async (req, res) => {
+  try {
+    const products = await database.getLowStockProducts();
+    res.json({
+      success: true,
+      products
+    });
+  } catch (error) {
+    console.error('Error fetching low stock products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch low stock products'
+    });
+  }
+});
+
+app.get('/api/products/:id', async (req, res) => {
+  try {
+    const product = await database.getProduct(parseInt(req.params.id));
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      product
+    });
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch product'
+    });
+  }
+});
+
+app.put('/api/products/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.updateProduct(parseInt(req.params.id), req.body, req.merchant.id);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update product'
+    });
+  }
+});
+
+app.delete('/api/products/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deleteProduct(parseInt(req.params.id), req.merchant.id);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete product'
+    });
+  }
+});
+
+app.put('/api/products/:id/stock', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { quantity, operation = 'set' } = req.body;
+    const result = await database.updateProductStock(parseInt(req.params.id), quantity, operation);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product stock updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating product stock:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update product stock'
+    });
+  }
+});
+
+// Order Management API Endpoints
+app.post('/api/orders', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('Creating order with data:', req.body);
+    
+    // Validate required fields
+    if (!req.body.customer_name || !req.body.customer_email || !req.body.total_amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: customer_name, customer_email, and total_amount are required'
+      });
+    }
+    
+    const result = await database.createOrder(req.body, req.merchant.id);
+    console.log('Order created successfully:', result);
+    
+    res.json({
+      success: true,
+      message: 'Order created successfully',
+      orderId: result.lastInsertRowid,
+      orderNumber: result.orderNumber
+    });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create order: ' + error.message
+    });
+  }
+});
+
+app.get('/api/orders', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { 
+      limit = 50, 
+      offset = 0, 
+      status, 
+      customerEmail, 
+      dateFrom, 
+      dateTo 
+    } = req.query;
+    
+    const orders = await database.getAllOrders(
+      parseInt(limit),
+      parseInt(offset),
+      status,
+      customerEmail,
+      dateFrom,
+      dateTo,
+      req.merchant.id
+    );
+    
+    res.json({
+      success: true,
+      orders,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: orders.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch orders'
+    });
+  }
+});
+
+// Order stats route (must come before :id route)
+app.get('/api/orders/stats', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    const stats = await database.getOrderStats(dateFrom, dateTo, req.merchant.id);
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Error fetching order stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order statistics'
+    });
+  }
+});
+
+app.get('/api/orders/:id', async (req, res) => {
+  try {
+    const order = await database.getOrder(parseInt(req.params.id));
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      order
+    });
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order'
+    });
+  }
+});
+
+app.put('/api/orders/:id/status', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { status, tracking_number, notes } = req.body;
+    
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'invoiced'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+    
+    const additionalData = {};
+    if (tracking_number) additionalData.tracking_number = tracking_number;
+    if (notes) additionalData.notes = notes;
+    
+    const result = await database.updateOrderStatus(parseInt(req.params.id), status, additionalData, req.merchant.id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: `Order status updated to ${status}`
+    });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update order status'
+    });
+  }
+});
+
+app.put('/api/orders/bulk/status', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { orderIds, status, tracking_number } = req.body;
+    
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'orderIds must be a non-empty array'
+      });
+    }
+    
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'invoiced'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+    
+    const additionalData = {};
+    if (tracking_number) additionalData.tracking_number = tracking_number;
+    
+    const result = await database.bulkUpdateOrderStatus(orderIds, status, additionalData);
+    
+    res.json({
+      success: true,
+      message: `${result.changes} orders updated to ${status}`,
+      updatedCount: result.changes
+    });
+  } catch (error) {
+    console.error('Error bulk updating order status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to bulk update order status'
+    });
+  }
+});
+
+app.delete('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deleteOrder(parseInt(req.params.id), req.user.id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete order'
+    });
+  }
+});
+
+app.post('/api/orders/:id/convert-to-invoice', async (req, res) => {
+  try {
+    const invoice = await database.convertOrderToInvoice(parseInt(req.params.id));
+    
+    res.json({
+      success: true,
+      message: 'Order converted to invoice successfully',
+      invoice: {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        customerToken: invoice.customerToken
+      }
+    });
+  } catch (error) {
+    console.error('Error converting order to invoice:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to convert order to invoice: ' + error.message
+    });
+  }
+});
+
+app.post('/api/orders/seed', async (req, res) => {
+  try {
+    const sampleOrders = [
+      {
+        customer_name: "John Doe",
+        customer_email: "john@example.com", 
+        customer_phone: "+62 812 3456 7890",
+        shipping_address: "Jl. Merdeka No. 123, Jakarta",
+        billing_address: "Jl. Merdeka No. 123, Jakarta",
+        status: "pending",
+        subtotal: 16500000,
+        tax_amount: 1815000,
+        shipping_cost: 15000,
+        total_amount: 18330000,
+        notes: "Rush order",
+        items: [
+          {
+            product_id: 1,
+            product_name: "iPhone 15 Pro",
+            sku: "IPHONE15PRO",
+            quantity: 1,
+            unit_price: 16500000,
+            line_total: 16500000
+          }
+        ]
+      },
+      {
+        customer_name: "Jane Smith",
+        customer_email: "jane@example.com",
+        customer_phone: "+62 813 9876 5432", 
+        shipping_address: "Jl. Sudirman No. 456, Bandung",
+        billing_address: "Jl. Sudirman No. 456, Bandung",
+        status: "processing",
+        subtotal: 5000,
+        tax_amount: 550,
+        shipping_cost: 15000,
+        total_amount: 20550,
+        notes: "Gift wrapping requested",
+        items: [
+          {
+            product_id: 5,
+            product_name: "Lolly",
+            sku: "LOLLY001",
+            quantity: 1,
+            unit_price: 5000,
+            line_total: 5000
+          }
+        ]
+      },
+      {
+        customer_name: "Ahmad Rahman", 
+        customer_email: "ahmad@example.com",
+        customer_phone: "+62 821 1122 3344",
+        shipping_address: "Jl. Thamrin No. 789, Surabaya",
+        billing_address: "Jl. Thamrin No. 789, Surabaya",
+        status: "shipped",
+        subtotal: 4925000,
+        tax_amount: 541750,
+        shipping_cost: 25000,
+        total_amount: 5491750,
+        tracking_number: "TRK123456789",
+        notes: "Express shipping",
+        items: [
+          {
+            product_id: 3,
+            product_name: "AirPods Pro",
+            sku: "AIRPODSPRO", 
+            quantity: 1,
+            unit_price: 4100000,
+            line_total: 4100000
+          },
+          {
+            product_id: 6,
+            product_name: "Wireless Charger",
+            sku: "WIRELESSCHARGER",
+            quantity: 1,
+            unit_price: 825000,
+            line_total: 825000
+          }
+        ]
+      }
+    ];
+
+    let created = 0;
+    let errors = [];
+
+    for (const order of sampleOrders) {
+      try {
+        await database.createOrder(order);
+        created++;
+      } catch (error) {
+        console.error(`Error creating sample order:`, error);
+        errors.push(error.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Seeding completed. Created: ${created} orders`,
+      created,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error('Seed orders error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to seed orders: ' + error.message
+    });
+  }
+});
+
+// Customer Management API Endpoints
+app.get('/api/customers', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { limit = 50, offset = 0, search } = req.query;
+    const customers = await database.getAllCustomers(
+      parseInt(limit),
+      parseInt(offset),
+      search,
+      req.merchant.id
+    );
+    
+    res.json({
+      success: true,
+      customers,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: customers.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customers'
+    });
+  }
+});
+
+// Customer stats and export routes (must come before :id route)
+app.get('/api/customers/stats', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const stats = await database.getCustomerStats(req.merchant.id);
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Error fetching customer stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer statistics'
+    });
+  }
+});
+
+app.get('/api/customers/export/csv', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const csvData = await database.exportCustomersToCSV(req.merchant.id);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="customers.csv"');
+    res.send(csvData);
+  } catch (error) {
+    console.error('Error exporting customers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export customers'
+    });
+  }
+});
+
+app.get('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const customer = await database.getCustomerById(parseInt(req.params.id), req.merchant.id);
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      customer
+    });
+  } catch (error) {
+    console.error('Error fetching customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer'
+    });
+  }
+});
+
+app.put('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.updateCustomer(parseInt(req.params.id), req.body, req.merchant.id);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Customer updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update customer'
+    });
+  }
+});
+
+app.delete('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deleteCustomer(parseInt(req.params.id), req.merchant.id);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Customer deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete customer'
+    });
+  }
+});
+
+// Smart customer matching endpoint
+app.post('/api/customers/smart-match', async (req, res) => {
+  try {
+    const customerData = req.body;
+    
+    if (!customerData.name && !customerData.email && !customerData.phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one of name, email, or phone is required'
+      });
+    }
+    
+    const customer = await database.findOrCreateCustomer(customerData);
+    
+    res.json({
+      success: true,
+      customer,
+      message: customer.created_at === customer.updated_at ? 'New customer created' : 'Existing customer matched and updated'
+    });
+  } catch (error) {
+    console.error('Error in smart customer matching:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to match or create customer'
+    });
+  }
+});
+
+// Statistics API (Combined invoice, order, and customer stats)
+app.get('/api/stats', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    const invoiceStats = await database.getInvoiceStats(dateFrom, dateTo, req.merchant.id);
+    const orderStats = await database.getOrderStats(dateFrom, dateTo, req.merchant.id);
+    const customerStats = await database.getCustomerStats(req.merchant.id);
+    
+    res.json({
+      success: true,
+      stats: invoiceStats,
+      orderStats: orderStats,
+      customerStats: customerStats
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch statistics'
+    });
+  }
+});
+
+// Payment Processing API Endpoints (Midtrans Integration)
+app.post('/api/payments/create', async (req, res) => {
+  try {
+    const { invoice_id, invoice_number, amount, payment_method, customer_email, customer_name } = req.body;
+    
+    // Validate required fields
+    if (!invoice_id || !invoice_number || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: invoice_id, invoice_number, amount'
+      });
+    }
+    
+    // Get invoice details
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Check if invoice is already paid
+    if (invoice.status === 'paid') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice has already been paid'
+      });
+    }
+    
+    // Create Midtrans payment transaction
+    const transactionDetails = {
+      order_id: `${invoice_number}-${Date.now()}`,
+      gross_amount: Math.round(amount)
+    };
+    
+    const customerDetails = {
+      first_name: customer_name || invoice.customer_name,
+      email: customer_email || invoice.customer_email,
+      phone: invoice.customer_phone
+    };
+    
+    const itemDetails = [];
+    try {
+      const items = JSON.parse(invoice.items_json);
+      items.forEach(item => {
+        itemDetails.push({
+          id: item.sku || item.productName,
+          price: Math.round(item.unitPrice || item.lineTotal),
+          quantity: item.quantity || 1,
+          name: item.productName
+        });
+      });
+      
+      // Add tax if applicable
+      if (invoice.tax_amount > 0) {
+        itemDetails.push({
+          id: 'TAX',
+          price: Math.round(invoice.tax_amount),
+          quantity: 1,
+          name: 'Tax'
+        });
+      }
+      
+      // Add shipping if applicable
+      if (invoice.shipping_cost > 0) {
+        itemDetails.push({
+          id: 'SHIPPING',
+          price: Math.round(invoice.shipping_cost),
+          quantity: 1,
+          name: 'Shipping Cost'
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing invoice items:', error);
+    }
+    
+    // Mock Midtrans response for demonstration
+    // In production, you would use actual Midtrans SDK
+    const mockSnapToken = `snap_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Update invoice status to sent if it's draft
+    if (invoice.status === 'draft') {
+      await database.updateInvoiceStatus(invoice_id, 'sent');
+    }
+    
+    // Log payment attempt
+    console.log('💳 Payment transaction created:', {
+      invoice_number,
+      amount,
+      payment_method,
+      customer_email,
+      transaction_id: transactionDetails.order_id
+    });
+    
+    res.json({
+      success: true,
+      snap_token: mockSnapToken,
+      transaction_id: transactionDetails.order_id,
+      amount: amount,
+      payment_method: payment_method
+    });
+    
+  } catch (error) {
+    console.error('Payment creation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create payment: ' + error.message
+    });
+  }
+});
+
+// Mock payment success webhook (In production, this would be called by Midtrans)
+app.post('/api/payments/webhook', async (req, res) => {
+  try {
+    const { order_id, transaction_status, payment_type, fraud_status } = req.body;
+    
+    // Extract invoice number from order_id
+    const invoiceNumber = order_id.split('-')[0];
+    
+    // Get invoice by number
+    const invoice = await database.getInvoiceByNumber(invoiceNumber);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Update invoice status based on transaction status
+    if (transaction_status === 'capture' || transaction_status === 'settlement') {
+      await database.updateInvoiceStatus(invoice.id, 'paid', invoice.merchant_id);
+      console.log('✅ Payment confirmed for invoice:', invoiceNumber);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Webhook processed successfully'
+    });
+    
+  } catch (error) {
+    console.error('Payment webhook error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process webhook: ' + error.message
+    });
+  }
+});
+
+// Mock payment success endpoint (for demo purposes)
+app.post('/api/payments/success', async (req, res) => {
+  try {
+    const { invoice_id, transaction_id, payment_method } = req.body;
+    
+    // Get invoice to get merchant_id
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({ success: false, error: 'Invoice not found' });
+    }
+    
+    // Update invoice status to paid
+    await database.updateInvoiceStatus(invoice_id, 'paid', invoice.merchant_id);
+    
+    console.log('✅ Payment successful for invoice ID:', invoice_id);
+    
+    // Send payment confirmation email
+    try {
+      if (invoice && invoice.customer_email) {
+        const paymentDetails = {
+          amount: invoice.grand_total,
+          payment_method: payment_method || 'Unknown',
+          transaction_id: transaction_id
+        };
+        
+        await emailService.sendPaymentConfirmationEmail(invoice, invoice.customer_email, paymentDetails);
+      }
+    } catch (emailError) {
+      console.error('Failed to send payment confirmation email:', emailError.message);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Payment processed successfully',
+      invoice_id: invoice_id,
+      transaction_id: transaction_id
+    });
+    
+  } catch (error) {
+    console.error('Payment success error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process payment success: ' + error.message
+    });
+  }
+});
+
+// Payment notification endpoint for email confirmations
+app.post('/api/notifications/payment-confirmation', async (req, res) => {
+  try {
+    const { invoice_id, payment_details, customer_email } = req.body;
+    
+    // Get invoice details
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Send payment confirmation email
+    const emailResult = await emailService.sendPaymentConfirmationEmail(
+      invoice, 
+      customer_email || invoice.customer_email, 
+      payment_details
+    );
+    
+    res.json({
+      success: emailResult.success,
+      message: emailResult.success ? 'Payment confirmation email sent successfully' : 'Failed to send email',
+      error: emailResult.error
+    });
+    
+  } catch (error) {
+    console.error('Payment notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send payment confirmation: ' + error.message
+    });
+  }
+});
+
+// Send invoice email endpoint
+app.post('/api/notifications/send-invoice', async (req, res) => {
+  try {
+    const { invoice_id, customer_email, include_pdf } = req.body;
+    
+    // Get invoice details
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    console.log('📧 Sending invoice email for:', invoice.invoice_number);
+    
+    // Send invoice email without PDF attachment
+    // Use the merchant data from the invoice itself to ensure consistency
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+    const businessSettings = {
+      name: invoice.merchant_name,
+      email: invoice.merchant_email,
+      address: invoice.merchant_address,
+      phone: invoice.merchant_phone,
+      website: currentBusinessSettings.website,
+      taxId: currentBusinessSettings.taxId,
+      logo: currentBusinessSettings.logoUrl || null
+    };
+    const emailResult = await emailService.sendInvoiceEmail(
+      invoice, 
+      customer_email || invoice.customer_email,
+      null,
+      businessSettings
+    );
+    
+    res.json({
+      success: emailResult.success,
+      message: emailResult.success ? 'Invoice email sent successfully' : 'Failed to send email',
+      error: emailResult.error
+    });
+    
+  } catch (error) {
+    console.error('Send invoice email error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send invoice email'
+    });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'WhatsApp Invoice Generator API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Logo accessibility test endpoint
+app.get('/api/test-logo-url', async (req, res) => {
+  const { url } = req.query;
+  
+  if (!url) {
+    return res.status(400).json({
+      success: false,
+      error: 'URL parameter is required'
+    });
+  }
+
+  try {
+    console.log('🧪 Testing logo URL accessibility:', url);
+    
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (error) {
+      return res.json({
+        success: false,
+        error: 'Invalid URL format',
+        url,
+        details: error.message
+      });
+    }
+
+    // Test if URL is accessible
+    const response = await fetch(url, {
+      method: 'HEAD',
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'AI-Invoice-Generator/1.0 (Logo Accessibility Test)'
+      }
+    });
+
+    const result = {
+      success: response.ok,
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      contentLength: response.headers.get('content-length'),
+      accessible: response.ok,
+      isImage: response.headers.get('content-type')?.startsWith('image/') || false
+    };
+
+    if (!response.ok) {
+      result.error = `HTTP ${response.status}: ${response.statusText}`;
+    }
+
+    console.log('🧪 Logo URL test result:', result);
+    res.json(result);
+
+  } catch (error) {
+    const result = {
+      success: false,
+      url,
+      error: error.message,
+      accessible: false,
+      timeout: error.name === 'FetchError' && error.message.includes('timeout')
+    };
+    
+    console.error('🧪 Logo URL test failed:', result);
+    res.json(result);
+  }
+});
+
+// Business logo test endpoint
+// Debug endpoint to check business settings for current merchant
+app.get('/api/debug-business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🔍 Debug business settings for merchant:', req.merchant.id, req.merchant.email);
+    
+    // Get business settings
+    const businessSettings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Raw business settings from database:', businessSettings);
+    
+    // Get processed settings
+    const currentSettings = await getCurrentBusinessSettings(req.merchant.id);
+    console.log('🔍 Processed business settings:', currentSettings);
+    
+    res.json({
+      success: true,
+      merchant: {
+        id: req.merchant.id,
+        email: req.merchant.email,
+        businessName: req.merchant.businessName
+      },
+      rawBusinessSettings: businessSettings,
+      processedSettings: currentSettings,
+      debug: {
+        hasLogo: !!currentSettings.logoUrl,
+        logoUrl: currentSettings.logoUrl,
+        hasTerms: !!currentSettings.termsAndConditions,
+        termsAndConditions: currentSettings.termsAndConditions
+      }
+    });
+  } catch (error) {
+    console.error('Error getting debug business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/test-business-logo', async (req, res) => {
+  try {
+    console.log('🧪 Testing current business logo accessibility...');
+    
+    // Get current business settings
+    const currentBusinessSettings = database.getBusinessSettings();
+    const businessProfile = typeof database.getBusinessProfile === 'function' 
+      ? database.getBusinessProfile() 
+      : null;
+    
+    const logoPath = businessProfile?.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2';
+    const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
+    
+    let logoUrl;
+    if (logoPath.startsWith('http') || logoPath.startsWith('data:')) {
+      logoUrl = logoPath;
+    } else {
+      logoUrl = `${baseUrl}/${logoPath.replace(/^\//, '')}`;
+    }
+    
+    console.log('🧪 Constructed logo URL:', logoUrl);
+    
+    // Test the URL
+    const response = await fetch(logoUrl, {
+      method: 'HEAD',
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'AI-Invoice-Generator/1.0 (Business Logo Test)'
+      }
+    });
+
+    const result = {
+      success: response.ok,
+      businessSettings: {
+        name: businessProfile?.name || currentBusinessSettings.name,
+        logoPath: logoPath,
+        logoUrl: logoUrl
+      },
+      logoUrl,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      contentLength: response.headers.get('content-length'),
+      accessible: response.ok,
+      isImage: response.headers.get('content-type')?.startsWith('image/') || false
+    };
+
+    if (!response.ok) {
+      result.error = `HTTP ${response.status}: ${response.statusText}`;
+    }
+
+    console.log('🧪 Business logo test result:', result);
+    res.json(result);
+
+  } catch (error) {
+    const result = {
+      success: false,
+      error: error.message,
+      accessible: false
+    };
+    
+    console.error('🧪 Business logo test failed:', result);
+    res.json(result);
+  }
+});
+
+// Test email sending endpoint for logo testing
+app.post('/api/send-test-email', async (req, res) => {
+  try {
+    const { customerEmail } = req.body;
+    
+    if (!customerEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer email is required'
+      });
+    }
+    
+    console.log('🧪 Sending test email with logo debugging...');
+    
+    // Create a test invoice for logo testing
+    const testInvoice = {
+      id: 'TEST-001',
+      invoice_number: 'INV-TEST-001',
+      customer_name: 'Test Customer',
+      customer_email: customerEmail,
+      customer_phone: '+62123456789',
+      customer_address: 'Test Address, Jakarta',
+      merchant_name: 'Test Business',
+      merchant_address: 'Test Business Address',
+      merchant_phone: '+62987654321',
+      merchant_email: 'business@test.com',
+      items_json: JSON.stringify([
+        {
+          product_name: 'Test Product',
+          quantity: 1,
+          unit_price: 100000,
+          line_total: 100000
         }
+      ]),
+      subtotal: 100000,
+      discount: 0,
+      shipping_cost: 0,
+      grand_total: 100000,
+      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date().toISOString(),
+      customer_token: 'test-token-12345'
+    };
+    
+    // Get business settings for logo testing
+    const currentBusinessSettings = database.getBusinessSettings();
+    const businessProfile = typeof database.getBusinessProfile === 'function' 
+      ? database.getBusinessProfile() 
+      : null;
+    
+    const businessSettings = {
+      name: businessProfile?.name || currentBusinessSettings.name || 'Test Business',
+      address: businessProfile?.address || currentBusinessSettings.address || 'Test Address',
+      phone: businessProfile?.phone || currentBusinessSettings.phone || '+62123456789',
+      email: businessProfile?.email || currentBusinessSettings.email || 'test@business.com',
+      website: businessProfile?.website || currentBusinessSettings.website || 'https://test.com',
+      logo: businessProfile?.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2'
+    };
+    
+    console.log('🧪 Business settings for email test:', businessSettings);
+    
+    // Send test email
+    const emailResult = await emailService.sendInvoiceEmail(testInvoice, customerEmail, null, businessSettings);
+    
+    res.json({
+      success: emailResult.success,
+      messageId: emailResult.messageId,
+      mode: emailResult.mode,
+      error: emailResult.error,
+      note: emailResult.note,
+      testInvoice: testInvoice.invoice_number,
+      businessSettings: {
+        name: businessSettings.name,
+        logo: businessSettings.logo
+      }
+    });
+    
+  } catch (error) {
+    console.error('🧪 Test email send failed:', error);
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
-        function editCustomer(customerId) {
-            const customer = customers.find(c => c.id === customerId);
-            if (!customer) return;
+// Database test endpoint
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const stats = await database.getInvoiceStats();
+    const products = await database.getAllProducts(5, 0);
+    const invoices = await database.getAllInvoices(5, 0);
+    const orders = await database.getAllOrders(5, 0);
+    const orderStats = await database.getOrderStats();
+    
+    const catalog = products.map(product => ({
+      id: `prod_${product.id}`,
+      name: product.name,
+      description: product.description,
+      sku: product.sku,
+      category: product.category,
+      price: product.unit_price,
+      tags: [product.name.toLowerCase(), product.category.toLowerCase(), product.sku.toLowerCase()]
+    }));
+    
+    // Test invoice number generation
+    const testInvoiceNumber = await database.generateInvoiceNumber();
+    const testOrderNumber = await database.generateOrderNumber();
+    
+    res.json({
+      success: true,
+      message: 'Database is working',
+      stats,
+      orderStats,
+      productCount: products.length,
+      orderCount: orders.length,
+      sampleProducts: products.slice(0, 2),
+      sampleOrders: orders.slice(0, 2),
+      catalogFormat: catalog.slice(0, 2),
+      recentInvoices: invoices.slice(0, 3).map(inv => ({
+        id: inv.id,
+        number: inv.invoice_number,
+        customer: inv.customer_name,
+        date: inv.created_at
+      })),
+      nextInvoiceNumber: testInvoiceNumber,
+      nextOrderNumber: testOrderNumber
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Database connection failed: ' + error.message
+    });
+  }
+});
 
-            const name = prompt('Customer Name:', customer.name || '');
-            if (name === null) return;
 
-            const phone = prompt('Phone Number:', customer.phone || '');
-            if (phone === null) return;
+// Seed products endpoint
+app.post('/api/seed-products', async (req, res) => {
+  try {
+    const sampleProducts = [
+      {
+        sku: "IPHONE15PRO",
+        name: "iPhone 15 Pro",
+        description: "Latest iPhone with Pro features",
+        category: "Smartphones",
+        unit_price: 16500000,
+        cost_price: 14000000,
+        stock_quantity: 25,
+        min_stock_level: 5,
+        tax_rate: 11,
+        weight: 0.187,
+        dimensions: "14.7 x 7.1 x 0.8"
+      },
+      {
+        sku: "GALAXYS24",
+        name: "Samsung Galaxy S24",
+        description: "Premium Android smartphone",
+        category: "Smartphones",
+        unit_price: 14800000,
+        cost_price: 12500000,
+        stock_quantity: 30,
+        min_stock_level: 8,
+        tax_rate: 11,
+        weight: 0.168,
+        dimensions: "14.7 x 7.1 x 0.8"
+      },
+      {
+        sku: "AIRPODSPRO",
+        name: "AirPods Pro",
+        description: "Wireless earbuds with noise cancellation",
+        category: "Audio",
+        unit_price: 4100000,
+        cost_price: 3200000,
+        stock_quantity: 50,
+        min_stock_level: 15,
+        tax_rate: 11,
+        weight: 0.056,
+        dimensions: "4.5 x 6.1 x 2.2"
+      },
+      {
+        sku: "LOLLY001",
+        name: "Lolly",
+        description: "Sweet lollipop candy",
+        category: "Candy",
+        unit_price: 5000,
+        cost_price: 2000,
+        stock_quantity: 100,
+        min_stock_level: 20,
+        tax_rate: 11,
+        weight: 0.01,
+        dimensions: "5 x 1 x 1"
+      }
+    ];
 
-            const address = prompt('Address:', customer.address || '');
-            if (address === null) return;
+    let created = 0;
+    let skipped = 0;
 
-            updateCustomer(customerId, { name, phone, address });
+    for (const product of sampleProducts) {
+      try {
+        const existing = await database.getProductBySku(product.sku);
+        if (existing) {
+          skipped++;
+          continue;
         }
+        
+        await database.createProduct(product);
+        created++;
+      } catch (error) {
+        console.error(`Error creating product ${product.sku}:`, error);
+      }
+    }
 
-        async function updateCustomer(customerId, customerData) {
-            try {
-                const response = await fetch(`/api/customers/${customerId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(customerData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Customer updated successfully');
-                    loadCustomers();
-                    loadCustomerStats();
-                } else {
-                    showError('Failed to update customer: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error updating customer: ' + error.message);
+    res.json({
+      success: true,
+      message: `Seeding completed. Created: ${created}, Skipped: ${skipped}`,
+      created,
+      skipped
+    });
+  } catch (error) {
+    console.error('Seed products error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to seed products: ' + error.message
+    });
+  }
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Server error:', error);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error'
+  });
+});
+
+
+
+// Performance monitoring endpoint
+app.get('/api/performance', async (req, res) => {
+  try {
+    const uptime = process.uptime();
+    const memoryUsage = process.memoryUsage();
+    
+    res.json({
+      success: true,
+      performance: {
+        uptime: Math.round(uptime),
+        uptimeFormatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`,
+        metrics: performanceMetrics,
+        memory: {
+          used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+          rss: Math.round(memoryUsage.rss / 1024 / 1024)
+        },
+        cache: {
+          size: cache.size,
+          hitRate: performanceMetrics.cacheHitRate
+        },
+        asyncQueue: {
+          pending: heavyOperationQueue.length,
+          processing: isProcessingQueue
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching performance metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch performance metrics'
+    });
+  }
+});
+
+
+
+// Real-time metrics endpoint for live dashboard updates
+app.get('/api/analytics/realtime', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    
+    // Get today's metrics
+    const todayInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const todayOrders = await database.getAllOrders(1000, 0, null, null, todayStart.toISOString(), null, req.merchant.id);
+    
+    const todayInvoicesFiltered = todayInvoices.filter(inv => 
+      new Date(inv.created_at) >= todayStart
+    );
+    
+    const todayRevenue = todayInvoicesFiltered
+      .filter(inv => inv.status === 'paid')
+      .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+    
+    const todayOrdersCount = todayOrders.length;
+    const todayInvoicesCount = todayInvoicesFiltered.length;
+    
+    // Get yesterday's metrics for comparison
+    const yesterdayInvoices = todayInvoices.filter(inv => {
+      const created = new Date(inv.created_at);
+      return created >= yesterdayStart && created < todayStart;
+    });
+    
+    const yesterdayRevenue = yesterdayInvoices
+      .filter(inv => inv.status === 'paid')
+      .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+    
+    const realtimeMetrics = {
+      success: true,
+      data: {
+        today: {
+          revenue: todayRevenue,
+          invoices: todayInvoicesCount,
+          orders: todayOrdersCount,
+          averageOrderValue: todayOrdersCount > 0 ? (todayRevenue / todayOrdersCount) : 0
+        },
+        yesterday: {
+          revenue: yesterdayRevenue,
+          invoices: yesterdayInvoices.length
+        },
+        growth: {
+          revenue: yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : 0,
+          invoices: yesterdayInvoices.length > 0 ? ((todayInvoicesCount - yesterdayInvoices.length) / yesterdayInvoices.length * 100) : 0
+        },
+        performance: {
+          systemUptime: process.uptime(),
+          memoryUsage: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          cacheHitRate: performanceMetrics.cacheHitRate,
+          averageResponseTime: performanceMetrics.averageResponseTime,
+          requestsPerMinute: performanceMetrics.requests.total
+        },
+        timestamp: now.toISOString()
+      }
+    };
+    
+    res.json(realtimeMetrics);
+    
+  } catch (error) {
+    console.error('Error fetching realtime metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch realtime metrics'
+    });
+  }
+});
+
+// Revenue analytics endpoint
+app.get('/api/analytics/revenue', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { period = '30d', groupBy = 'day' } = req.query;
+    
+    const cacheKey = getCacheKey('analytics-revenue', period, groupBy, req.merchant.id);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      const revenueData = await getRevenueAnalytics(period, groupBy, req.merchant.id);
+      result = {
+        success: true,
+        data: revenueData
+      };
+      
+      // Cache for 10 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error fetching revenue analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch revenue analytics'
+    });
+  }
+});
+
+// Customer analytics endpoint
+app.get('/api/analytics/customers', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { period = '30d' } = req.query;
+    
+    const cacheKey = getCacheKey('analytics-customers', period, req.merchant.id);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      const customerAnalytics = await getCustomerAnalytics(period, req.merchant.id);
+      result = {
+        success: true,
+        data: customerAnalytics
+      };
+      
+      // Cache for 15 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error fetching customer analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer analytics'
+    });
+  }
+});
+
+// Product analytics endpoint
+app.get('/api/analytics/products', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { period = '30d' } = req.query;
+    
+    const cacheKey = getCacheKey('analytics-products', period, req.merchant.id);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      const productAnalytics = await getProductAnalytics(period, req.merchant.id);
+      result = {
+        success: true,
+        data: productAnalytics
+      };
+      
+      // Cache for 15 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error fetching product analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch product analytics'
+    });
+  }
+});
+
+// Analytics helper functions
+async function getProductAnalytics(period = '30d', merchantId = null) {
+  try {
+    const allProducts = await database.getAllProducts(1000, 0, null, false, merchantId);
+    const categories = await database.getProductCategories(merchantId);
+    const lowStockProducts = await database.getLowStockProducts(merchantId);
+    
+    // Get all invoices to calculate product sales
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, merchantId);
+    const productSales = {};
+    
+    allInvoices.forEach(invoice => {
+      if (invoice.items_json && Array.isArray(invoice.items_json)) {
+        invoice.items_json.forEach(item => {
+          const productName = item.productName || item.name;
+          if (productName) {
+            if (!productSales[productName]) {
+              productSales[productName] = {
+                quantity: 0,
+                revenue: 0,
+                invoiceCount: 0
+              };
             }
+            productSales[productName].quantity += item.quantity || 0;
+            productSales[productName].revenue += item.lineTotal || 0;
+            productSales[productName].invoiceCount += 1;
+          }
+        });
+      }
+    });
+    
+    // Get top selling products
+    const topSellingProducts = Object.entries(productSales)
+      .sort(([,a], [,b]) => b.quantity - a.quantity)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, ...data }));
+    
+    // Get top revenue products
+    const topRevenueProducts = Object.entries(productSales)
+      .sort(([,a], [,b]) => b.revenue - a.revenue)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, ...data }));
+    
+    return {
+      totalProducts: allProducts.length,
+      activeProducts: allProducts.filter(p => p.is_active).length,
+      categories: categories,
+      lowStockProducts: lowStockProducts,
+      topSellingProducts: topSellingProducts,
+      topRevenueProducts: topRevenueProducts,
+      totalStockValue: allProducts.reduce((sum, p) => sum + (p.stock_quantity * p.unit_price), 0),
+      averageProductPrice: allProducts.length > 0 ? 
+        allProducts.reduce((sum, p) => sum + p.unit_price, 0) / allProducts.length : 0
+    };
+  } catch (error) {
+    console.error('Error getting product analytics:', error);
+    return {
+      totalProducts: 0,
+      activeProducts: 0,
+      categories: [],
+      lowStockProducts: [],
+      topSellingProducts: [],
+      topRevenueProducts: [],
+      totalStockValue: 0,
+      averageProductPrice: 0
+    };
+  }
+}
+
+async function getRevenueAnalytics(period = '30d', groupBy = 'day', merchantId = null) {
+  try {
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, merchantId);
+    const paidInvoices = allInvoices.filter(inv => inv.status === 'paid');
+    
+    // Calculate date range
+    const now = new Date();
+    const daysBack = parseInt(period.replace('d', '')) || 30;
+    const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+    
+    // Filter invoices within period
+    const periodInvoices = paidInvoices.filter(inv => {
+      const invoiceDate = new Date(inv.paid_at || inv.created_at);
+      return invoiceDate >= startDate && invoiceDate <= now;
+    });
+    
+    // Group by time period
+    const revenueByPeriod = {};
+    periodInvoices.forEach(invoice => {
+      const date = new Date(invoice.paid_at || invoice.created_at);
+      let key;
+      
+      if (groupBy === 'day') {
+        key = date.toISOString().split('T')[0];
+      } else if (groupBy === 'week') {
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        key = weekStart.toISOString().split('T')[0];
+      } else if (groupBy === 'month') {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      }
+      
+      if (!revenueByPeriod[key]) {
+        revenueByPeriod[key] = {
+          revenue: 0,
+          invoices: 0,
+          averageOrderValue: 0
+        };
+      }
+      
+      revenueByPeriod[key].revenue += invoice.grand_total || 0;
+      revenueByPeriod[key].invoices += 1;
+    });
+    
+    // Calculate average order value for each period
+    Object.keys(revenueByPeriod).forEach(key => {
+      const period = revenueByPeriod[key];
+      period.averageOrderValue = period.invoices > 0 ? period.revenue / period.invoices : 0;
+    });
+    
+    // Convert to array and sort by date
+    const revenueData = Object.entries(revenueByPeriod)
+      .map(([date, data]) => ({ date, ...data }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const totalRevenue = periodInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+    const averageOrderValue = periodInvoices.length > 0 ? totalRevenue / periodInvoices.length : 0;
+    
+    return {
+      periodData: revenueData,
+      totalRevenue: totalRevenue,
+      totalInvoices: periodInvoices.length,
+      averageOrderValue: averageOrderValue,
+      period: period,
+      groupBy: groupBy
+    };
+  } catch (error) {
+    console.error('Error getting revenue analytics:', error);
+    return {
+      periodData: [],
+      totalRevenue: 0,
+      totalInvoices: 0,
+      averageOrderValue: 0,
+      period: period,
+      groupBy: groupBy
+    };
+  }
+}
+
+async function getCustomerAnalytics(period = '30d', merchantId = null) {
+  try {
+    const allCustomers = await database.getAllCustomers(1000, 0, null, merchantId);
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, merchantId);
+    
+    // Calculate customer lifetime values
+    const customerValues = {};
+    allInvoices.forEach(invoice => {
+      const email = invoice.customer_email;
+      if (email) {
+        if (!customerValues[email]) {
+          customerValues[email] = {
+            totalSpent: 0,
+            invoiceCount: 0,
+            firstPurchase: invoice.created_at,
+            lastPurchase: invoice.created_at
+          };
         }
-
-        async function deleteCustomer(customerId) {
-            if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/customers/${customerId}`, {
-                    method: 'DELETE'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showSuccess('Customer deleted successfully');
-                    loadCustomers();
-                    loadCustomerStats();
-                } else {
-                    showError('Failed to delete customer: ' + data.error);
-                }
-            } catch (error) {
-                showError('Error deleting customer: ' + error.message);
-            }
+        customerValues[email].totalSpent += invoice.grand_total || 0;
+        customerValues[email].invoiceCount += 1;
+        
+        if (new Date(invoice.created_at) < new Date(customerValues[email].firstPurchase)) {
+          customerValues[email].firstPurchase = invoice.created_at;
         }
-
-        async function exportCustomers() {
-            try {
-                const response = await fetch('/api/customers/export/csv');
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `customers-${new Date().toISOString().split('T')[0]}.csv`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    showSuccess('Customer data exported successfully');
-                } else {
-                    const errorText = await response.text();
-                    showError('Failed to export customers: ' + errorText);
-                }
-            } catch (error) {
-                console.error('Export Error:', error);
-                showError('Error exporting customers: ' + error.message);
-            }
+        if (new Date(invoice.created_at) > new Date(customerValues[email].lastPurchase)) {
+          customerValues[email].lastPurchase = invoice.created_at;
         }
+      }
+    });
+    
+    // Get top customers by value
+    const topCustomers = Object.entries(customerValues)
+      .sort(([,a], [,b]) => b.totalSpent - a.totalSpent)
+      .slice(0, 10)
+      .map(([email, data]) => {
+        const customer = allCustomers.find(c => c.email === email);
+        return {
+          email,
+          name: customer ? customer.name : 'Unknown',
+          ...data
+        };
+      });
+    
+    // Calculate customer segments
+    const customerSegments = {
+      new: 0,
+      active: 0,
+      inactive: 0,
+      vip: 0
+    };
+    
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    Object.values(customerValues).forEach(customer => {
+      const lastPurchase = new Date(customer.lastPurchase);
+      const firstPurchase = new Date(customer.firstPurchase);
+      
+      if (firstPurchase > thirtyDaysAgo) {
+        customerSegments.new++;
+      } else if (lastPurchase > thirtyDaysAgo) {
+        customerSegments.active++;
+      } else {
+        customerSegments.inactive++;
+      }
+      
+      if (customer.totalSpent > 10000000) { // 10M IDR
+        customerSegments.vip++;
+      }
+    });
+    
+    return {
+      totalCustomers: allCustomers.length,
+      topCustomers: topCustomers,
+      customerSegments: customerSegments,
+      averageCustomerValue: Object.values(customerValues).length > 0 ? 
+        Object.values(customerValues).reduce((sum, c) => sum + c.totalSpent, 0) / Object.values(customerValues).length : 0,
+      repeatCustomerRate: Object.values(customerValues).filter(c => c.invoiceCount > 1).length / Object.values(customerValues).length * 100
+    };
+  } catch (error) {
+    console.error('Error getting customer analytics:', error);
+    return {
+      totalCustomers: 0,
+      topCustomers: [],
+      customerSegments: { new: 0, active: 0, inactive: 0, vip: 0 },
+      averageCustomerValue: 0,
+      repeatCustomerRate: 0
+    };
+  }
+}
 
-        function refreshCustomers() {
-            loadCustomers();
-            loadCustomerStats();
+async function getPerformanceAnalytics() {
+  try {
+    const uptime = process.uptime();
+    const memoryUsage = process.memoryUsage();
+    
+    return {
+      uptime: uptime,
+      uptimeFormatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`,
+      memoryUsage: {
+        used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+        total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+        rss: Math.round(memoryUsage.rss / 1024 / 1024)
+      },
+      requests: performanceMetrics.requests,
+      averageResponseTime: performanceMetrics.averageResponseTime,
+      cacheHitRate: performanceMetrics.cacheHitRate,
+      cacheSize: cache.size,
+      asyncQueueSize: heavyOperationQueue.length
+    };
+  } catch (error) {
+    console.error('Error getting performance analytics:', error);
+    return {
+      uptime: 0,
+      uptimeFormatted: '0h 0m 0s',
+      memoryUsage: { used: 0, total: 0, rss: 0 },
+      requests: { total: 0, successful: 0, failed: 0, slow: 0 },
+      averageResponseTime: 0,
+      cacheHitRate: 0,
+      cacheSize: 0,
+      asyncQueueSize: 0
+    };
+  }
+}
+
+async function getPendingOrdersValue() {
+  try {
+    const pendingOrders = await database.getAllOrders(1000, 0, 'pending');
+    return pendingOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+  } catch (error) {
+    console.error('Error getting pending orders value:', error);
+    return 0;
+  }
+}
+
+// Optimized search endpoints
+app.get('/api/search/invoices', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      status, 
+      dateFrom, 
+      dateTo, 
+      limit = 50, 
+      offset = 0,
+      sortBy = 'invoice_date',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    // Check cache first
+    const cacheKey = getCacheKey('search-invoices', searchTerm, status, dateFrom, dateTo, limit, offset, sortBy, sortOrder);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      // Use optimized database search method
+      const searchResult = await database.searchInvoices(
+        searchTerm, 
+        status && status !== 'all' ? status : null, 
+        dateFrom, 
+        dateTo, 
+        parseInt(limit), 
+        parseInt(offset)
+      );
+      
+      result = {
+        success: true,
+        invoices: searchResult.invoices,
+        pagination: {
+          total: searchResult.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: searchResult.page,
+          totalPages: searchResult.totalPages,
+          hasMore: parseInt(offset) + parseInt(limit) < searchResult.total
         }
+      };
+      
+      // Cache for 2 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Invoice search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error searching invoices:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search invoices'
+    });
+  }
+});
 
-        function showCustomerError(message) {
-            const errorDiv = document.getElementById('customers-error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
+app.get('/api/search/customers', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      limit = 50, 
+      offset = 0,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    // Check cache first
+    const cacheKey = getCacheKey('search-customers', searchTerm, limit, offset, sortBy, sortOrder);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      // Use optimized database search method
+      const searchResult = await database.searchCustomers(
+        searchTerm, 
+        req.merchant.id, 
+        parseInt(limit), 
+        parseInt(offset)
+      );
+      
+      result = {
+        success: true,
+        customers: searchResult.customers,
+        pagination: {
+          total: searchResult.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: searchResult.page,
+          totalPages: searchResult.totalPages,
+          hasMore: parseInt(offset) + parseInt(limit) < searchResult.total
         }
+      };
+      
+      // Cache for 2 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Customer search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error searching customers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search customers'
+    });
+  }
+});
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const productModal = document.getElementById('productModal');
-            const invoiceModal = document.getElementById('invoiceModal');
-            const customerModal = document.getElementById('customerModal');
-            const serviceTicketModal = document.getElementById('serviceTicketModal');
-            
-            if (event.target === productModal) {
-                closeProductModal();
-            } else if (event.target === invoiceModal) {
-                closeInvoiceModal();
-            } else if (event.target === customerModal) {
-                closeCustomerModal();
-            } else if (event.target === serviceTicketModal) {
-                closeServiceTicketModal();
-            }
+app.get('/api/search/products', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      category, 
+      active_only = 'true',
+      limit = 50, 
+      offset = 0,
+      sortBy = 'name',
+      sortOrder = 'asc'
+    } = req.query;
+    
+    // Check cache first
+    const cacheKey = getCacheKey('search-products', searchTerm, category, active_only, limit, offset, sortBy, sortOrder);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      // Use optimized database search method
+      const searchResult = await database.searchProducts(
+        searchTerm, 
+        category, 
+        null, // priceMin
+        null, // priceMax
+        active_only === 'true',
+        parseInt(limit), 
+        parseInt(offset),
+        req.merchant.id
+      );
+      
+      result = {
+        success: true,
+        products: searchResult.products,
+        pagination: {
+          total: searchResult.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: searchResult.page,
+          totalPages: searchResult.totalPages,
+          hasMore: parseInt(offset) + parseInt(limit) < searchResult.total
         }
+      };
+      
+      // Cache for 2 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Product search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error searching products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search products'
+    });
+  }
+});
 
-
-
-
-
-
-        // Logout function
-        async function handleLogout() {
-            const confirmed = confirm('Are you sure you want to logout?');
-            if (!confirmed) return;
-
-            try {
-                // Show loading state
-                const logoutBtn = document.querySelector('.header-logout-btn');
-                const originalText = logoutBtn.innerHTML;
-                logoutBtn.innerHTML = '<span>⏳</span> Logging out...';
-                logoutBtn.disabled = true;
-
-                // Call logout API
-                const response = await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Clear any local storage data
-                    localStorage.removeItem('merchantToken');
-                    localStorage.removeItem('businessProfile');
-                    
-                    // Show success message briefly
-                    logoutBtn.innerHTML = '<span>✅</span> Logged out!';
-                    
-                    // Redirect to login page after a short delay
-                    setTimeout(() => {
-                        window.location.href = '/auth/login';
-                    }, 1000);
-                } else {
-                    throw new Error(result.error || 'Logout failed');
-                }
-            } catch (error) {
-                console.error('Logout error:', error);
-                alert('Failed to logout. Please try again.');
-                
-                // Reset button state
-                const logoutBtn = document.querySelector('.header-logout-btn');
-                logoutBtn.innerHTML = '<span>🚪</span> Logout';
-                logoutBtn.disabled = false;
-            }
+app.get('/api/search/orders', async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      status, 
+      dateFrom, 
+      dateTo, 
+      limit = 50, 
+      offset = 0,
+      sortBy = 'order_date',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    // Check cache first
+    const cacheKey = getCacheKey('search-orders', searchTerm, status, dateFrom, dateTo, limit, offset, sortBy, sortOrder);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      // Use optimized database search method
+      const searchResult = await database.searchOrders(
+        searchTerm, 
+        status, 
+        null, // customerEmail
+        dateFrom, 
+        dateTo, 
+        parseInt(limit), 
+        parseInt(offset)
+      );
+      
+      result = {
+        success: true,
+        orders: searchResult.orders,
+        pagination: {
+          total: searchResult.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: searchResult.page,
+          totalPages: searchResult.totalPages,
+          hasMore: parseInt(offset) + parseInt(limit) < searchResult.total
         }
+      };
+      
+      // Cache for 2 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Order search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error searching orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search orders'
+    });
+  }
+});
 
-    </script>
-</body>
-</html>
+// Advanced search endpoint with faceted search
+app.get('/api/search/advanced', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      type = 'all', // 'invoices', 'customers', 'products', 'orders', 'all'
+      limit = 10
+    } = req.query;
+    
+    // Check cache first with merchant ID
+    const cacheKey = getCacheKey('search-advanced', searchTerm, type, limit, req.merchant.id);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      const results = {
+        invoices: [],
+        customers: [],
+        products: [],
+        orders: []
+      };
+      
+      const term = searchTerm.toLowerCase();
+      
+      if (type === 'all' || type === 'invoices') {
+        const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+        results.invoices = invoices
+          .filter(invoice => 
+            invoice.invoice_number?.toLowerCase().includes(term) ||
+            invoice.customer_name?.toLowerCase().includes(term) ||
+            invoice.customer_email?.toLowerCase().includes(term)
+          )
+          .slice(0, parseInt(limit));
+      }
+      
+      if (type === 'all' || type === 'customers') {
+        const customers = await database.getAllCustomers(1000, 0, null, req.merchant.id);
+        results.customers = customers
+          .filter(customer => 
+            customer.name?.toLowerCase().includes(term) ||
+            customer.email?.toLowerCase().includes(term) ||
+            customer.phone?.toLowerCase().includes(term)
+          )
+          .slice(0, parseInt(limit));
+      }
+      
+      if (type === 'all' || type === 'products') {
+        const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
+        results.products = products
+          .filter(product => 
+            product.name?.toLowerCase().includes(term) ||
+            product.description?.toLowerCase().includes(term) ||
+            product.sku?.toLowerCase().includes(term)
+          )
+          .slice(0, parseInt(limit));
+      }
+      
+      if (type === 'all' || type === 'orders') {
+        const orders = await database.getAllOrders(1000, 0, null, null, null, null, req.merchant.id);
+        results.orders = orders
+          .filter(order => 
+            order.order_number?.toLowerCase().includes(term) ||
+            order.customer_name?.toLowerCase().includes(term) ||
+            order.customer_email?.toLowerCase().includes(term)
+          )
+          .slice(0, parseInt(limit));
+      }
+      
+      result = {
+        success: true,
+        results,
+        totalFound: {
+          invoices: results.invoices.length,
+          customers: results.customers.length,
+          products: results.products.length,
+          orders: results.orders.length
+        }
+      };
+      
+      // Cache for 1 minute (shorter for advanced search)
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Advanced search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error in advanced search:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to perform advanced search'
+    });
+  }
+});
+
+// Analytics API endpoints
+// REMOVED: Duplicate revenue analytics endpoint - use the one above with proper merchant isolation
+
+app.get('/api/analytics/sales', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const orders = await database.getAllOrders(1000, 0, null, null, null, null, req.merchant.id);
+    
+    const totalOrders = orders.length;
+    const completedOrders = orders.filter(order => order.status === 'delivered').length;
+    const pendingOrders = orders.filter(order => ['pending', 'processing', 'shipped'].includes(order.status)).length;
+    
+    const totalInvoices = invoices.length;
+    const paidInvoices = invoices.filter(inv => inv.status === 'paid').length;
+    const conversionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices * 100).toFixed(1) : 0;
+    
+    res.json({
+      success: true,
+      totalOrders,
+      completedOrders,
+      pendingOrders,
+      totalInvoices,
+      paidInvoices,
+      conversionRate: parseFloat(conversionRate)
+    });
+  } catch (error) {
+    console.error('Error fetching sales analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch sales analytics'
+    });
+  }
+});
+
+// REMOVED: Duplicate customer analytics endpoint - use the one above with proper merchant isolation
+
+app.get('/api/analytics/top-products', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
+    
+    // Aggregate product sales data
+    const productSales = {};
+    
+    invoices.forEach(invoice => {
+      if (invoice.items_json) {
+        let items = [];
+        try {
+          items = typeof invoice.items_json === 'string' 
+            ? JSON.parse(invoice.items_json) 
+            : invoice.items_json;
+        } catch (e) {
+          console.error('Error parsing invoice items:', e);
+          return;
+        }
+        
+        items.forEach(item => {
+          const sku = item.sku || item.productSku;
+          if (!productSales[sku]) {
+            productSales[sku] = {
+              name: item.productName || item.product_name,
+              sku: sku,
+              totalSold: 0,
+              revenue: 0
+            };
+          }
+          productSales[sku].totalSold += item.quantity || 0;
+          productSales[sku].revenue += (item.lineTotal || item.line_total || 0);
+        });
+      }
+    });
+    
+    // Sort by total sold and get top 10
+    const topProducts = Object.values(productSales)
+      .sort((a, b) => b.totalSold - a.totalSold)
+      .slice(0, 10);
+    
+    res.json({
+      success: true,
+      products: topProducts
+    });
+  } catch (error) {
+    console.error('Error fetching top products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch top products'
+    });
+  }
+});
+
+app.get('/api/analytics/recent-activity', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices(50, 0, null, null, null, null, req.merchant.id);
+    const orders = await database.getAllOrders(50, 0, null, null, null, null, req.merchant.id);
+    const customers = await database.getAllCustomers(50, 0, null, req.merchant.id);
+    
+    const activities = [];
+    
+    // Add recent invoices
+    invoices.slice(-5).forEach(invoice => {
+      activities.push({
+        type: 'invoice',
+        description: `Invoice ${invoice.invoice_number} created for ${invoice.customer_name}`,
+        timestamp: invoice.created_at,
+        amount: invoice.grand_total
+      });
+    });
+    
+    // Add recent orders
+    orders.slice(-5).forEach(order => {
+      activities.push({
+        type: 'order',
+        description: `Order ${order.order_number} ${order.status}`,
+        timestamp: order.updated_at,
+        amount: order.total_amount
+      });
+    });
+    
+    // Add recent customers
+    customers.slice(-3).forEach(customer => {
+      activities.push({
+        type: 'customer',
+        description: `New customer ${customer.name} registered`,
+        timestamp: customer.created_at
+      });
+    });
+    
+    // Sort by timestamp and get latest 10
+    const recentActivities = activities
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 10);
+    
+    res.json({
+      success: true,
+      activities: recentActivities
+    });
+  } catch (error) {
+    console.error('Error fetching recent activity:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch recent activity'
+    });
+  }
+});
+
+app.get('/api/analytics/ai-insights', async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices();
+    const orders = await database.getAllOrders();
+    const products = await database.getAllProducts();
+    const customers = await database.getAllCustomers();
+    
+    const insights = [];
+    
+    // Revenue trend insight
+    const paidInvoices = invoices.filter(inv => inv.status === 'paid');
+    const totalRevenue = paidInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+    if (totalRevenue > 0) {
+      insights.push({
+        icon: '📈',
+        title: 'Revenue Growth',
+        description: `You've generated ${paidInvoices.length} paid invoices with total revenue of ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalRevenue).replace('IDR', 'Rp')}`,
+        action: 'showSection("analytics")',
+        actionText: 'View Details'
+      });
+    }
+    
+    // Low stock insight
+    const lowStockProducts = products.filter(product => 
+      product.stock_quantity <= product.min_stock_level && product.is_active
+    );
+    if (lowStockProducts.length > 0) {
+      insights.push({
+        icon: '⚠️',
+        title: 'Low Stock Alert',
+        description: `${lowStockProducts.length} products are running low on stock. Consider restocking soon.`,
+        action: 'showSection("products")',
+        actionText: 'Manage Stock'
+      });
+    }
+    
+    // Customer engagement insight
+    if (customers.length > 0) {
+      const activeCustomers = customers.filter(c => c.total_orders > 0).length;
+      const engagementRate = (activeCustomers / customers.length * 100).toFixed(1);
+      insights.push({
+        icon: '👥',
+        title: 'Customer Engagement',
+        description: `${engagementRate}% of your customers (${activeCustomers}/${customers.length}) have made purchases.`,
+        action: 'showSection("customers")',
+        actionText: 'View Customers'
+      });
+    }
+    
+    // AI learning insight
+    insights.push({
+      icon: '🤖',
+      title: 'AI Auto-Learning Active',
+      description: 'Your AI system is continuously learning from invoice patterns to improve accuracy and efficiency.',
+      action: null,
+      actionText: null
+    });
+    
+    res.json({
+      success: true,
+      insights: insights
+    });
+  } catch (error) {
+    console.error('Error generating AI insights:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate AI insights'
+    });
+  }
+});
+
+// PREMIUM LOGO UPLOAD API ENDPOINTS
+// Premium Logo Upload Endpoint
+app.post('/api/upload-premium-logo', authMiddleware.authenticateMerchant, upload.single('logo'), async (req, res) => {
+  try {
+    console.log('📸 Premium logo upload request received');
+    console.log('File details:', req.file);
+    console.log('Logo type:', req.body.type); // 'header' or 'footer'
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file uploaded' 
+      });
+    }
+
+    const logoType = req.body.type; // 'header' or 'footer'
+    if (!logoType || !['header', 'footer'].includes(logoType)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid logo type. Must be "header" or "footer"' 
+      });
+    }
+
+    const merchantId = req.merchant.id;
+    console.log(`📤 Uploading ${logoType} logo for merchant:`, merchantId);
+
+    // Upload to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const uploadOptions = {
+        folder: `ai-invoice-generator/premium-logos/${logoType}/merchant_${merchantId}`,
+        public_id: `merchant_${merchantId}_${logoType}_logo_${Date.now()}`,
+        transformation: [
+          { width: logoType === 'header' ? 400 : 200, height: logoType === 'header' ? 200 : 100, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'auto' }
+        ]
+      };
+
+      const uploadStream = cloudinary.uploader.upload_stream(
+        uploadOptions,
+        (error, result) => {
+          if (error) {
+            console.error(`❌ Cloudinary upload error for ${logoType} logo:`, error);
+            reject(error);
+          } else {
+            console.log(`✅ ${logoType} logo uploaded successfully:`, result.secure_url);
+            resolve(result);
+          }
+        }
+      );
+
+      uploadStream.end(req.file.buffer);
+    });
+
+    // Update business settings with new logo URL
+    const updateData = {};
+    if (logoType === 'header') {
+      updateData.customHeaderLogoUrl = result.secure_url;
+      updateData.customHeaderLogoPublicId = result.public_id;
+    } else {
+      updateData.customFooterLogoUrl = result.secure_url;
+      updateData.customFooterLogoPublicId = result.public_id;
+    }
+
+    await database.updateBusinessSettings(updateData, merchantId);
+
+    res.json({
+      success: true,
+      url: result.secure_url,
+      publicId: result.public_id,
+      message: `${logoType} logo uploaded successfully`
+    });
+
+  } catch (error) {
+    console.error(`❌ Error uploading premium ${req.body.type} logo:`, error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to upload logo' 
+    });
+  }
+});
+
+// Remove Premium Logo Endpoint
+app.delete('/api/remove-premium-logo/:type', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const logoType = req.params.type; // 'header' or 'footer'
+    const merchantId = req.merchant.id;
+
+    if (!['header', 'footer'].includes(logoType)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid logo type' 
+      });
+    }
+
+    console.log(`🗑️ Removing ${logoType} logo for merchant:`, merchantId);
+
+    // Get current logo info
+    const settings = await database.getBusinessSettings(merchantId);
+    const publicId = logoType === 'header' ? 
+      settings.customHeaderLogoPublicId || settings.custom_header_logo_public_id :
+      settings.customFooterLogoPublicId || settings.custom_footer_logo_public_id;
+
+    // Remove from Cloudinary if exists
+    if (publicId) {
+      try {
+        await cloudinary.uploader.destroy(publicId);
+        console.log(`✅ ${logoType} logo removed from Cloudinary:`, publicId);
+      } catch (cloudinaryError) {
+        console.error(`⚠️ Error removing ${logoType} logo from Cloudinary:`, cloudinaryError);
+      }
+    }
+
+    // Update database
+    const updateData = {};
+    if (logoType === 'header') {
+      updateData.customHeaderLogoUrl = null;
+      updateData.customHeaderLogoPublicId = null;
+    } else {
+      updateData.customFooterLogoUrl = null;
+      updateData.customFooterLogoPublicId = null;
+    }
+
+    await database.updateBusinessSettings(updateData, merchantId);
+
+    res.json({
+      success: true,
+      message: `${logoType} logo removed successfully`
+    });
+
+  } catch (error) {
+    console.error(`❌ Error removing premium ${req.params.type} logo:`, error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to remove logo' 
+    });
+  }
+});
+
+// Unified Premium Branding Save Endpoint
+app.post('/api/save-premium-branding', authMiddleware.authenticateMerchant, upload.fields([
+  { name: 'headerLogo', maxCount: 1 },
+  { name: 'footerLogo', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    console.log('💎 Saving premium branding for merchant:', merchantId);
+    console.log('📋 Form data received:', {
+      customHeaderText: req.body.customHeaderText,
+      hasHeaderLogo: !!(req.files && req.files.headerLogo),
+      hasFooterLogo: !!(req.files && req.files.footerLogo),
+      hideAspreeBranding: req.body.hideAspreeBranding
+    });
+    
+    // Prepare settings data
+    const settingsData = {
+      customHeaderText: req.body.customHeaderText || '',
+      customHeaderBgColor: req.body.customHeaderBgColor || '#311d6b',
+      customFooterBgColor: req.body.customFooterBgColor || '#311d6b',
+      customHeaderTextColor: req.body.customHeaderTextColor || '#ffffff',
+      customFooterTextColor: req.body.customFooterTextColor || '#ffffff',
+      hideAspreeBranding: req.body.hideAspreeBranding === 'true'
+    };
+    
+    // Upload logos if provided
+    if (req.files && req.files.headerLogo) {
+      console.log('📤 Uploading header logo...');
+      const headerResult = await uploadToCloudinary(req.files.headerLogo[0], 'header', merchantId);
+      settingsData.customHeaderLogoUrl = headerResult.secure_url;
+      settingsData.customHeaderLogoPublicId = headerResult.public_id;
+    }
+    
+    if (req.files && req.files.footerLogo) {
+      console.log('📤 Uploading footer logo...');
+      const footerResult = await uploadToCloudinary(req.files.footerLogo[0], 'footer', merchantId);
+      settingsData.customFooterLogoUrl = footerResult.secure_url;
+      settingsData.customFooterLogoPublicId = footerResult.public_id;
+    }
+    
+    // Save everything at once
+    await database.updateBusinessSettings(settingsData, merchantId);
+    
+    console.log('✅ Premium branding saved successfully for merchant:', merchantId);
+    res.json({
+      success: true,
+      message: 'Premium branding saved successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error saving premium branding:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to save premium branding'
+    });
+  }
+});
+
+// Helper function for Cloudinary upload
+async function uploadToCloudinary(file, type, merchantId) {
+  return new Promise((resolve, reject) => {
+    const uploadOptions = {
+      folder: `ai-invoice-generator/premium-logos/${type}/merchant_${merchantId}`,
+      public_id: `merchant_${merchantId}_${type}_logo_${Date.now()}`,
+      transformation: [
+        { width: type === 'header' ? 400 : 200, height: type === 'header' ? 200 : 100, crop: 'limit' },
+        { quality: 'auto:good' },
+        { format: 'auto' }
+      ]
+    };
+
+    const uploadStream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
+      if (error) {
+        console.error(`❌ Cloudinary upload error for ${type}:`, error);
+        reject(error);
+      } else {
+        console.log(`✅ ${type} logo uploaded:`, result.secure_url);
+        resolve(result);
+      }
+    });
+
+    uploadStream.end(file.buffer);
+  });
+}
+
+// Start the server
+async function startServer() {
+  // Print configuration summary
+  config.printStartupInfo();
+  
+  // Initialize email service
+  await emailService.initialize();
+  
+  let server;
+  
+  if (config.ssl.enabled) {
+    console.log('🔐 Starting HTTPS server...');
+    
+    // Setup SSL certificates
+    const sslReady = await sslManager.setupSSL();
+    if (!sslReady) {
+      console.error('❌ SSL setup failed. Exiting...');
+      process.exit(1);
+    }
+    
+    // Print SSL status
+    sslManager.printSSLStatus();
+    
+    // Load SSL certificates
+    try {
+      const { cert, key } = sslManager.loadCertificates();
+      const httpsOptions = { cert, key };
+      
+      // Create HTTPS server
+      server = https.createServer(httpsOptions, app);
+      
+      server.listen(PORT, config.server.host, () => {
+        console.log(`🔒 HTTPS Server running at: https://${config.server.host}:${PORT}`);
+        printServerInfo();
+      });
+      
+      // Also start HTTP server for redirect (in production)
+      if (config.isProduction) {
+        const httpApp = express();
+        httpApp.use((req, res) => {
+          res.redirect(301, `https://${req.headers.host}${req.url}`);
+        });
+        
+        httpApp.listen(80, config.server.host, () => {
+          console.log('🔄 HTTP redirect server running on port 80');
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to start HTTPS server:', error.message);
+      process.exit(1);
+    }
+  } else {
+    console.log('🌐 Starting HTTP server...');
+    server = http.createServer(app);
+    
+    server.listen(PORT, config.server.host, () => {
+      console.log(`🌐 HTTP Server running at: http://${config.server.host}:${PORT}`);
+      printServerInfo();
+    });
+  }
+  
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('📴 Shutting down server...');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  });
+  
+  process.on('SIGINT', () => {
+    console.log('📴 Shutting down server...');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  });
+}
+
+function printServerInfo() {
+  console.log('📱 Open your browser and go to the URL above');
+  console.log('💡 Make sure you have set OPENAI_API_KEY environment variable');
+  
+  // Print additional development info
+  if (config.isDevelopment) {
+    console.log('\n📋 Development Mode Features:');
+    console.log('• Mock payments enabled');
+    console.log('• Debug logging enabled');
+    console.log('• CORS enabled for development');
+    console.log('• Check .env.example for configuration options');
+    
+    if (config.ssl.enabled) {
+      console.log('• Self-signed SSL certificate (accept security warning)');
+    }
+  }
+  
+  console.log('='.repeat(50));
+}
+
+// Start the server
+startServer().catch(error => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+});
