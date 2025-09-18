@@ -6165,10 +6165,10 @@ Terima kasih! 🙏`;
             const token = localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
             if (token) {
                 // User is logged in, go to dashboard
-                window.location.href = '/merchant';
+                window.location.href = '/merchant-dashboard';
             } else {
                 // User not logged in, redirect to login with return URL
-                window.location.href = '/auth/login?redirect=' + encodeURIComponent('/merchant');
+                window.location.href = '/auth/login?redirect=' + encodeURIComponent('/merchant-dashboard');
             }
         }
 
