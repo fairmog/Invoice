@@ -4054,29 +4054,54 @@ app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMercha
 app.put('/api/invoices/:id/status', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { status } = req.body;
+    console.log(`🔄 Updating invoice ${req.params.id} status to '${status}' for merchant ${req.merchant.id}`);
+
     if (!['draft', 'sent', 'paid'].includes(status)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid status. Must be draft, sent, or paid'
       });
     }
-    
+
     const result = await database.updateInvoiceStatus(parseInt(req.params.id), status, req.merchant.id);
-    
+
     // Check if order was created (if status was updated to paid)
     let orderInfo = null;
-    if (status === 'paid' && result && result.orderCreated) {
-      orderInfo = {
-        orderCreated: true,
-        orderId: result.orderId,
-        orderNumber: result.orderNumber
-      };
-      console.log(`✅ Order ${result.orderNumber} created from paid invoice`);
+    if (status === 'paid') {
+      console.log('📊 Payment status update result:', {
+        hasResult: !!result,
+        orderCreated: result?.orderCreated,
+        orderId: result?.orderId,
+        orderNumber: result?.orderNumber,
+        orderError: result?.orderError
+      });
+
+      if (result && result.orderCreated) {
+        orderInfo = {
+          orderCreated: true,
+          orderId: result.orderId,
+          orderNumber: result.orderNumber
+        };
+        console.log(`✅ Order ${result.orderNumber} successfully created from paid invoice ${req.params.id}`);
+      } else if (result && result.orderError) {
+        orderInfo = {
+          orderCreated: false,
+          orderError: result.orderError
+        };
+        console.warn(`⚠️ Order creation failed for invoice ${req.params.id}: ${result.orderError}`);
+      } else {
+        orderInfo = {
+          orderCreated: false
+        };
+        console.warn(`⚠️ No order creation info returned for paid invoice ${req.params.id}`);
+      }
     }
-    
+
+    const responseMessage = `Invoice status updated to ${status}${orderInfo?.orderCreated ? ` and order ${orderInfo.orderNumber} created` : ''}`;
+
     res.json({
       success: true,
-      message: `Invoice status updated to ${status}${orderInfo ? ` and order ${orderInfo.orderNumber} created` : ''}`,
+      message: responseMessage,
       result,
       ...orderInfo
     });
@@ -4613,22 +4638,26 @@ app.get('/api/orders/stats', authMiddleware.authenticateMerchant, async (req, re
   }
 });
 
-app.get('/api/orders/:id', async (req, res) => {
+app.get('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const order = await database.getOrder(parseInt(req.params.id));
+    console.log(`🔍 Getting order ${req.params.id} for merchant ${req.merchant.id}`);
+
+    const order = await database.getOrder(parseInt(req.params.id), req.merchant.id);
     if (!order) {
+      console.log(`❌ Order ${req.params.id} not found or access denied for merchant ${req.merchant.id}`);
       return res.status(404).json({
         success: false,
-        error: 'Order not found'
+        error: 'Order not found or access denied'
       });
     }
-    
+
+    console.log(`✅ Order ${req.params.id} retrieved successfully for merchant ${req.merchant.id}`);
     res.json({
       success: true,
       order
     });
   } catch (error) {
-    console.error('Error fetching order:', error);
+    console.error(`❌ Error getting order ${req.params.id} for merchant ${req.merchant.id}:`, error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch order'
@@ -4714,21 +4743,25 @@ app.put('/api/orders/bulk/status', authMiddleware.authenticateMerchant, async (r
 
 app.delete('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
-    const result = await database.deleteOrder(parseInt(req.params.id), req.user.id);
+    console.log(`🗑️ Deleting order ${req.params.id} for merchant ${req.merchant.id}`);
+
+    const result = await database.deleteOrder(parseInt(req.params.id), req.merchant.id);
     
     if (result.changes === 0) {
+      console.log(`❌ Order ${req.params.id} not found or access denied for merchant ${req.merchant.id}`);
       return res.status(404).json({
         success: false,
-        error: 'Order not found'
+        error: 'Order not found or access denied'
       });
     }
-    
+
+    console.log(`✅ Order ${req.params.id} deleted successfully for merchant ${req.merchant.id}`);
     res.json({
       success: true,
       message: 'Order deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting order:', error);
+    console.error(`❌ Error deleting order ${req.params.id} for merchant ${req.merchant.id}:`, error);
     res.status(500).json({
       success: false,
       error: 'Failed to delete order'
