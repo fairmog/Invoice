@@ -1928,9 +1928,9 @@
                     })()}
 
                     <!-- Footer band with terms and contact -->
-                    <div class="footer-band" style="background: ${businessProfile?.premiumActive && businessProfile.customFooterBgColor ? 
-                        `linear-gradient(135deg, ${businessProfile.customFooterBgColor}, ${adjustBrightness(businessProfile.customFooterBgColor, 20)})` : 
-                        'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: white; padding: 20px; margin-bottom: 0;">
+                    <div class="footer-band" style="background: ${businessProfile?.premiumActive && businessProfile.customFooterBgColor ?
+                        `linear-gradient(135deg, ${businessProfile.customFooterBgColor}, ${adjustBrightness(businessProfile.customFooterBgColor, 20)})` :
+                        'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile?.premiumActive && businessProfile.customFooterTextColor ? businessProfile.customFooterTextColor : 'white'}; padding: 20px; margin-bottom: 0;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
                             <div class="footer-section">
                                 <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
