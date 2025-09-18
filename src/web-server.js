@@ -6815,7 +6815,7 @@ app.get('/api/analytics/ai-insights', async (req, res) => {
 
 // PREMIUM LOGO UPLOAD API ENDPOINTS
 // Premium Logo Upload Endpoint
-app.post('/api/upload-premium-logo', authMiddleware.authenticateMerchant, upload.single('logo'), async (req, res) => {
+app.post('/api/upload-premium-logo', authMiddleware.authenticateMerchant, logoUpload.single('logo'), async (req, res) => {
   try {
     console.log('📸 Premium logo upload request received');
     console.log('File details:', req.file);
@@ -6952,7 +6952,7 @@ app.delete('/api/remove-premium-logo/:type', authMiddleware.authenticateMerchant
 });
 
 // Unified Premium Branding Save Endpoint
-app.post('/api/save-premium-branding', authMiddleware.authenticateMerchant, upload.fields([
+app.post('/api/save-premium-branding', authMiddleware.authenticateMerchant, logoUpload.fields([
   { name: 'headerLogo', maxCount: 1 },
   { name: 'footerLogo', maxCount: 1 }
 ]), async (req, res) => {
