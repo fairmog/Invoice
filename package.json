@@ -18,11 +18,10 @@
     "backup": "./scripts/backup.sh",
     "ssl-setup": "./scripts/ssl-setup.sh",
     "test-email": "node tests/test-email-logo-fix.js",
-    "config": "node -e \"import('./config/config.js').then(c => console.log(JSON.stringify(c.default.getConfigSummary(), null, 2)))\"",
-    "verify-build": "node -e \"console.log('✅ Build verification: All imports can be resolved'); import('./src/web-server.js').then(() => console.log('✅ Main server module loads successfully')).catch(e => { console.error('❌ Build verification failed:', e.message); process.exit(1); });\""
+    "config": "node -e \"import('./config/config.js').then(c => console.log(JSON.stringify(c.default.getConfigSummary(), null, 2)))\""
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@supabase/functions-js": "^2.4.1",
