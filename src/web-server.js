@@ -3845,6 +3845,13 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
     // Get current business settings for the invoice's merchant to ensure consistent display
     const currentBusinessSettings = await getCurrentBusinessSettings(invoice.merchant_id);
     console.log('✅ Business settings loaded for merchant_id', invoice.merchant_id);
+    console.log('🔍 Premium branding debug - currentBusinessSettings:', {
+      premiumActive: currentBusinessSettings.premiumActive,
+      hideAspreeBranding: currentBusinessSettings.hideAspreeBranding,
+      customHeaderText: currentBusinessSettings.customHeaderText,
+      customHeaderLogoUrl: currentBusinessSettings.customHeaderLogoUrl,
+      customFooterLogoUrl: currentBusinessSettings.customFooterLogoUrl
+    });
     
     // Data consistency check
     if (currentBusinessSettings.email && currentBusinessSettings.email !== invoice.merchant_email) {
@@ -3874,7 +3881,17 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
         hideBusinessName: currentBusinessSettings.hideBusinessName || false,
         taxEnabled: currentBusinessSettings.taxEnabled || false,
         taxRate: currentBusinessSettings.taxRate || 0,
-        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
+        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari',
+        // Premium branding fields for invoice template
+        premiumActive: currentBusinessSettings.premiumActive || false,
+        hideAspreeBranding: currentBusinessSettings.hideAspreeBranding || false,
+        customHeaderText: currentBusinessSettings.customHeaderText,
+        customHeaderLogoUrl: currentBusinessSettings.customHeaderLogoUrl,
+        customFooterLogoUrl: currentBusinessSettings.customFooterLogoUrl,
+        customHeaderBgColor: currentBusinessSettings.customHeaderBgColor || '#311d6b',
+        customFooterBgColor: currentBusinessSettings.customFooterBgColor || '#311d6b',
+        customHeaderTextColor: currentBusinessSettings.customHeaderTextColor || '#ffffff',
+        customFooterTextColor: currentBusinessSettings.customFooterTextColor || '#ffffff'
       }
     };
     
@@ -3882,6 +3899,13 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
       invoice_number: enhancedInvoice.invoice_number,
       hasLogo: !!enhancedInvoice.merchant_logo,
       hasBusinessProfile: !!enhancedInvoice.businessProfile
+    });
+    console.log('🔍 Premium branding debug - final businessProfile:', {
+      premiumActive: enhancedInvoice.businessProfile.premiumActive,
+      hideAspreeBranding: enhancedInvoice.businessProfile.hideAspreeBranding,
+      customHeaderText: enhancedInvoice.businessProfile.customHeaderText,
+      customHeaderLogoUrl: enhancedInvoice.businessProfile.customHeaderLogoUrl,
+      customFooterLogoUrl: enhancedInvoice.businessProfile.customFooterLogoUrl
     });
     
     res.json({
@@ -4297,7 +4321,17 @@ app.get('/api/customer/invoice/:token', async (req, res) => {
         hideBusinessName: currentBusinessSettings.hideBusinessName || false,
         taxEnabled: currentBusinessSettings.taxEnabled || false,
         taxRate: currentBusinessSettings.taxRate || 0,
-        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
+        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari',
+        // Premium branding fields for invoice template
+        premiumActive: currentBusinessSettings.premiumActive || false,
+        hideAspreeBranding: currentBusinessSettings.hideAspreeBranding || false,
+        customHeaderText: currentBusinessSettings.customHeaderText,
+        customHeaderLogoUrl: currentBusinessSettings.customHeaderLogoUrl,
+        customFooterLogoUrl: currentBusinessSettings.customFooterLogoUrl,
+        customHeaderBgColor: currentBusinessSettings.customHeaderBgColor || '#311d6b',
+        customFooterBgColor: currentBusinessSettings.customFooterBgColor || '#311d6b',
+        customHeaderTextColor: currentBusinessSettings.customHeaderTextColor || '#ffffff',
+        customFooterTextColor: currentBusinessSettings.customFooterTextColor || '#ffffff'
       }
     };
     
