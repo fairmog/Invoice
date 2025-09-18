@@ -1478,14 +1478,26 @@ class SupabaseDatabase {
     return data || [];
   }
 
-  async getOrder(id) {
-    const { data, error } = await this.supabase
+  async getOrder(id, merchantId = null) {
+    let query = this.supabase
       .from('orders')
       .select('*')
-      .eq('id', id)
-      .single();
+      .eq('id', id);
 
-    if (error) throw error;
+    // Add merchant isolation if merchantId is provided
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
+
+    const { data, error } = await query.single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned - order not found or access denied
+        return null;
+      }
+      throw error;
+    }
     
     // Get order items for this order
     const { data: items, error: itemsError } = await this.supabase
