@@ -3996,7 +3996,44 @@
                                 </div>
                             </div>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <!-- Default Aspree Footer -->
+                        <div class="footer-band" style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 20px; margin-bottom: 0;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
+                                <div class="footer-section">
+                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
+                                    <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessTerms}</p>
+                                </div>
+                                <div class="footer-section">
+                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
+                                    <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
+                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                            <span style="opacity: 0.7;">📞</span>
+                                            ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
+                                        </li>
+                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                            <span style="opacity: 0.7;">✉️</span>
+                                            ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
+                                        </li>
+                                        <li style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="opacity: 0.7;">📍</span>
+                                            ${businessProfile ? (businessProfile.address || invoice.merchant_address) : invoice.merchant_address || '-'}
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
+                                    <img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">
+                                </div>
+                            </div>
+
+                            <!-- Powered by text -->
+                            <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                                <p style="font-size: 12px; opacity: 0.7; margin: 0;">
+                                    Powered by Aspree Invoice Generator
+                                </p>
+                            </div>
+                        </div>
+                    `}
                 </div>
             `;
             
