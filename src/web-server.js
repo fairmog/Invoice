@@ -3965,10 +3965,21 @@ app.put('/api/invoices/:id/payment-confirmations/approve', async (req, res) => {
       });
     }
     
+    // Check if an order was automatically created
+    let message = 'Payment confirmation approved successfully';
+    if (result.orderCreated) {
+      message += ` and order ${result.orderNumber} was created automatically`;
+    } else if (result.orderError) {
+      message += `, but order creation failed: ${result.orderError}`;
+    }
+
     res.json({
       success: true,
-      message: 'Payment confirmation approved successfully',
-      invoice: result
+      message: message,
+      invoice: result,
+      orderCreated: result.orderCreated || false,
+      orderId: result.orderId || null,
+      orderNumber: result.orderNumber || null
     });
     
   } catch (error) {
@@ -6972,14 +6983,32 @@ app.post('/api/save-premium-branding', authMiddleware.authenticateMerchant, uplo
     // Upload logos if provided
     if (req.files && req.files.headerLogo) {
       console.log('📤 Uploading header logo...');
-      const headerResult = await uploadToCloudinary(req.files.headerLogo[0], 'header', merchantId);
+      const headerResult = await cloudinaryService.uploadImage(req.files.headerLogo[0].buffer, {
+        filename: `merchant_${merchantId}_header_logo_${Date.now()}`,
+        merchantId: merchantId,
+        folder: `ai-invoice-generator/premium-logos/header/merchant_${merchantId}`,
+        transformation: [
+          { width: 400, height: 200, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'auto' }
+        ]
+      });
       settingsData.customHeaderLogoUrl = headerResult.secure_url;
       settingsData.customHeaderLogoPublicId = headerResult.public_id;
     }
-    
+
     if (req.files && req.files.footerLogo) {
       console.log('📤 Uploading footer logo...');
-      const footerResult = await uploadToCloudinary(req.files.footerLogo[0], 'footer', merchantId);
+      const footerResult = await cloudinaryService.uploadImage(req.files.footerLogo[0].buffer, {
+        filename: `merchant_${merchantId}_footer_logo_${Date.now()}`,
+        merchantId: merchantId,
+        folder: `ai-invoice-generator/premium-logos/footer/merchant_${merchantId}`,
+        transformation: [
+          { width: 200, height: 100, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'auto' }
+        ]
+      });
       settingsData.customFooterLogoUrl = footerResult.secure_url;
       settingsData.customFooterLogoPublicId = footerResult.public_id;
     }
@@ -7002,32 +7031,7 @@ app.post('/api/save-premium-branding', authMiddleware.authenticateMerchant, uplo
   }
 });
 
-// Helper function for Cloudinary upload
-async function uploadToCloudinary(file, type, merchantId) {
-  return new Promise((resolve, reject) => {
-    const uploadOptions = {
-      folder: `ai-invoice-generator/premium-logos/${type}/merchant_${merchantId}`,
-      public_id: `merchant_${merchantId}_${type}_logo_${Date.now()}`,
-      transformation: [
-        { width: type === 'header' ? 400 : 200, height: type === 'header' ? 200 : 100, crop: 'limit' },
-        { quality: 'auto:good' },
-        { format: 'auto' }
-      ]
-    };
-
-    const uploadStream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
-      if (error) {
-        console.error(`❌ Cloudinary upload error for ${type}:`, error);
-        reject(error);
-      } else {
-        console.log(`✅ ${type} logo uploaded:`, result.secure_url);
-        resolve(result);
-      }
-    });
-
-    uploadStream.end(file.buffer);
-  });
-}
+// Note: uploadToCloudinary function removed - now using cloudinaryService.uploadImage directly
 
 // Start the server
 async function startServer() {
