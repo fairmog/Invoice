@@ -213,8 +213,8 @@ async function getCurrentBusinessSettings(merchantId = null) {
       customFooterLogoUrl: dbSettings.customFooterLogoUrl || null,
       customHeaderBgColor: dbSettings.customHeaderBgColor || '#311d6b',
       customFooterBgColor: dbSettings.customFooterBgColor || '#311d6b',
-      customHeaderTextColor: dbSettings.customHeaderTextColor || '#ffffff',
-      customFooterTextColor: dbSettings.customFooterTextColor || '#ffffff',
+      customHeaderTextColor: dbSettings.customHeaderTextColor || '#000000',
+      customFooterTextColor: dbSettings.customFooterTextColor || '#000000',
       customHeaderLogoPublicId: dbSettings.customHeaderLogoPublicId || null,
       customFooterLogoPublicId: dbSettings.customFooterLogoPublicId || null
     };
@@ -244,8 +244,8 @@ async function getCurrentBusinessSettings(merchantId = null) {
       customFooterLogoUrl: null,
       customHeaderBgColor: '#311d6b',
       customFooterBgColor: '#311d6b',
-      customHeaderTextColor: '#ffffff',
-      customFooterTextColor: '#ffffff',
+      customHeaderTextColor: '#000000',
+      customFooterTextColor: '#000000',
       customHeaderLogoPublicId: null,
       customFooterLogoPublicId: null
     };
@@ -2687,8 +2687,8 @@ app.post('/api/preview-invoice', authMiddleware.authenticateMerchant, async (req
           customFooterLogoUrl: currentBusinessSettings.customFooterLogoUrl,
           customHeaderBgColor: currentBusinessSettings.customHeaderBgColor || '#311d6b',
           customFooterBgColor: currentBusinessSettings.customFooterBgColor || '#311d6b',
-          customHeaderTextColor: currentBusinessSettings.customHeaderTextColor || '#ffffff',
-          customFooterTextColor: currentBusinessSettings.customFooterTextColor || '#ffffff'
+          customHeaderTextColor: currentBusinessSettings.customHeaderTextColor || '#000000',
+          customFooterTextColor: currentBusinessSettings.customFooterTextColor || '#000000'
         }
       };
 
@@ -4801,6 +4801,7 @@ app.put('/api/orders/bulk/status', authMiddleware.authenticateMerchant, async (r
 
 app.delete('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
+    console.log(`🗑️ Delete order request: orderId=${req.params.id}, merchantId=${req.merchant.id}`);
     const result = await database.deleteOrder(parseInt(req.params.id), req.merchant.id);
     
     if (result.changes === 0) {
@@ -4810,6 +4811,7 @@ app.delete('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, r
       });
     }
     
+    console.log(`✅ Order deleted successfully: orderId=${req.params.id}, changes=${result.changes}`);
     res.json({
       success: true,
       message: 'Order deleted successfully'
