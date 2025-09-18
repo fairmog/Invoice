@@ -5182,8 +5182,17 @@ app.post('/api/payments/webhook', async (req, res) => {
     
     // Update invoice status based on transaction status
     if (transaction_status === 'capture' || transaction_status === 'settlement') {
-      await database.updateInvoiceStatus(invoice.id, 'paid', invoice.merchant_id);
-      console.log('✅ Payment confirmed for invoice:', invoiceNumber);
+      const result = await database.updateInvoiceStatus(invoice.id, 'paid', invoice.merchant_id);
+
+      let message = `✅ Payment confirmed for invoice: ${invoiceNumber}`;
+      if (result && result.orderCreated) {
+        message += ` and order ${result.orderNumber} was created automatically`;
+      } else if (result && result.orderError) {
+        message += `, but order creation failed: ${result.orderError}`;
+        console.warn('⚠️ Order creation failed during webhook processing:', result.orderError);
+      }
+
+      console.log(message);
     }
     
     res.json({
@@ -5211,10 +5220,18 @@ app.post('/api/payments/success', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Invoice not found' });
     }
     
-    // Update invoice status to paid
-    await database.updateInvoiceStatus(invoice_id, 'paid', invoice.merchant_id);
-    
-    console.log('✅ Payment successful for invoice ID:', invoice_id);
+    // Update invoice status to paid (this automatically creates an order)
+    const result = await database.updateInvoiceStatus(invoice_id, 'paid', invoice.merchant_id);
+
+    let message = `✅ Payment successful for invoice ID: ${invoice_id}`;
+    if (result && result.orderCreated) {
+      message += ` and order ${result.orderNumber} was created automatically`;
+    } else if (result && result.orderError) {
+      message += `, but order creation failed: ${result.orderError}`;
+      console.warn('⚠️ Order creation failed during payment processing:', result.orderError);
+    }
+
+    console.log(message);
     
     // Send payment confirmation email
     try {
@@ -5235,7 +5252,11 @@ app.post('/api/payments/success', async (req, res) => {
       success: true,
       message: 'Payment processed successfully',
       invoice_id: invoice_id,
-      transaction_id: transaction_id
+      transaction_id: transaction_id,
+      orderCreated: result?.orderCreated || false,
+      orderId: result?.orderId || null,
+      orderNumber: result?.orderNumber || null,
+      orderError: result?.orderError || null
     });
     
   } catch (error) {
