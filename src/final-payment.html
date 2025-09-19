@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran Akhir - Final Payment</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <style>
+        /* Modern Purple Design System */
+        :root {
+            --primary-purple: #311d6b;
+            --primary-dark: #2a1759;
+            --primary-light: #4a2b7a;
+            --accent-purple: #4a2b7a;
+            --light-accent: #6d5498;
+            
+            --background: #FAFAFA;
+            --card-background: #FFFFFF;
+            --text-primary: #2D3748;
+            --text-secondary: #718096;
+            --border-color: #E2E8F0;
+            
+            --success: #48BB78;
+            --warning: #ED8936;
+            --error: #F56565;
+            --info: #4299E1;
+            
+            --shadow-soft: 0 4px 6px rgba(49, 29, 107, 0.05);
+            --shadow-medium: 0 10px 25px rgba(49, 29, 107, 0.1);
+            --gradient-primary: linear-gradient(135deg, #311d6b, #4a2b7a);
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .payment-card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-medium);
+            padding: 40px;
+            text-align: center;
+        }
+
+        .payment-header {
+            margin-bottom: 30px;
+        }
+
+        .payment-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-bottom: 12px;
+        }
+
+        .payment-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .invoice-number {
+            font-size: 16px;
+            color: var(--primary-purple);
+            font-weight: 600;
+            background: rgba(49, 29, 107, 0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .payment-summary {
+            background: rgba(49, 29, 107, 0.05);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+            padding-top: 20px;
+            margin-top: 20px;
+            border-top: 2px solid var(--primary-purple);
+        }
+
+        .summary-label {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .summary-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .final-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-purple);
+        }
+
+        .payment-instructions {
+            background: rgba(72, 187, 120, 0.1);
+            border-left: 4px solid var(--success);
+            padding: 20px;
+            margin: 30px 0;
+            text-align: left;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .payment-instructions h3 {
+            color: var(--success);
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .payment-instructions p {
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+
+        .upload-section {
+            margin: 30px 0;
+        }
+
+        .upload-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-purple);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 16px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-purple);
+            background: rgba(49, 29, 107, 0.02);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-purple);
+            background: rgba(49, 29, 107, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .selected-file {
+            background: rgba(72, 187, 120, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .selected-file.show {
+            display: block;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            font-size: 24px;
+            color: var(--success);
+        }
+
+        .file-details h4 {
+            color: var(--success);
+            margin-bottom: 4px;
+        }
+
+        .file-details p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .notes-section {
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .notes-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .notes-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            transition: var(--transition);
+        }
+
+        .notes-input:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px rgba(49, 29, 107, 0.1);
+        }
+
+        .submit-button {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: rgba(245, 101, 101, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(72, 187, 120, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer-info {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .payment-card {
+                padding: 24px;
+            }
+
+            .payment-title {
+                font-size: 24px;
+            }
+
+            .final-amount {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="payment-card">
+            <div class="payment-header">
+                <h1 class="payment-title">🏦 Pembayaran Akhir</h1>
+                <p class="payment-subtitle">Final Payment Required</p>
+                <div class="invoice-number" id="invoiceNumber">Loading...</div>
+            </div>
+
+            <div class="payment-summary" id="paymentSummary">
+                <div class="summary-row">
+                    <span class="summary-label">Total Invoice:</span>
+                    <span class="summary-value" id="grandTotal">Loading...</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Uang Muka Sudah Dibayar:</span>
+                    <span class="summary-value" id="downPaymentAmount">Loading...</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Sisa Pembayaran:</span>
+                    <span class="summary-value final-amount" id="finalPaymentAmount">Loading...</span>
+                </div>
+            </div>
+
+            <div class="payment-instructions">
+                <h3>📋 Cara Pembayaran</h3>
+                <p><strong>1. Transfer ke rekening berikut:</strong></p>
+                <p>&nbsp;&nbsp;&nbsp;Bank BCA: <strong>1234567890</strong></p>
+                <p>&nbsp;&nbsp;&nbsp;Atas Nama: <strong>Toko Gadget Teknologi</strong></p>
+                <p><strong>2. Gunakan kode unik:</strong> <span id="paymentCode">Loading...</span></p>
+                <p><strong>3. Upload bukti pembayaran di bawah ini</strong></p>
+                <p><strong>4. Klik "Konfirmasi Pembayaran"</strong></p>
+            </div>
+
+            <form id="paymentForm" enctype="multipart/form-data">
+                <div class="upload-section">
+                    <h3 class="upload-title">📎 Upload Bukti Pembayaran</h3>
+                    
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">Klik atau seret file bukti pembayaran</div>
+                        <div class="upload-hint">Format: JPG, PNG, PDF (Max 10MB)</div>
+                    </div>
+                    
+                    <input type="file" 
+                           id="paymentProof" 
+                           name="paymentProof" 
+                           class="file-input" 
+                           accept="image/*,application/pdf" 
+                           required>
+                    
+                    <div class="selected-file" id="selectedFile">
+                        <div class="file-info">
+                            <div class="file-icon">✅</div>
+                            <div class="file-details">
+                                <h4 id="fileName">File selected</h4>
+                                <p id="fileSize">0 KB</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="notes-section">
+                    <label for="paymentNotes" class="notes-label">💬 Catatan (Opsional)</label>
+                    <textarea id="paymentNotes" 
+                              name="notes" 
+                              class="notes-input" 
+                              placeholder="Tambahkan catatan atau keterangan pembayaran Anda..."></textarea>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <button type="submit" class="submit-button" id="submitButton">
+                    ✅ Konfirmasi Pembayaran Akhir
+                </button>
+            </form>
+
+            <div class="footer-info">
+                <p>⚡ Pembayaran Anda akan diproses dalam 1-2 jam kerja</p>
+                <p>📞 Butuh bantuan? Hubungi: +62 21 1234 5678</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let invoiceData = null;
+        let paymentToken = null;
+
+        // Get payment token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        paymentToken = urlParams.get('token');
+
+        // Load payment details on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!paymentToken) {
+                showError('Token pembayaran tidak valid atau hilang');
+                return;
+            }
+
+            await loadPaymentDetails();
+            setupFileUpload();
+            setupFormSubmission();
+        });
+
+        async function loadPaymentDetails() {
+            try {
+                const response = await fetch(`/api/final-payment/${paymentToken}`);
+                const result = await response.json();
+
+                if (!result.success) {
+                    showError(result.error || 'Gagal memuat detail pembayaran');
+                    return;
+                }
+
+                invoiceData = result.invoice;
+                displayPaymentDetails(invoiceData);
+                
+            } catch (error) {
+                console.error('Error loading payment details:', error);
+                showError('Terjadi kesalahan saat memuat detail pembayaran');
+            }
+        }
+
+        function displayPaymentDetails(invoice) {
+            // Update invoice details
+            document.getElementById('invoiceNumber').textContent = `Invoice: ${invoice.invoice_number}`;
+            document.getElementById('grandTotal').textContent = formatCurrency(invoice.grand_total);
+            document.getElementById('downPaymentAmount').textContent = formatCurrency(invoice.down_payment_amount);
+            document.getElementById('finalPaymentAmount').textContent = formatCurrency(invoice.final_payment_amount);
+            
+            // Generate payment code (last 3 digits of final payment amount)
+            const paymentCode = String(invoice.final_payment_amount).slice(-3).padStart(3, '0');
+            document.getElementById('paymentCode').textContent = paymentCode;
+        }
+
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('paymentProof');
+            const selectedFile = document.getElementById('selectedFile');
+
+            // Click to upload
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            // File selection
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelect();
+                }
+            });
+        }
+
+        function handleFileSelect() {
+            const fileInput = document.getElementById('paymentProof');
+            const selectedFile = document.getElementById('selectedFile');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                
+                // Validate file size (10MB max)
+                if (file.size > 10 * 1024 * 1024) {
+                    showError('File terlalu besar. Maksimal 10MB');
+                    fileInput.value = '';
+                    return;
+                }
+
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+                if (!validTypes.includes(file.type)) {
+                    showError('Format file tidak didukung. Gunakan JPG, PNG, atau PDF');
+                    fileInput.value = '';
+                    return;
+                }
+
+                // Display selected file
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                selectedFile.classList.add('show');
+                
+                // Clear error
+                hideError();
+            }
+        }
+
+        function setupFormSubmission() {
+            const form = document.getElementById('paymentForm');
+            form.addEventListener('submit', handleSubmit);
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            if (!invoiceData) {
+                showError('Data invoice tidak tersedia');
+                return;
+            }
+
+            const fileInput = document.getElementById('paymentProof');
+            if (!fileInput.files.length) {
+                showError('Harap upload bukti pembayaran');
+                return;
+            }
+
+            const submitButton = document.getElementById('submitButton');
+            const originalText = submitButton.innerHTML;
+            
+            // Disable form and show loading
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="loading"></span>Memproses...';
+
+            try {
+                const formData = new FormData();
+                formData.append('paymentProof', fileInput.files[0]);
+                formData.append('notes', document.getElementById('paymentNotes').value);
+                formData.append('paymentToken', paymentToken);
+
+                const response = await fetch(`/api/final-payment/${paymentToken}/payment-confirmation`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('✅ Bukti pembayaran berhasil diupload! Pembayaran Anda sedang diproses. Kami akan menghubungi Anda setelah pembayaran dikonfirmasi.');
+                    
+                    // Hide form after successful submission
+                    form.style.display = 'none';
+                } else {
+                    showError(result.error || 'Gagal mengupload bukti pembayaran');
+                }
+
+            } catch (error) {
+                console.error('Error submitting payment:', error);
+                showError('Terjadi kesalahan saat mengupload bukti pembayaran');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // Hide success message
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            
+            // Hide error message
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
