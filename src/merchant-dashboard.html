@@ -4249,6 +4249,7 @@
             loadUserInfo();
             loadPlanStatus();
             loadInvoiceStats(); // Load dashboard statistics on page load
+            loadCustomerStats(); // Load customer statistics on page load
 
             // Handle URL hash navigation
             const hash = window.location.hash.substring(1);
@@ -6926,20 +6927,20 @@ Terima kasih! 🙏`;
         // Direct Print Function - Simple approach that works with flat invoice data
         async function printInvoice(invoiceNumber) {
             console.log('🖨️ Print function called for invoice:', invoiceNumber);
-            
+
             try {
-                // Get the invoice by number to find the full invoice data
+                // Get the invoice by number to find the customer token
                 const invoiceResponse = await fetch(`/api/invoices/number/${invoiceNumber}`, {
                     headers: getAuthHeaders()
                 });
-                
+
                 if (!invoiceResponse.ok) {
                     if (handleAuthError(invoiceResponse)) return;
                     throw new Error(`HTTP ${invoiceResponse.status}: ${invoiceResponse.statusText}`);
                 }
-                
+
                 const invoiceResult = await invoiceResponse.json();
-                
+
                 if (!invoiceResult.success) {
                     alert('Failed to load invoice for printing: ' + invoiceResult.error);
                     return;
@@ -6947,36 +6948,34 @@ Terima kasih! 🙏`;
 
                 const invoice = invoiceResult.invoice;
                 console.log('🔍 Found invoice for printing:', invoice);
-                
-                // Load business profile for logos and branding
-                console.log('🏢 Loading business data...');
-                await loadBusinessDataFromAPI();
-                console.log('✅ Business data loaded');
-                
-                // Generate simple printable HTML directly from flat data
-                console.log('🎨 Generating simple printable HTML...');
-                const printableHTML = generateSimplePrintableInvoice(invoice);
-                console.log('✅ Printable HTML generated');
-                
-                // Create new window and print immediately
-                const printWindow = window.open('', '_blank', 'width=1000,height=800,scrollbars=yes');
-                if (!printWindow) {
-                    alert('Popup blocked. Please allow popups for this site and try again.');
+
+                if (!invoice.customer_token) {
+                    alert('Cannot print: Invoice does not have a customer token. Please regenerate the invoice.');
                     return;
                 }
-                
-                // Write the complete HTML to the print window
-                printWindow.document.write(printableHTML);
-                printWindow.document.close();
-                
-                // Wait for content to load then print
-                printWindow.onload = function() {
-                    console.log('🖨️ Print window loaded, initiating print...');
+
+                // Open invoice view in new window for printing (same as invoice generator)
+                const baseUrl = window.location.origin;
+                const invoiceUrl = `${baseUrl}/simple-invoice-view.html?id=${invoice.invoice_number}&from=dashboard`;
+
+                console.log('🔗 Opening invoice URL for printing:', invoiceUrl);
+
+                const printWindow = window.open(invoiceUrl, '_blank', 'width=1000,height=800,scrollbars=yes');
+
+                if (printWindow) {
+                    // Auto-print after a short delay to let the page load
                     setTimeout(() => {
-                        printWindow.print();
-                    }, 500);
-                };
-                
+                        try {
+                            printWindow.focus();
+                            printWindow.print();
+                        } catch (printError) {
+                            console.warn('⚠️ Auto-print failed, user can print manually:', printError);
+                        }
+                    }, 2000);
+                } else {
+                    alert('Popup was blocked. Please allow popups for this site and try again.');
+                }
+
             } catch (error) {
                 console.error('❌ Error loading invoice for printing:', error);
                 console.error('❌ Error stack:', error.stack);
