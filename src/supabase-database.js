@@ -277,12 +277,18 @@ class SupabaseDatabase {
     }
   }
 
-  async getCustomer(email) {
-    const { data, error } = await this.supabase
+  async getCustomer(email, merchantId = null) {
+    let query = this.supabase
       .from('customers')
       .select('*')
-      .eq('email', email)
-      .single();
+      .eq('email', email);
+
+    // Filter by merchant if provided
+    if (merchantId) {
+      query = query.eq('merchant_id', merchantId);
+    }
+
+    const { data, error } = await query.single();
 
     if (error && error.code !== 'PGRST116') throw error;
     return data;
@@ -796,15 +802,33 @@ class SupabaseDatabase {
       // 1. Auto-create order
       try {
         console.log(`💎 Invoice ${data.invoice_number || invoiceId} marked as paid - creating order automatically`);
+        console.log(`🔍 Debug: Invoice ID: ${invoiceId}, Merchant ID: ${merchantId}`);
+        console.log(`🔍 Debug: Invoice data:`, {
+          id: data.id,
+          invoice_number: data.invoice_number,
+          customer_name: data.customer_name,
+          grand_total: data.grand_total
+        });
+
         orderResult = await this.createOrderFromInvoice(invoiceId, merchantId);
         console.log(`✅ Order ${orderResult.orderNumber} auto-created from paid invoice ${data.invoice_number || invoiceId}`);
+
+        // Return extended data with order info
+        data.orderCreated = true;
+        data.orderNumber = orderResult.orderNumber;
+        data.orderId = orderResult.lastInsertRowid;
       } catch (orderError) {
         console.error(`❌ Failed to auto-create order from invoice ${data.invoice_number || invoiceId}:`, {
           error: orderError.message,
           stack: orderError.stack,
           invoiceId,
-          merchantId
+          merchantId,
+          errorType: orderError.constructor.name
         });
+
+        // Add error info to return data
+        data.orderCreated = false;
+        data.orderError = orderError.message;
       }
 
       // 2. Extract customer data from paid invoice
@@ -1338,50 +1362,96 @@ class SupabaseDatabase {
       }
 
       console.log(`📋 Processing invoice ${invoice.invoice_number} (${invoice.customer_name}, Rp ${parseFloat(invoice.grand_total || 0).toLocaleString()})`);
+      console.log(`🔍 Invoice details:`, {
+        id: invoice.id,
+        status: invoice.status,
+        payment_status: invoice.payment_status,
+        items_count: Array.isArray(invoice.items_json) ? invoice.items_json.length : 0
+      });
 
+      // Check if order already exists for this merchant
+      console.log(`🔍 Checking for existing order with source_invoice_id: ${invoiceId}, merchant_id: ${merchantId}`);
+      const { data: existingOrder, error: existingOrderError } = await this.supabase
+        .from('orders')
+        .select('*')
+        .eq('source_invoice_id', invoiceId)
+        .eq('merchant_id', merchantId)
+        .maybeSingle(); // Use maybeSingle instead of single to avoid error when no record found
 
-    // Check if order already exists for this merchant
-    const { data: existingOrder } = await this.supabase
-      .from('orders')
-      .select('*')
-      .eq('source_invoice_id', invoiceId)
-      .eq('merchant_id', merchantId)
-      .single();
-    
-    if (existingOrder) {
-      console.log(`Order ${existingOrder.order_number} already exists for invoice ${invoice.invoice_number}`);
-      return existingOrder;
+      if (existingOrderError) {
+        console.warn(`⚠️ Error checking existing order:`, existingOrderError);
+      }
+
+      if (existingOrder) {
+        console.log(`✅ Order ${existingOrder.order_number} already exists for invoice ${invoice.invoice_number}`);
+        return { lastInsertRowid: existingOrder.id, orderNumber: existingOrder.order_number };
+      }
+
+      console.log(`🆕 No existing order found, creating new order...`);
+
+    // Parse items safely
+    let invoiceItems = [];
+    try {
+      if (Array.isArray(invoice.items_json)) {
+        invoiceItems = invoice.items_json;
+      } else if (typeof invoice.items_json === 'string') {
+        invoiceItems = JSON.parse(invoice.items_json);
+      } else {
+        console.warn(`⚠️ Invoice items_json is not an array or string:`, typeof invoice.items_json);
+        invoiceItems = [];
+      }
+    } catch (itemsError) {
+      console.error(`❌ Error parsing invoice items:`, itemsError);
+      invoiceItems = [];
     }
 
-    const invoiceItems = Array.isArray(invoice.items_json) ? invoice.items_json : [];
-    
+    console.log(`🛍️ Parsed ${invoiceItems.length} items from invoice`);
+
     const orderData = {
-      customer_name: invoice.customer_name,
-      customer_email: invoice.customer_email,
-      customer_phone: invoice.customer_phone,
-      shipping_address: invoice.customer_address,
-      billing_address: invoice.customer_address,
+      customer_name: invoice.customer_name || 'Unknown Customer',
+      customer_email: invoice.customer_email || '',
+      customer_phone: invoice.customer_phone || '',
+      shipping_address: invoice.customer_address || '',
+      billing_address: invoice.customer_address || '',
       status: 'pending',
       payment_status: 'paid',
       order_date: new Date().toISOString(),
-      subtotal: invoice.subtotal,
-      tax_amount: invoice.tax_amount,
-      shipping_cost: invoice.shipping_cost || 0,
-      discount: invoice.discount || 0,
-      total_amount: invoice.grand_total,
+      subtotal: parseFloat(invoice.subtotal || 0),
+      tax_amount: parseFloat(invoice.tax_amount || 0),
+      shipping_cost: parseFloat(invoice.shipping_cost || 0),
+      discount: parseFloat(invoice.discount || 0),
+      total_amount: parseFloat(invoice.grand_total || 0),
       notes: `Auto-created from paid invoice ${invoice.invoice_number}`,
       source_invoice_id: invoice.id,
       source_invoice_number: invoice.invoice_number,
-      items: invoiceItems.map(item => ({
-        product_name: item.productName || item.name,
-        sku: item.sku || '',
-        quantity: item.quantity,
-        unit_price: item.unitPrice || item.price,
-        line_total: item.lineTotal || (item.quantity * (item.unitPrice || item.price))
-      }))
+      items: invoiceItems.map((item, index) => {
+        const mappedItem = {
+          product_name: item.productName || item.name || item.description || `Item ${index + 1}`,
+          sku: item.sku || '',
+          quantity: parseFloat(item.quantity || 1),
+          unit_price: parseFloat(item.unitPrice || item.price || item.unit_price || 0),
+          line_total: parseFloat(item.lineTotal || item.line_total || 0)
+        };
+
+        // Calculate line_total if not provided
+        if (!mappedItem.line_total && mappedItem.quantity && mappedItem.unit_price) {
+          mappedItem.line_total = mappedItem.quantity * mappedItem.unit_price;
+        }
+
+        return mappedItem;
+      })
     };
 
+    console.log(`📦 Order data prepared:`, {
+      customer_name: orderData.customer_name,
+      total_amount: orderData.total_amount,
+      items_count: orderData.items.length,
+      source_invoice_id: orderData.source_invoice_id
+    });
+
+    console.log(`🔧 Calling createOrder function...`);
     const result = await this.createOrder(orderData, merchantId);
+    console.log(`✅ createOrder completed, result:`, result);
     
     // Update invoice metadata
     const metadata = invoice.metadata_json || {};
@@ -2456,17 +2526,24 @@ class SupabaseDatabase {
 
   async getCustomerStats(merchantId = null) {
     try {
+      console.log(`📊 Calculating customer stats for merchant: ${merchantId}`);
+
       // Get customers filtered by merchant
       let customerQuery = this.supabase
         .from('customers')
         .select('*');
-      
+
       if (merchantId) {
         customerQuery = customerQuery.eq('merchant_id', merchantId);
       }
 
       const { data: customers, error: customerError } = await customerQuery;
-      if (customerError) throw customerError;
+      if (customerError) {
+        console.error('❌ Error fetching customers:', customerError);
+        throw customerError;
+      }
+
+      console.log(`👥 Found ${customers.length} customers for merchant ${merchantId}`);
 
       // Get invoices filtered by merchant for CLV calculation
       let invoiceQuery = this.supabase
