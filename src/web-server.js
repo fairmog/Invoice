@@ -4110,6 +4110,71 @@ app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMercha
   }
 });
 
+// Sync paid invoices to orders (creates missing orders for paid invoices)
+app.post('/api/orders/sync-from-invoices', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log(`🔄 Syncing paid invoices to orders for merchant ${req.merchant.id}`);
+
+    // Get all paid invoices for this merchant
+    const paidInvoices = await database.getInvoices(req.merchant.id, { status: 'paid' });
+
+    if (!Array.isArray(paidInvoices) || paidInvoices.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No paid invoices found',
+        processed: 0,
+        created: 0
+      });
+    }
+
+    // Get existing orders to check which invoices already have orders
+    const existingOrders = await database.getOrders(req.merchant.id);
+    const existingOrderInvoiceIds = new Set(
+      existingOrders.map(order => order.source_invoice_id).filter(Boolean)
+    );
+
+    // Find paid invoices without corresponding orders
+    const invoicesNeedingOrders = paidInvoices.filter(invoice =>
+      !existingOrderInvoiceIds.has(invoice.id)
+    );
+
+    console.log(`📊 Found ${paidInvoices.length} paid invoices, ${invoicesNeedingOrders.length} need orders`);
+
+    let createdCount = 0;
+    const errors = [];
+
+    // Create orders for invoices that don't have them
+    for (const invoice of invoicesNeedingOrders) {
+      try {
+        const orderResult = await database.createOrderFromInvoice(invoice.id, req.merchant.id);
+        console.log(`✅ Created order ${orderResult.orderNumber} for invoice ${invoice.invoice_number}`);
+        createdCount++;
+      } catch (error) {
+        console.error(`❌ Failed to create order for invoice ${invoice.invoice_number}:`, error.message);
+        errors.push({
+          invoiceNumber: invoice.invoice_number,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Sync completed: ${createdCount} orders created`,
+      processed: invoicesNeedingOrders.length,
+      created: createdCount,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error('Error syncing invoices to orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to sync invoices to orders: ' + error.message
+    });
+  }
+});
+
 app.put('/api/invoices/:id/status', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const { status } = req.body;
