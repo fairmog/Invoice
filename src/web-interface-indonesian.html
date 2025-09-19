@@ -6178,18 +6178,55 @@ Terima kasih! 🙏`;
             }
         });
 
-        // Navigation Functions
+        // Navigation Functions - Make it globally available
         function openMerchantDashboard() {
-            // Check if user is logged in
-            const token = localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
-            if (token) {
-                // User is logged in, open dashboard in new tab
-                window.open('/merchant-dashboard', '_blank');
-            } else {
-                // User not logged in, open login page in new tab with return URL
-                window.open('/auth/login?redirect=' + encodeURIComponent('/merchant-dashboard'), '_blank');
+            try {
+                console.log('🎯 Merchant Dashboard button clicked');
+
+                // Check if user is logged in
+                const token = localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
+                console.log('🔑 Token found:', !!token);
+
+                if (token) {
+                    // User is logged in, open dashboard in new tab
+                    console.log('✅ Opening merchant dashboard...');
+                    const newWindow = window.open('/merchant-dashboard', '_blank');
+                    if (!newWindow) {
+                        alert('Popup blocked. Please allow popups for this site and try again.');
+                    }
+                } else {
+                    // User not logged in, open login page in new tab with return URL
+                    console.log('🔐 No token found, redirecting to login...');
+                    const loginUrl = '/auth/login?redirect=' + encodeURIComponent('/merchant-dashboard');
+                    console.log('🔗 Login URL:', loginUrl);
+                    const newWindow = window.open(loginUrl, '_blank');
+                    if (!newWindow) {
+                        alert('Popup blocked. Please allow popups for this site and try again.');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error in openMerchantDashboard:', error);
+                alert('Error opening merchant dashboard: ' + error.message);
             }
         }
+
+        // Ensure function is globally available
+        window.openMerchantDashboard = openMerchantDashboard;
+
+        // Add event listener as backup when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const dashboardBtn = document.querySelector('.profile-btn');
+            if (dashboardBtn) {
+                console.log('🔧 Adding event listener to merchant dashboard button');
+                dashboardBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🎯 Dashboard button clicked via event listener');
+                    openMerchantDashboard();
+                });
+            } else {
+                console.warn('⚠️ Merchant dashboard button not found');
+            }
+        });
 
         // Hook into existing invoice preview generation
         const originalGenerateInvoicePreview = window.generateInvoicePreview;
