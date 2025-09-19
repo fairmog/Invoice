@@ -2628,6 +2628,7 @@
                     <button class="btn btn-primary" onclick="toggleOrderSelectionMode()" id="select-orders-btn">📋 Select Orders</button>
                     <button class="btn btn-info" onclick="printSelectedOrders()" id="print-orders-btn" style="display: none;">🖨️ Print Selected</button>
                     <button class="btn btn-warning" onclick="changeSelectedOrdersStatus()" id="change-status-btn" style="display: none;">📝 Change Status</button>
+                    <button class="btn btn-secondary" onclick="syncInvoicesToOrders()" title="Create orders for paid invoices that don't have orders yet">🔄 Sync Paid Invoices</button>
                     <button class="btn btn-success" onclick="openAddOrderModal()">+ Add Order</button>
                 </div>
             </div>
@@ -4978,6 +4979,46 @@
 
         function filterOrders() {
             loadOrders();
+        }
+
+        // Sync paid invoices to orders (creates missing orders)
+        async function syncInvoicesToOrders() {
+            if (!confirm('This will create orders for all paid invoices that don\'t have associated orders yet. Continue?')) {
+                return;
+            }
+
+            try {
+                showSuccess('Syncing paid invoices to orders...');
+
+                const response = await fetch('/api/orders/sync-from-invoices', {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    if (data.created > 0) {
+                        showSuccess(`🎉 Successfully created ${data.created} orders from paid invoices!`);
+                    } else {
+                        showSuccess('✅ All paid invoices already have associated orders');
+                    }
+
+                    if (data.errors && data.errors.length > 0) {
+                        console.warn('Some invoices failed to sync:', data.errors);
+                        showError(`⚠️ ${data.errors.length} invoices failed to sync (check console for details)`);
+                    }
+
+                    // Refresh orders and stats
+                    loadOrders();
+                    loadOrderStats();
+                } else {
+                    showError('Failed to sync invoices: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error syncing invoices to orders:', error);
+                showError('Error syncing invoices to orders: ' + error.message);
+            }
         }
 
         function applyDateFilters() {
@@ -8597,6 +8638,18 @@ Terima kasih! 🙏`;
                 
                 if (data.success) {
                     showSuccess(`Invoice status updated to ${newStatus}`);
+
+                    // If invoice was marked as paid, show order creation status
+                    if (newStatus === 'paid') {
+                        if (data.orderCreated) {
+                            showSuccess(`🎉 Order ${data.orderNumber} automatically created from paid invoice!`);
+                        } else if (data.orderError) {
+                            showError(`⚠️ Invoice paid but order creation failed: ${data.orderError}`);
+                        } else {
+                            console.log('⚠️ Invoice marked as paid but no order creation info returned');
+                        }
+                    }
+
                     loadInvoices();
                     loadInvoiceStats();
                 } else {
