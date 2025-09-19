@@ -6190,14 +6190,14 @@ Terima kasih! 🙏`;
                 if (token) {
                     // User is logged in, open dashboard in new tab
                     console.log('✅ Opening merchant dashboard...');
-                    const newWindow = window.open('/merchant-dashboard', '_blank');
+                    const newWindow = window.open('/merchant', '_blank');
                     if (!newWindow) {
                         alert('Popup blocked. Please allow popups for this site and try again.');
                     }
                 } else {
                     // User not logged in, open login page in new tab with return URL
                     console.log('🔐 No token found, redirecting to login...');
-                    const loginUrl = '/auth/login?redirect=' + encodeURIComponent('/merchant-dashboard');
+                    const loginUrl = '/auth/login?redirect=' + encodeURIComponent('/merchant');
                     console.log('🔗 Login URL:', loginUrl);
                     const newWindow = window.open(loginUrl, '_blank');
                     if (!newWindow) {
