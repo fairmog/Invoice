@@ -393,20 +393,27 @@ class SupabaseDatabase {
         const customerInvoices = allInvoices.filter(i => i.customer_email === customer.email);
         const customerOrders = allOrders.filter(o => o.customer_email === customer.email);
         
-        const totalSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+        // Calculate total spent from both invoices and orders
+        const invoiceSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+        const orderSpent = customerOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+        const totalSpent = invoiceSpent + orderSpent;
+
         const totalOrders = customerOrders.length;
         const totalInvoices = customerInvoices.length;
-        const lastOrderDate = customerOrders.length > 0 ? 
+        const lastOrderDate = customerOrders.length > 0 ?
           customerOrders.sort((a, b) => new Date(b.order_date || b.created_at) - new Date(a.order_date || a.created_at))[0].order_date || customerOrders[0].created_at : null;
-        
+
+        // Calculate average order value based on total transactions (invoices + orders)
+        const totalTransactions = totalInvoices + totalOrders;
+
         return {
           ...customer,
           total_spent: totalSpent,
           total_orders: totalOrders,
           total_invoices: totalInvoices,
           last_order_date: lastOrderDate,
-          status: totalOrders > 0 ? 'active' : 'inactive',
-          avg_order_value: totalOrders > 0 ? totalSpent / totalOrders : 0
+          status: (totalOrders > 0 || totalInvoices > 0) ? 'active' : 'inactive',
+          avg_order_value: totalTransactions > 0 ? totalSpent / totalTransactions : 0
         };
       });
       
@@ -603,6 +610,18 @@ class SupabaseDatabase {
         grand_total: data.grand_total
       });
 
+      // Extract and save customer data using CustomerExtractionService
+      try {
+        console.log('🧠 Extracting customer data from invoice...');
+        const CustomerExtractionService = (await import('./customer-extraction-service.js')).default;
+        const customerService = new CustomerExtractionService(this);
+        await customerService.extractFromInvoice(data);
+        console.log('✅ Customer data extracted and saved successfully');
+      } catch (extractionError) {
+        console.error('⚠️ Warning: Customer extraction failed:', extractionError.message);
+        // Continue with invoice save even if customer extraction fails
+      }
+
       const returnObject = {
         ...data,
         invoiceNumber: invoiceNumber,
@@ -769,19 +788,16 @@ class SupabaseDatabase {
 
     if (error) throw error;
 
-    // Auto-create order if paid
+    // Auto-create order and extract customer data if paid
     if (status === 'paid') {
+      let orderResult = null;
+      let customerExtractionResult = null;
+
+      // 1. Auto-create order
       try {
         console.log(`💎 Invoice ${data.invoice_number || invoiceId} marked as paid - creating order automatically`);
-        const orderResult = await this.createOrderFromInvoice(invoiceId, merchantId);
+        orderResult = await this.createOrderFromInvoice(invoiceId, merchantId);
         console.log(`✅ Order ${orderResult.orderNumber} auto-created from paid invoice ${data.invoice_number || invoiceId}`);
-
-        return {
-          ...data,
-          orderCreated: true,
-          orderId: orderResult.lastInsertRowid,
-          orderNumber: orderResult.orderNumber
-        };
       } catch (orderError) {
         console.error(`❌ Failed to auto-create order from invoice ${data.invoice_number || invoiceId}:`, {
           error: orderError.message,
@@ -789,12 +805,39 @@ class SupabaseDatabase {
           invoiceId,
           merchantId
         });
+      }
 
-        // Still return the updated invoice data even if order creation failed
+      // 2. Extract customer data from paid invoice
+      try {
+        console.log(`👥 Extracting customer data from paid invoice ${data.invoice_number || invoiceId}`);
+        const CustomerExtractionService = (await import('./customer-extraction-service.js')).default;
+        const customerService = new CustomerExtractionService(this);
+        customerExtractionResult = await customerService.extractFromPaidInvoice(data);
+
+        if (customerExtractionResult.success) {
+          console.log(`✅ Customer data extracted for invoice ${data.invoice_number}: ${customerExtractionResult.action}`);
+        } else {
+          console.log(`⚠️ Customer extraction skipped for invoice ${data.invoice_number}: ${customerExtractionResult.reason || customerExtractionResult.error}`);
+        }
+      } catch (customerError) {
+        console.error(`❌ Customer extraction failed for invoice ${data.invoice_number || invoiceId}:`, customerError);
+      }
+
+      // Return comprehensive result
+      if (orderResult) {
+        return {
+          ...data,
+          orderCreated: true,
+          orderId: orderResult.lastInsertRowid,
+          orderNumber: orderResult.orderNumber,
+          customerExtracted: customerExtractionResult?.success || false
+        };
+      } else {
         return {
           ...data,
           orderCreated: false,
-          orderError: orderError.message
+          orderError: 'Order creation failed',
+          customerExtracted: customerExtractionResult?.success || false
         };
       }
     }
@@ -2472,10 +2515,15 @@ class SupabaseDatabase {
         return createdDate >= firstDayThisMonth;
       }).length;
 
-      // Calculate total customer lifetime value
+      // Calculate total customer lifetime value from both invoices and orders
       const totalCLV = customers.reduce((sum, customer) => {
         const customerInvoices = invoices.filter(i => i.customer_email === customer.email);
-        const customerTotal = customerInvoices.reduce((invSum, inv) => invSum + (inv.grand_total || 0), 0);
+        const customerOrders = orders.filter(o => o.customer_email === customer.email);
+
+        const invoiceTotal = customerInvoices.reduce((invSum, inv) => invSum + (inv.grand_total || 0), 0);
+        const orderTotal = customerOrders.reduce((ordSum, ord) => ordSum + (ord.total_amount || 0), 0);
+        const customerTotal = invoiceTotal + orderTotal;
+
         return sum + customerTotal;
       }, 0);
 
