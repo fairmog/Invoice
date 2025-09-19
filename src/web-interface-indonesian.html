@@ -1832,7 +1832,7 @@
 
                 <div class="profile-content">
                     <div class="business-info">
-                        <div class="business-logo" onclick="window.location.href='/business-settings'" style="cursor: pointer;" title="Go to Business Settings">
+                        <div class="business-logo" onclick="window.open('/business-settings', '_blank')" style="cursor: pointer;" title="Go to Business Settings">
                             <img id="business-logo-img" src="" alt="" style="display: none;">
                             <div class="logo-placeholder" id="logo-placeholder">
                                 <div style="font-size: 24px; margin-bottom: 8px;">🏢</div>
@@ -5396,9 +5396,9 @@ Terima kasih! 🙏`;
             addMessage(`⏭️ <strong>Skipped adding ${type}.</strong><br>You can manually add it later if needed.`, 'ai');
         }
 
-        // Redirect to business settings instead of opening modal
+        // Open business settings in new tab instead of redirecting
         function openBusinessProfile() {
-            window.location.href = '/business-settings';
+            window.open('/business-settings', '_blank');
         }
 
 
@@ -6183,11 +6183,11 @@ Terima kasih! 🙏`;
             // Check if user is logged in
             const token = localStorage.getItem('merchantToken') || sessionStorage.getItem('merchantToken');
             if (token) {
-                // User is logged in, go to dashboard
-                window.location.href = '/merchant-dashboard';
+                // User is logged in, open dashboard in new tab
+                window.open('/merchant-dashboard', '_blank');
             } else {
-                // User not logged in, redirect to login with return URL
-                window.location.href = '/auth/login?redirect=' + encodeURIComponent('/merchant-dashboard');
+                // User not logged in, open login page in new tab with return URL
+                window.open('/auth/login?redirect=' + encodeURIComponent('/merchant-dashboard'), '_blank');
             }
         }
 
