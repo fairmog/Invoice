@@ -23,14 +23,14 @@ class CustomerExtractionService {
         address: invoice.customer_address
       };
 
-      // Validate that we have minimum required data
-      if (!extractedCustomerData.name && !extractedCustomerData.email && !extractedCustomerData.phone) {
-        console.log(`⚠️ Insufficient customer data in invoice ${invoice.invoice_number}, skipping extraction`);
+      // Validate that we have minimum required data - require name and at least email or phone
+      if (!extractedCustomerData.name || (!extractedCustomerData.email && !extractedCustomerData.phone)) {
+        console.log(`⚠️ Insufficient customer data in invoice ${invoice.invoice_number} - need name and either email or phone, skipping extraction`);
         return { success: false, reason: 'insufficient_data' };
       }
 
-      // Use existing smart matching to find or create customer
-      const customer = await this.database.findOrCreateCustomer({
+      // Use saveCustomer with merchant isolation
+      const customerData = {
         name: extractedCustomerData.name || 'Unknown Customer',
         email: extractedCustomerData.email || null,
         phone: extractedCustomerData.phone || null,
@@ -40,21 +40,19 @@ class CustomerExtractionService {
         first_invoice_date: invoice.invoice_date || new Date().toISOString(),
         last_invoice_date: invoice.invoice_date || new Date().toISOString(),
         invoice_count: 1,
-        total_spent: invoice.grand_total || 0
-      });
+        total_spent: invoice.grand_total || 0,
+        extraction_method: 'ai_invoice_extraction'
+      };
 
-      // If this is an existing customer, update their stats
-      if (customer.id) {
-        await this.updateCustomerStats(customer, invoice);
-      }
+      const saveResult = await this.database.saveCustomer(customerData, invoice.merchant_id);
 
-      console.log(`✅ Customer data processed successfully: ${customer.name} (ID: ${customer.id})`);
+      console.log(`✅ Customer data processed successfully: ${customerData.name} (ID: ${saveResult.lastInsertRowid})`);
       
       return {
         success: true,
-        customer: customer,
-        isNew: !customer.source_invoice_id || customer.source_invoice_id === invoice.id,
-        action: customer.source_invoice_id === invoice.id ? 'created' : 'updated'
+        customer: { id: saveResult.lastInsertRowid, ...customerData },
+        isNew: true,
+        action: 'created'
       };
 
     } catch (error) {
@@ -71,10 +69,11 @@ class CustomerExtractionService {
    */
   async updateCustomerStats(customer, newInvoice) {
     try {
-      // Get all invoices for this customer
-      const customerInvoices = this.database.data.invoices.filter(inv => 
-        inv.status === 'paid' && 
-        (inv.customer_email === customer.email || inv.customer_phone === customer.phone)
+      // Get all invoices for this customer (match by email or phone)
+      const customerInvoices = this.database.data.invoices.filter(inv =>
+        inv.status === 'paid' &&
+        ((customer.email && inv.customer_email === customer.email) ||
+         (customer.phone && inv.customer_phone && this.database.normalizePhone(inv.customer_phone) === this.database.normalizePhone(customer.phone)))
       );
 
       // Calculate updated stats
@@ -121,14 +120,17 @@ class CustomerExtractionService {
           address: invoice.customer_address || aiResult.customer.address
         };
 
-        return await this.database.findOrCreateCustomer({
+        const customerData = {
           ...mergedData,
           source_invoice_id: invoice.id,
           source_invoice_number: invoice.invoice_number,
           extraction_method: 'ai_enhanced',
           first_invoice_date: invoice.invoice_date || new Date().toISOString(),
           last_invoice_date: invoice.invoice_date || new Date().toISOString()
-        });
+        };
+
+        const saveResult = await this.database.saveCustomer(customerData, invoice.merchant_id);
+        return { id: saveResult.lastInsertRowid, ...customerData };
       }
       
       return { success: false, reason: 'ai_extraction_failed' };
@@ -190,8 +192,9 @@ class CustomerExtractionService {
         }).length,
         topCustomers: customers
           .map(customer => {
-            const customerInvoices = paidInvoices.filter(inv => 
-              inv.customer_email === customer.email
+            const customerInvoices = paidInvoices.filter(inv =>
+              (customer.email && inv.customer_email === customer.email) ||
+              (customer.phone && inv.customer_phone && this.database.normalizePhone(inv.customer_phone) === this.database.normalizePhone(customer.phone))
             );
             return {
               ...customer,
