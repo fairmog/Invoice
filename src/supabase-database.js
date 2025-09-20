@@ -208,32 +208,31 @@ class SupabaseDatabase {
         throw new Error('Customer name and either email or phone number are required');
       }
 
-      // Look up existing customer by email or phone
+      // Look up existing customer by email or phone with better duplicate prevention
       let existing = null;
       let selectError = null;
 
-      if (customerData.email) {
-        // Try to find by email first
-        const { data: emailMatch, error: emailError } = await this.supabase
-          .from('customers')
-          .select('*')
-          .eq('email', customerData.email)
-          .eq('merchant_id', merchantId)
-          .maybeSingle();
+      // Get all customers for this merchant to check for duplicates more thoroughly
+      const { data: allCustomers, error: fetchError } = await this.supabase
+        .from('customers')
+        .select('*')
+        .eq('merchant_id', merchantId);
 
-        existing = emailMatch;
-        selectError = emailError;
-      } else if (customerData.phone) {
-        // If no email, look up by phone number
-        const { data: phoneMatch, error: phoneError } = await this.supabase
-          .from('customers')
-          .select('*')
-          .eq('phone', customerData.phone)
-          .eq('merchant_id', merchantId)
-          .maybeSingle();
+      if (fetchError) {
+        selectError = fetchError;
+      } else if (allCustomers) {
+        // Check for existing customer by email first (most reliable)
+        if (customerData.email) {
+          existing = allCustomers.find(c => c.email === customerData.email);
+        }
 
-        existing = phoneMatch;
-        selectError = phoneError;
+        // If no email match and we have a phone, check by normalized phone
+        if (!existing && customerData.phone) {
+          const normalizedPhone = this.normalizePhone(customerData.phone);
+          existing = allCustomers.find(c =>
+            c.phone && this.normalizePhone(c.phone) === normalizedPhone
+          );
+        }
       }
 
       if (selectError && selectError.code !== 'PGRST116') {
@@ -248,9 +247,13 @@ class SupabaseDatabase {
           name: customerData.name,
           phone: customerData.phone || existing.phone,
           address: customerData.address || existing.address,
-          last_invoice_date: new Date().toISOString(),
-          invoice_count: (existing.invoice_count || 0) + 1
+          last_invoice_date: new Date().toISOString()
         };
+
+        // Only increment invoice count if this is from an invoice (has source_invoice_id)
+        if (customerData.source_invoice_id) {
+          updateData.invoice_count = (existing.invoice_count || 0) + 1;
+        }
 
         // Only update email if provided
         if (customerData.email) {
@@ -270,7 +273,7 @@ class SupabaseDatabase {
           throw error;
         }
         console.log('✅ Customer updated successfully');
-        return { lastInsertRowid: data.id };
+        return { insertedId: data.id, lastInsertRowid: data.id };
       } else {
         // Create new customer
         console.log('✨ Creating new customer');
@@ -298,7 +301,7 @@ class SupabaseDatabase {
           throw error;
         }
         console.log('✅ Customer created successfully');
-        return { lastInsertRowid: data.id };
+        return { insertedId: data.id, lastInsertRowid: data.id };
       }
     } catch (error) {
       console.error('💥 saveCustomer failed:', error.message);
@@ -382,7 +385,7 @@ class SupabaseDatabase {
     const { data: newCustomer } = await this.supabase
       .from('customers')
       .select('*')
-      .eq('id', result.lastInsertRowid)
+      .eq('id', result.insertedId)
       .single();
 
     return newCustomer;
@@ -467,15 +470,24 @@ class SupabaseDatabase {
       
       // Calculate statistics for each customer
       const customersWithStats = customers.map(customer => {
-        // Match by email or phone number
-        const customerInvoices = allInvoices.filter(i =>
-          (customer.email && i.customer_email === customer.email) ||
-          (customer.phone && i.customer_phone && this.normalizePhone(i.customer_phone) === this.normalizePhone(customer.phone))
-        );
-        const customerOrders = allOrders.filter(o =>
-          (customer.email && o.customer_email === customer.email) ||
-          (customer.phone && o.customer_phone && this.normalizePhone(o.customer_phone) === this.normalizePhone(customer.phone))
-        );
+        // Match by email first (more reliable), then by phone if no email match
+        let customerInvoices = [];
+        let customerOrders = [];
+
+        if (customer.email) {
+          // Primary match by email
+          customerInvoices = allInvoices.filter(i => i.customer_email === customer.email);
+          customerOrders = allOrders.filter(o => o.customer_email === customer.email);
+        } else if (customer.phone) {
+          // Secondary match by normalized phone if no email
+          const normalizedCustomerPhone = this.normalizePhone(customer.phone);
+          customerInvoices = allInvoices.filter(i =>
+            !i.customer_email && i.customer_phone && this.normalizePhone(i.customer_phone) === normalizedCustomerPhone
+          );
+          customerOrders = allOrders.filter(o =>
+            !o.customer_email && o.customer_phone && this.normalizePhone(o.customer_phone) === normalizedCustomerPhone
+          );
+        }
         
         // Calculate total spent from both invoices and orders
         const invoiceSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
