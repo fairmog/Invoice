@@ -203,16 +203,38 @@ class SupabaseDatabase {
         merchantId
       });
 
-      if (!customerData.email || !customerData.name) {
-        throw new Error('Customer email and name are required');
+      // Allow customers with phone number if email is missing
+      if (!customerData.name || (!customerData.email && !customerData.phone)) {
+        throw new Error('Customer name and either email or phone number are required');
       }
 
-      const { data: existing, error: selectError } = await this.supabase
-        .from('customers')
-        .select('*')
-        .eq('email', customerData.email)
-        .eq('merchant_id', merchantId)
-        .single();
+      // Look up existing customer by email or phone
+      let existing = null;
+      let selectError = null;
+
+      if (customerData.email) {
+        // Try to find by email first
+        const { data: emailMatch, error: emailError } = await this.supabase
+          .from('customers')
+          .select('*')
+          .eq('email', customerData.email)
+          .eq('merchant_id', merchantId)
+          .maybeSingle();
+
+        existing = emailMatch;
+        selectError = emailError;
+      } else if (customerData.phone) {
+        // If no email, look up by phone number
+        const { data: phoneMatch, error: phoneError } = await this.supabase
+          .from('customers')
+          .select('*')
+          .eq('phone', customerData.phone)
+          .eq('merchant_id', merchantId)
+          .maybeSingle();
+
+        existing = phoneMatch;
+        selectError = phoneError;
+      }
 
       if (selectError && selectError.code !== 'PGRST116') {
         console.error('💥 Error checking existing customer:', selectError.message);
@@ -222,16 +244,23 @@ class SupabaseDatabase {
       if (existing) {
         // Update existing customer
         console.log('🔄 Updating existing customer with ID:', existing.id);
+        const updateData = {
+          name: customerData.name,
+          phone: customerData.phone || existing.phone,
+          address: customerData.address || existing.address,
+          last_invoice_date: new Date().toISOString(),
+          invoice_count: (existing.invoice_count || 0) + 1
+        };
+
+        // Only update email if provided
+        if (customerData.email) {
+          updateData.email = customerData.email;
+        }
+
         const { data, error } = await this.supabase
           .from('customers')
-          .update({
-            name: customerData.name,
-            phone: customerData.phone || existing.phone,
-            address: customerData.address || existing.address,
-            last_invoice_date: new Date().toISOString(),
-            invoice_count: (existing.invoice_count || 0) + 1
-          })
-          .eq('email', customerData.email)
+          .update(updateData)
+          .eq('id', existing.id)
           .eq('merchant_id', merchantId)
           .select()
           .single();
@@ -294,62 +323,104 @@ class SupabaseDatabase {
     return data;
   }
 
-  async findOrCreateCustomer(customerData) {
+  async findOrCreateCustomer(customerData, merchantId = null) {
     const { name, email, phone } = customerData;
-    
+
+    if (!merchantId) {
+      throw new Error('Merchant ID is required for customer operations');
+    }
+
+    // Validate that we have minimum required data
+    if (!name || (!email && !phone)) {
+      throw new Error('Customer name and either email or phone number are required');
+    }
+
     // Try email match first
-    if (email) {
-      const { data: emailMatch } = await this.supabase
+    if (email && this.isValidEmail(email)) {
+      const { data: emailMatch, error: emailError } = await this.supabase
         .from('customers')
         .select('*')
-        .ilike('email', email)
-        .single();
-      
+        .eq('email', email)
+        .eq('merchant_id', merchantId)
+        .maybeSingle();
+
+      if (emailError && emailError.code !== 'PGRST116') {
+        console.error('Error checking email match:', emailError);
+      }
+
       if (emailMatch) {
         console.log(`✅ Customer matched by email: ${emailMatch.name}`);
         return emailMatch;
       }
     }
-    
+
     // Try phone match
-    if (phone) {
+    if (phone && this.isValidPhone(phone)) {
       const normalizedPhone = this.normalizePhone(phone);
-      const { data: customers } = await this.supabase
+      const { data: customers, error: customersError } = await this.supabase
         .from('customers')
-        .select('*');
-      
-      const phoneMatch = customers?.find(c => 
-        c.phone && this.normalizePhone(c.phone) === normalizedPhone
-      );
-      
-      if (phoneMatch) {
-        console.log(`✅ Customer matched by phone: ${phoneMatch.name}`);
-        return phoneMatch;
+        .select('*')
+        .eq('merchant_id', merchantId);
+
+      if (customersError) {
+        console.error('Error fetching customers for phone match:', customersError);
+      } else {
+        const phoneMatch = customers?.find(c =>
+          c.phone && this.normalizePhone(c.phone) === normalizedPhone
+        );
+
+        if (phoneMatch) {
+          console.log(`✅ Customer matched by phone: ${phoneMatch.name}`);
+          return phoneMatch;
+        }
       }
     }
-    
+
     // Create new customer
     console.log(`➕ Creating new customer: ${name || 'Unknown'}`);
-    const result = await this.saveCustomer(customerData);
+    const result = await this.saveCustomer(customerData, merchantId);
     const { data: newCustomer } = await this.supabase
       .from('customers')
       .select('*')
       .eq('id', result.lastInsertRowid)
       .single();
-    
+
     return newCustomer;
   }
 
   normalizePhone(phone) {
     if (!phone) return '';
     const digits = phone.replace(/\D/g, '');
-    
+
     if (digits.startsWith('08')) return '628' + digits.substring(2);
     if (digits.startsWith('8') && digits.length >= 10) return '62' + digits;
     if (digits.startsWith('628')) return digits;
     if (digits.startsWith('62')) return digits;
-    
+
     return digits;
+  }
+
+  isValidEmail(email) {
+    if (!email) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  isValidPhone(phone) {
+    if (!phone) return false;
+    const digits = phone.replace(/\D/g, '');
+
+    // Indonesian phone numbers should be at least 10 digits
+    if (digits.length < 10) return false;
+
+    // Check for valid Indonesian phone number patterns
+    if (digits.startsWith('08') && digits.length >= 11) return true;
+    if (digits.startsWith('8') && digits.length >= 10) return true;
+    if (digits.startsWith('628') && digits.length >= 12) return true;
+    if (digits.startsWith('62') && digits.length >= 11) return true;
+
+    // Allow international numbers (10+ digits)
+    return digits.length >= 10;
   }
 
   async getAllCustomers(limit = 50, offset = 0, searchTerm = null, merchantId = null) {
@@ -378,13 +449,13 @@ class SupabaseDatabase {
       }
       
       // Get invoices and orders for this merchant to calculate customer statistics
-      const invoicesQuery = merchantId 
-        ? this.supabase.from('invoices').select('customer_email, grand_total, created_at').eq('merchant_id', merchantId)
-        : this.supabase.from('invoices').select('customer_email, grand_total, created_at');
-      
+      const invoicesQuery = merchantId
+        ? this.supabase.from('invoices').select('customer_email, customer_phone, grand_total, created_at').eq('merchant_id', merchantId)
+        : this.supabase.from('invoices').select('customer_email, customer_phone, grand_total, created_at');
+
       const ordersQuery = merchantId
-        ? this.supabase.from('orders').select('customer_email, total_amount, order_date, created_at').eq('merchant_id', merchantId)
-        : this.supabase.from('orders').select('customer_email, total_amount, order_date, created_at');
+        ? this.supabase.from('orders').select('customer_email, customer_phone, total_amount, order_date, created_at').eq('merchant_id', merchantId)
+        : this.supabase.from('orders').select('customer_email, customer_phone, total_amount, order_date, created_at');
       
       const [invoicesResult, ordersResult] = await Promise.all([invoicesQuery, ordersQuery]);
       
@@ -396,8 +467,15 @@ class SupabaseDatabase {
       
       // Calculate statistics for each customer
       const customersWithStats = customers.map(customer => {
-        const customerInvoices = allInvoices.filter(i => i.customer_email === customer.email);
-        const customerOrders = allOrders.filter(o => o.customer_email === customer.email);
+        // Match by email or phone number
+        const customerInvoices = allInvoices.filter(i =>
+          (customer.email && i.customer_email === customer.email) ||
+          (customer.phone && i.customer_phone && this.normalizePhone(i.customer_phone) === this.normalizePhone(customer.phone))
+        );
+        const customerOrders = allOrders.filter(o =>
+          (customer.email && o.customer_email === customer.email) ||
+          (customer.phone && o.customer_phone && this.normalizePhone(o.customer_phone) === this.normalizePhone(customer.phone))
+        );
         
         // Calculate total spent from both invoices and orders
         const invoiceSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
@@ -621,7 +699,7 @@ class SupabaseDatabase {
         console.log('🧠 Extracting customer data from invoice...');
         const CustomerExtractionService = (await import('./customer-extraction-service.js')).default;
         const customerService = new CustomerExtractionService(this);
-        await customerService.extractFromInvoice(data);
+        await customerService.extractFromPaidInvoice(data);
         console.log('✅ Customer data extracted and saved successfully');
       } catch (extractionError) {
         console.error('⚠️ Warning: Customer extraction failed:', extractionError.message);
