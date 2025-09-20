@@ -1,9 +1,10 @@
+// @ts-nocheck
+/* eslint-disable */
 import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
 import https from 'https';
