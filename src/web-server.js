@@ -3573,7 +3573,7 @@ app.post('/api/auto-learning/confirm-customer', async (req, res) => {
     }
 
     if (action === 'add') {
-      await database.findOrCreateCustomer(customerData);
+      await database.findOrCreateCustomer(customerData, merchantId);
       console.log('✅ Customer manually confirmed and added:', customerData.name);
       
       res.json({
@@ -3658,7 +3658,7 @@ app.post('/api/auto-learning/edit-customer', async (req, res) => {
       });
     }
 
-    await database.findOrCreateCustomer(customerData);
+    await database.findOrCreateCustomer(customerData, merchantId);
     console.log('✅ Customer edited and added:', customerData.name);
     
     res.json({
@@ -5158,7 +5158,7 @@ app.delete('/api/customers/:id', authMiddleware.authenticateMerchant, async (req
 });
 
 // Smart customer matching endpoint
-app.post('/api/customers/smart-match', async (req, res) => {
+app.post('/api/customers/smart-match', authMiddleware.authenticateMerchant, async (req, res) => {
   try {
     const customerData = req.body;
     
@@ -5169,7 +5169,8 @@ app.post('/api/customers/smart-match', async (req, res) => {
       });
     }
     
-    const customer = await database.findOrCreateCustomer(customerData);
+    const merchantId = req.merchantId;
+    const customer = await database.findOrCreateCustomer(customerData, merchantId);
     
     res.json({
       success: true,
