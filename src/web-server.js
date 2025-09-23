@@ -513,9 +513,9 @@ app.get('/', authMiddleware.optionalAuth, (req, res) => {
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
   
-  // If authenticated, redirect to merchant dashboard
+  // If authenticated, redirect to invoice generator
   if (req.merchant) {
-    return res.redirect('/merchant');
+    return res.redirect('/generator');
   }
   
   // Otherwise, redirect to login
