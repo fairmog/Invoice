@@ -6197,8 +6197,18 @@ Terima kasih! 🙏`;
                     if (!newWindow) {
                         // Use mobile-friendly notification instead of alert
                         if (window.mobileNotifications) {
-                            window.mobileNotifications.confirmPaymentRedirect('/merchant',
-                                'Your browser blocked the popup. Click "Continue" to open the dashboard in this tab.');
+                            window.mobileNotifications.showModal({
+                                title: 'Open Merchant Dashboard',
+                                message: 'Your browser blocked the popup. Would you like to open the merchant dashboard in this tab instead?',
+                                buttons: [
+                                    { text: 'Cancel', class: 'secondary' },
+                                    { text: 'Open Dashboard', class: 'primary' }
+                                ]
+                            }).then(result => {
+                                if (result.buttonIndex === 1) {
+                                    window.location.href = '/merchant';
+                                }
+                            });
                         } else {
                             // Fallback to same tab navigation
                             if (confirm('Popup blocked. Open dashboard in this tab instead?')) {
@@ -6215,8 +6225,18 @@ Terima kasih! 🙏`;
                     if (!newWindow) {
                         // Use mobile-friendly notification instead of alert
                         if (window.mobileNotifications) {
-                            window.mobileNotifications.confirmPaymentRedirect(loginUrl,
-                                'Your browser blocked the popup. Click "Continue" to log in.');
+                            window.mobileNotifications.showModal({
+                                title: 'Login Required',
+                                message: 'You need to log in first. Your browser blocked the popup. Would you like to log in using this tab?',
+                                buttons: [
+                                    { text: 'Cancel', class: 'secondary' },
+                                    { text: 'Login', class: 'primary' }
+                                ]
+                            }).then(result => {
+                                if (result.buttonIndex === 1) {
+                                    window.location.href = loginUrl;
+                                }
+                            });
                         } else {
                             // Fallback to same tab navigation
                             if (confirm('Popup blocked. Open login in this tab instead?')) {
