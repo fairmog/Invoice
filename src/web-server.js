@@ -417,6 +417,13 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // Serve only specific files that should be publicly accessible
 app.use('/favicon.ico', express.static(path.join(__dirname, '..', 'favicon.ico')));
 
+// Serve mobile notifications script
+app.get('/mobile-notifications.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+  res.sendFile(path.join(__dirname, 'mobile-notifications.js'));
+});
+
 // Block direct access to source files and other sensitive directories
 app.use('/src', (req, res) => {
   res.status(403).json({ error: 'Direct access to source files is not allowed' });
