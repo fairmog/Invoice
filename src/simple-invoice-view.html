@@ -1144,6 +1144,8 @@
             }
         }
     </style>
+    <!-- Mobile-friendly notifications -->
+    <script src="/mobile-notifications.js"></script>
 </head>
 <body>
     <div class="container" id="main-container">
@@ -2870,21 +2872,21 @@
                         // Validate file type
                         const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
                         if (!allowedTypes.includes(file.type)) {
-                            alert('File harus berformat gambar (JPG, PNG) atau PDF!');
+                            showError('File harus berformat gambar (JPG, PNG) atau PDF!');
                             e.target.value = '';
                             return;
                         }
                         
                         // Validate file size (10MB limit)
                         if (file.size > 10 * 1024 * 1024) {
-                            alert('File terlalu besar! Maksimal 10MB.');
+                            showError('File terlalu besar! Maksimal 10MB.');
                             e.target.value = '';
                             return;
                         }
                         
                         // Additional validation for very small files (likely corrupted)
                         if (file.size < 1024) { // Less than 1KB
-                            alert('File terlalu kecil atau rusak. Silakan pilih file yang valid.');
+                            showError('File terlalu kecil atau rusak. Silakan pilih file yang valid.');
                             e.target.value = '';
                             return;
                         }
@@ -2903,7 +2905,7 @@
                     const notesInput = document.getElementById('payment-notes');
                     
                     if (!fileInput.files[0]) {
-                        alert('Silakan pilih file bukti pembayaran terlebih dahulu.');
+                        showError('Silakan pilih file bukti pembayaran terlebih dahulu.');
                         return;
                     }
                     
@@ -2920,7 +2922,7 @@
         // Xendit payment processing
         async function processXenditPayment() {
             if (!currentInvoice) {
-                alert('Invoice tidak ditemukan. Silakan refresh halaman.');
+                showError('Invoice tidak ditemukan. Silakan refresh halaman.');
                 return;
             }
 
@@ -2954,10 +2956,19 @@
                     statusDiv.className = 'payment-status success';
                     statusDiv.innerHTML = '✅ Link pembayaran berhasil dibuat! Anda akan dialihkan ke Xendit...';
                     
-                    // Redirect to Xendit payment page
-                    setTimeout(() => {
-                        window.open(result.paymentUrl, '_blank');
-                    }, 1000);
+                    // Use mobile-friendly payment redirect
+                    setTimeout(async () => {
+                        const confirmed = await window.mobileNotifications.confirmPaymentRedirect(
+                            result.paymentUrl,
+                            'Anda akan diarahkan ke halaman pembayaran Xendit untuk menyelesaikan transaksi.'
+                        );
+                        if (!confirmed) {
+                            // Reset button state if user cancelled
+                            paymentButton.style.display = 'block';
+                            paymentButton.disabled = false;
+                            paymentButton.innerHTML = originalButtonText;
+                        }
+                    }, 500);
                     
                     // Reset button after delay
                     setTimeout(() => {
@@ -2982,7 +2993,7 @@
         // WhatsApp sharing function
         async function shareInvoiceWhatsApp() {
             if (!currentInvoice) {
-                alert('Tidak ada data faktur yang tersedia. Silakan refresh halaman.');
+                showError('Tidak ada data faktur yang tersedia. Silakan refresh halaman.');
                 return;
             }
             
