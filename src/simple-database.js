@@ -1181,12 +1181,22 @@ class SimpleDatabase {
   async updateInvoiceStatus(invoiceId, status) {
     const index = this.data.invoices.findIndex(i => i.id === parseInt(invoiceId));
     if (index === -1) {
+      console.error(`❌ Invoice not found for status update: ${invoiceId}`);
       return { changes: 0 };
     }
 
     const invoice = this.data.invoices[index];
+    const oldStatus = invoice.status;
     invoice.status = status;
     invoice.updated_at = new Date().toISOString();
+
+    console.log(`📝 Invoice ${invoice.invoice_number} status: "${oldStatus}" → "${status}"`);
+
+    // Verify status was actually updated
+    if (invoice.status !== status) {
+      console.error(`❌ Failed to update invoice status: expected "${status}", got "${invoice.status}"`);
+      return { changes: 0 };
+    }
     
     if (status === 'sent') {
       invoice.sent_at = new Date().toISOString();
@@ -1259,6 +1269,15 @@ class SimpleDatabase {
     }
 
     this.saveData();
+
+    // Verify the data was properly saved by checking the invoice again
+    const verificationInvoice = this.data.invoices.find(i => i.id === parseInt(invoiceId));
+    if (verificationInvoice && verificationInvoice.status !== status) {
+      console.error(`❌ Data verification failed: Invoice ${invoiceId} status is "${verificationInvoice.status}", expected "${status}"`);
+      return { changes: 0, error: 'Status update verification failed' };
+    }
+
+    console.log(`✅ Invoice status update verified: ${invoice.invoice_number} is now "${status}"`);
     return { changes: 1 };
   }
 
@@ -1464,27 +1483,79 @@ class SimpleDatabase {
     return { changes: 1 };
   }
 
-  async getInvoiceStats(dateFrom = null, dateTo = null) {
+  async getInvoiceStats(dateFrom = null, dateTo = null, merchantId = null) {
     let invoices = this.data.invoices;
-    
+
+    // Apply merchant filtering if provided (for multi-tenant support)
+    if (merchantId) {
+      invoices = invoices.filter(invoice => invoice.merchant_id === merchantId);
+      console.log(`📊 Filtering invoices for merchant ${merchantId}: ${invoices.length} invoices found`);
+    }
+
     // Apply date filtering if provided
     if (dateFrom || dateTo) {
+      const originalCount = invoices.length;
       invoices = invoices.filter(invoice => {
         const invoiceDate = new Date(invoice.date || invoice.created_at);
         if (dateFrom && invoiceDate < new Date(dateFrom)) return false;
         if (dateTo && invoiceDate > new Date(dateTo + 'T23:59:59')) return false;
         return true;
       });
+      console.log(`📊 Date filtering applied: ${originalCount} → ${invoices.length} invoices`);
     }
-    
-    return {
+
+    // Calculate statistics with detailed logging
+    const draftInvoices = invoices.filter(i => i.status === 'draft');
+    const sentInvoices = invoices.filter(i => i.status === 'sent');
+    const paidInvoices = invoices.filter(i => i.status === 'paid');
+    const cancelledInvoices = invoices.filter(i => i.status === 'cancelled');
+
+    console.log(`📊 Invoice Statistics Breakdown:`, {
+      total: invoices.length,
+      draft: draftInvoices.length,
+      sent: sentInvoices.length,
+      paid: paidInvoices.length,
+      cancelled: cancelledInvoices.length,
+      merchantId: merchantId || 'all'
+    });
+
+    // Calculate revenue from paid invoices only
+    const totalPaidRevenue = paidInvoices.reduce((sum, invoice) => {
+      const amount = parseFloat(invoice.grand_total || 0);
+      return sum + amount;
+    }, 0);
+
+    // Calculate outstanding amount from sent invoices
+    const outstandingAmount = sentInvoices.reduce((sum, invoice) => {
+      const amount = parseFloat(invoice.grand_total || 0);
+      return sum + amount;
+    }, 0);
+
+    // Calculate draft amount
+    const draftAmount = draftInvoices.reduce((sum, invoice) => {
+      const amount = parseFloat(invoice.grand_total || 0);
+      return sum + amount;
+    }, 0);
+
+    const stats = {
       total_invoices: invoices.length,
-      draft_invoices: invoices.filter(i => i.status === 'draft').length,
-      sent_invoices: invoices.filter(i => i.status === 'sent').length,
-      paid_invoices: invoices.filter(i => i.status === 'paid').length,
-      total_paid: invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.grand_total, 0),
-      total_revenue: invoices.reduce((sum, i) => sum + i.grand_total, 0)
+      draft_invoices: draftInvoices.length,
+      sent_invoices: sentInvoices.length,
+      paid_invoices: paidInvoices.length,
+      cancelled_invoices: cancelledInvoices.length,
+      total_paid: totalPaidRevenue, // Backward compatibility
+      total_revenue: totalPaidRevenue, // Supabase compatibility
+      outstanding_amount: outstandingAmount,
+      draft_amount: draftAmount
     };
+
+    console.log(`📊 Revenue Calculations:`, {
+      totalPaidRevenue: totalPaidRevenue,
+      outstandingAmount: outstandingAmount,
+      draftAmount: draftAmount
+    });
+
+    return stats;
   }
 
   // Utility methods
