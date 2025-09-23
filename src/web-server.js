@@ -955,11 +955,13 @@ app.get('/merchant', authMiddleware.authenticateMerchant, (req, res) => {
   // Verify it's actually an HTML file by checking the first few bytes
   try {
     const fileBuffer = fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' });
-    const firstLine = fileBuffer.split('\n')[0].trim();
+    const firstFewLines = fileBuffer.substring(0, 500).toLowerCase();
 
-    if (!firstLine.includes('<!DOCTYPE html>') && !firstLine.includes('<html')) {
-      console.error('❌ Invalid file content - not HTML:', firstLine.substring(0, 100));
+    if (!firstFewLines.includes('<!doctype html>') && !firstFewLines.includes('<html')) {
+      console.error('❌ Invalid file content - not HTML. First 200 chars:', fileBuffer.substring(0, 200));
       return res.status(500).send('Invalid dashboard file');
+    } else {
+      console.log('✅ File validation passed - detected HTML content');
     }
   } catch (readError) {
     console.error('❌ Error reading dashboard file:', readError);
@@ -996,11 +998,13 @@ app.get('/merchant-dashboard.html', authMiddleware.authenticateMerchant, (req, r
   // Verify it's actually an HTML file by checking the first few bytes
   try {
     const fileBuffer = fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' });
-    const firstLine = fileBuffer.split('\n')[0].trim();
+    const firstFewLines = fileBuffer.substring(0, 500).toLowerCase();
 
-    if (!firstLine.includes('<!DOCTYPE html>') && !firstLine.includes('<html')) {
-      console.error('❌ Invalid file content - not HTML:', firstLine.substring(0, 100));
+    if (!firstFewLines.includes('<!doctype html>') && !firstFewLines.includes('<html')) {
+      console.error('❌ Invalid file content - not HTML. First 200 chars:', fileBuffer.substring(0, 200));
       return res.status(500).send('Invalid dashboard file');
+    } else {
+      console.log('✅ File validation passed - detected HTML content');
     }
   } catch (readError) {
     console.error('❌ Error reading dashboard file:', readError);
