@@ -943,30 +943,17 @@ app.get('/dashboard', (req, res) => {
 // Serve the merchant dashboard (Protected)
 app.get('/merchant', authMiddleware.authenticateMerchant, (req, res) => {
   console.log('🎯 Merchant dashboard route accessed by:', req.merchant?.email);
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const filePath = path.join(__dirname, 'merchant-dashboard.html');
   console.log('📁 Serving file from:', filePath);
 
-  // Verify the file exists and is readable before serving
+  // Verify the file exists before serving
   if (!fs.existsSync(filePath)) {
     console.error('❌ Merchant dashboard file not found:', filePath);
     return res.status(404).send('Dashboard not found');
   }
 
-  // Verify it's actually an HTML file by checking the first few bytes
-  try {
-    const fileBuffer = fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' });
-    const firstFewLines = fileBuffer.substring(0, 500).toLowerCase();
-
-    if (!firstFewLines.includes('<!doctype html>') && !firstFewLines.includes('<html')) {
-      console.error('❌ Invalid file content - not HTML. First 200 chars:', fileBuffer.substring(0, 200));
-      return res.status(500).send('Invalid dashboard file');
-    } else {
-      console.log('✅ File validation passed - detected HTML content');
-    }
-  } catch (readError) {
-    console.error('❌ Error reading dashboard file:', readError);
-    return res.status(500).send('Error reading dashboard file');
-  }
+  console.log('✅ File exists, proceeding to serve dashboard');
 
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
@@ -986,30 +973,17 @@ app.get('/merchant', authMiddleware.authenticateMerchant, (req, res) => {
 // Direct access to merchant-dashboard.html (for navigation buttons) (Protected)
 app.get('/merchant-dashboard.html', authMiddleware.authenticateMerchant, (req, res) => {
   console.log('🎯 Merchant dashboard HTML route accessed by:', req.merchant?.email);
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const filePath = path.join(__dirname, 'merchant-dashboard.html');
   console.log('📁 Serving HTML file from:', filePath);
 
-  // Verify the file exists and is readable before serving
+  // Verify the file exists before serving
   if (!fs.existsSync(filePath)) {
     console.error('❌ Merchant dashboard file not found:', filePath);
     return res.status(404).send('Dashboard not found');
   }
 
-  // Verify it's actually an HTML file by checking the first few bytes
-  try {
-    const fileBuffer = fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' });
-    const firstFewLines = fileBuffer.substring(0, 500).toLowerCase();
-
-    if (!firstFewLines.includes('<!doctype html>') && !firstFewLines.includes('<html')) {
-      console.error('❌ Invalid file content - not HTML. First 200 chars:', fileBuffer.substring(0, 200));
-      return res.status(500).send('Invalid dashboard file');
-    } else {
-      console.log('✅ File validation passed - detected HTML content');
-    }
-  } catch (readError) {
-    console.error('❌ Error reading dashboard file:', readError);
-    return res.status(500).send('Error reading dashboard file');
-  }
+  console.log('✅ File exists, proceeding to serve dashboard');
 
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
