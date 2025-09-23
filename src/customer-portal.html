@@ -6,6 +6,8 @@
     <title>Customer Portal - Invoice Viewer</title>
     <!-- Midtrans Payment Integration -->
     <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="SB-Mid-client-your-client-key"></script>
+    <!-- Mobile-friendly notifications -->
+    <script src="/mobile-notifications.js"></script>
     <style>
         * {
             margin: 0;
@@ -1288,7 +1290,7 @@
                     errorDiv.style.display = 'none';
                 }, 5000);
             } else {
-                alert('Error: ' + message);
+                showError('Error: ' + message);
             }
         }
 
@@ -1453,7 +1455,7 @@
                     
                     // Show success message
                     setTimeout(() => {
-                        alert('Payment successful! Thank you for your payment.');
+                        showSuccess('Payment successful! Thank you for your payment.');
                         closeModal();
                         // Refresh the invoices list
                         if (currentCustomer?.email) {
