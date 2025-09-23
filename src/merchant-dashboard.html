@@ -2498,9 +2498,9 @@
                     <span>Settings</span>
                 </a>
                 <div class="user-info">
-                    <div class="user-avatar">AG</div>
+                    <div class="user-avatar" id="userAvatar">--</div>
                     <div class="user-details">
-                        <div style="font-weight: 600; font-size: 14px;">Agus Merchant</div>
+                        <div style="font-weight: 600; font-size: 14px;" id="merchantName">Loading...</div>
                         <div style="font-size: 12px; color: var(--text-secondary);">Business Owner</div>
                         <button class="header-logout-btn" onclick="handleLogout()">
                             <span>🚪</span> Logout
@@ -4211,33 +4211,121 @@
             }
         }
 
-        // Load user info from account settings
+        // Load user info and validate session
         async function loadUserInfo() {
             try {
-                const response = await fetch('/api/account-settings');
-                const settings = await response.json();
-                
-                if (settings && (settings.businessOwnerName || settings.fullName || settings.name)) {
-                    const userName = settings.businessOwnerName || settings.fullName || settings.name;
-                    const userInfoDiv = document.querySelector('.user-info div div');
-                    if (userInfoDiv) {
-                        userInfoDiv.textContent = userName;
-                    }
-                    
-                    // Update user avatar with initials
-                    const avatar = document.querySelector('.user-avatar');
-                    if (avatar && userName) {
-                        const initials = userName.split(' ')
-                            .filter(word => word.length > 0)
-                            .map(word => word.charAt(0).toUpperCase())
-                            .slice(0, 2)
-                            .join('');
-                        avatar.textContent = initials;
+                // First try to get merchant info from session/localStorage
+                const merchantInfo = sessionStorage.getItem('merchantInfo') || localStorage.getItem('merchantInfo');
+                let merchantData = null;
+
+                if (merchantInfo) {
+                    try {
+                        merchantData = JSON.parse(merchantInfo);
+                    } catch (e) {
+                        console.error('Invalid merchant info in storage:', e);
                     }
                 }
+
+                // Verify token and get fresh merchant data
+                const token = sessionStorage.getItem('merchantToken') || localStorage.getItem('merchantToken');
+                if (token) {
+                    try {
+                        const response = await fetch('/api/auth/verify', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.success && result.merchant) {
+                                merchantData = result.merchant;
+                                // Update stored merchant info
+                                const storage = sessionStorage.getItem('merchantToken') ? sessionStorage : localStorage;
+                                storage.setItem('merchantInfo', JSON.stringify(merchantData));
+                            }
+                        } else {
+                            // Token is invalid, clean up and redirect
+                            cleanupSessionAndRedirect();
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error verifying token:', error);
+                    }
+                }
+
+                // Try account settings as fallback
+                if (!merchantData) {
+                    try {
+                        const response = await fetch('/api/account-settings');
+                        if (response.ok) {
+                            const settings = await response.json();
+                            if (settings) {
+                                merchantData = settings;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error loading account settings:', error);
+                    }
+                }
+
+                // Update UI with merchant data
+                if (merchantData) {
+                    updateMerchantDisplay(merchantData);
+                } else {
+                    // No valid merchant data found
+                    cleanupSessionAndRedirect();
+                }
+
             } catch (error) {
                 console.error('Error loading user info:', error);
+                // On error, clean up session
+                cleanupSessionAndRedirect();
             }
+        }
+
+        // Update merchant display in UI
+        function updateMerchantDisplay(merchantData) {
+            const merchantNameEl = document.getElementById('merchantName');
+            const userAvatarEl = document.getElementById('userAvatar');
+
+            // Determine display name
+            const displayName = merchantData.businessName || merchantData.fullName || merchantData.businessOwnerName || merchantData.name || 'Merchant';
+
+            // Update merchant name
+            if (merchantNameEl) {
+                merchantNameEl.textContent = displayName;
+            }
+
+            // Update avatar with initials
+            if (userAvatarEl) {
+                const initials = getInitials(displayName);
+                userAvatarEl.textContent = initials;
+            }
+        }
+
+        // Get initials from name
+        function getInitials(name) {
+            if (!name || typeof name !== 'string') return '--';
+            const words = name.trim().split(' ');
+            if (words.length === 1) {
+                return words[0].substring(0, 2).toUpperCase();
+            } else {
+                return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+            }
+        }
+
+        // Clean up session and redirect to login
+        function cleanupSessionAndRedirect() {
+            // Clear all authentication data
+            sessionStorage.removeItem('merchantToken');
+            sessionStorage.removeItem('merchantInfo');
+            localStorage.removeItem('merchantToken');
+            localStorage.removeItem('merchantInfo');
+
+            // Show message and redirect
+            alert('Session expired. Please login again.');
+            window.location.href = '/auth/login?from=dashboard';
         }
 
         // Initialize dashboard
@@ -6960,10 +7048,10 @@ Terima kasih! 🙏`;
 
                 console.log('🔗 Opening invoice URL for printing:', invoiceUrl);
 
-                const printWindow = window.open(invoiceUrl, '_blank', 'width=1000,height=800,scrollbars=yes');
+                const printWindow = window.open(invoiceUrl, '_blank', 'width=1200,height=1400,scrollbars=yes,resizable=yes');
 
                 if (printWindow) {
-                    // Auto-print after a short delay to let the page load
+                    // Auto-print after a longer delay to ensure proper loading and display
                     setTimeout(() => {
                         try {
                             printWindow.focus();
@@ -6971,7 +7059,7 @@ Terima kasih! 🙏`;
                         } catch (printError) {
                             console.warn('⚠️ Auto-print failed, user can print manually:', printError);
                         }
-                    }, 2000);
+                    }, 3000);
                 } else {
                     alert('Popup was blocked. Please allow popups for this site and try again.');
                 }
