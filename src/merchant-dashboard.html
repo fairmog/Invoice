@@ -2467,6 +2467,8 @@
             }
         }
     </style>
+    <!-- Mobile-friendly notifications -->
+    <script src="/mobile-notifications.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -5072,7 +5074,7 @@
 
         // Sync paid invoices to orders (creates missing orders)
         async function syncInvoicesToOrders() {
-            if (!confirm('This will create orders for all paid invoices that don\'t have associated orders yet. Continue?')) {
+            if (!(await mobileConfirm('This will create orders for all paid invoices that don\'t have associated orders yet. Continue?', 'Sync Paid Invoices'))) {
                 return;
             }
 
@@ -5273,7 +5275,7 @@
         }
 
         async function convertToInvoice(orderId) {
-            if (!confirm('Convert this order to an invoice?')) return;
+            if (!(await mobileConfirm('Convert this order to an invoice?', 'Convert to Invoice'))) return;
             
             try {
                 const response = await fetch(`/api/orders/${orderId}/convert-to-invoice`, {
@@ -5295,7 +5297,7 @@
         }
 
         async function deleteOrder(orderId) {
-            if (!confirm('Are you sure you want to delete this order?')) return;
+            if (!(await mobileConfirm('Are you sure you want to delete this order?', 'Delete Order'))) return;
             
             try {
                 const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
@@ -5525,7 +5527,7 @@
         }
 
         async function deleteProduct(productId) {
-            if (!confirm('Are you sure you want to delete this product?')) return;
+            if (!(await mobileConfirm('Are you sure you want to delete this product?', 'Delete Product'))) return;
 
             try {
                 const response = await fetch(`/api/products/${productId}`, {
