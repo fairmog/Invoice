@@ -327,7 +327,7 @@ function getTokenFromRequest(req) {
  */
 function handleAuthFailure(res, message, code = 'AUTH_REQUIRED') {
   const isApiRequest = res.req.path.startsWith('/api/');
-  
+
   if (isApiRequest) {
     return res.status(401).json({
       success: false,
@@ -335,13 +335,25 @@ function handleAuthFailure(res, message, code = 'AUTH_REQUIRED') {
       code: code
     });
   } else {
-    // Clear invalid tokens to prevent loops
+    // Clear all possible token storage to prevent session corruption
     res.clearCookie('merchantToken');
-    
-    // Add loop prevention parameter
+
+    // Set headers to clear browser storage
+    res.set('Clear-Site-Data', '"storage"');
+
+    // Add comprehensive loop prevention
     const redirectUrl = res.req.originalUrl;
-    const loginUrl = `/auth/login?redirect=${encodeURIComponent(redirectUrl)}&from=merchant`;
-    
+    const isFromMerchant = res.req.query?.from === 'merchant' || res.req.query?.from === 'dashboard';
+    const isLoginPage = redirectUrl.includes('/auth/login');
+
+    // Prevent redirect loops
+    if (isLoginPage || isFromMerchant) {
+      return res.redirect('/auth/login');
+    }
+
+    // Add session cleanup indication for client-side
+    const loginUrl = `/auth/login?redirect=${encodeURIComponent(redirectUrl)}&from=merchant&cleanup=true`;
+
     return res.redirect(loginUrl);
   }
 }
