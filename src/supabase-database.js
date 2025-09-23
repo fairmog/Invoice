@@ -489,27 +489,30 @@ class SupabaseDatabase {
           );
         }
         
-        // Calculate total spent from both invoices and orders
-        const invoiceSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
-        const orderSpent = customerOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
-        const totalSpent = invoiceSpent + orderSpent;
+        // Calculate total spent from PAID invoices only (avoid double-counting with orders)
+        const paidInvoices = customerInvoices.filter(inv => inv.status === 'paid');
+        const totalSpent = paidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.grand_total) || 0), 0);
+
+        console.log(`💰 Customer ${customer.email}: ${customerInvoices.length} total invoices, ${paidInvoices.length} paid, spend: ${totalSpent}`);
 
         const totalOrders = customerOrders.length;
         const totalInvoices = customerInvoices.length;
         const lastOrderDate = customerOrders.length > 0 ?
           customerOrders.sort((a, b) => new Date(b.order_date || b.created_at) - new Date(a.order_date || a.created_at))[0].order_date || customerOrders[0].created_at : null;
 
-        // Calculate average order value based on total transactions (invoices + orders)
-        const totalTransactions = totalInvoices + totalOrders;
+        // Calculate average order value based on actual paid transactions
+        // Use number of paid invoices as the transaction count (since orders come from paid invoices)
+        const avgOrderValue = paidInvoices.length > 0 ? totalSpent / paidInvoices.length : 0;
 
         return {
           ...customer,
           total_spent: totalSpent,
           total_orders: totalOrders,
           total_invoices: totalInvoices,
+          paid_invoices: paidInvoices.length,
           last_order_date: lastOrderDate,
           status: (totalOrders > 0 || totalInvoices > 0) ? 'active' : 'inactive',
-          avg_order_value: totalTransactions > 0 ? totalSpent / totalTransactions : 0
+          avg_order_value: avgOrderValue
         };
       });
       
