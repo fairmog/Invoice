@@ -696,10 +696,15 @@ class SimpleDatabase {
     customers = customers.map(customer => {
       const customerInvoices = this.data.invoices.filter(i => i.customer_email === customer.email);
       const customerOrders = this.data.orders.filter(o => o.customer_email === customer.email);
-      
-      const totalSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+
+      // Calculate total spent from PAID invoices only (not all invoices)
+      const paidInvoices = customerInvoices.filter(inv => inv.status === 'paid');
+      const totalSpent = paidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.grand_total) || 0), 0);
+
+      console.log(`💰 Customer ${customer.email}: ${customerInvoices.length} total invoices, ${paidInvoices.length} paid, spend: ${totalSpent}`);
+
       const totalOrders = customerOrders.length;
-      const lastOrderDate = customerOrders.length > 0 ? 
+      const lastOrderDate = customerOrders.length > 0 ?
         customerOrders.sort((a, b) => new Date(b.order_date) - new Date(a.order_date))[0].order_date : null;
 
       return {
@@ -733,10 +738,13 @@ class SimpleDatabase {
     customers = customers.map(customer => {
       const customerInvoices = this.data.invoices.filter(i => i.customer_email === customer.email);
       const customerOrders = this.data.orders.filter(o => o.customer_email === customer.email);
-      
-      const totalSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+
+      // Calculate total spent from PAID invoices only (not all invoices)
+      const paidInvoices = customerInvoices.filter(inv => inv.status === 'paid');
+      const totalSpent = paidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.grand_total) || 0), 0);
+
       const totalOrders = customerOrders.length;
-      const lastOrderDate = customerOrders.length > 0 ? 
+      const lastOrderDate = customerOrders.length > 0 ?
         customerOrders.sort((a, b) => new Date(b.order_date) - new Date(a.order_date))[0].order_date : null;
 
       return {
@@ -775,10 +783,16 @@ class SimpleDatabase {
     // Add detailed statistics
     const customerInvoices = this.data.invoices.filter(i => i.customer_email === customer.email);
     const customerOrders = this.data.orders.filter(o => o.customer_email === customer.email);
-    
-    const totalSpent = customerInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
-    const avgOrderValue = customerOrders.length > 0 ? 
-      customerOrders.reduce((sum, ord) => sum + (ord.total_amount || 0), 0) / customerOrders.length : 0;
+
+    // Calculate total spent from PAID invoices only (not all invoices)
+    const paidInvoices = customerInvoices.filter(inv => inv.status === 'paid');
+    const totalSpent = paidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.grand_total) || 0), 0);
+
+    // Average order value should be based on actual orders (not invoices)
+    const avgOrderValue = customerOrders.length > 0 ?
+      customerOrders.reduce((sum, ord) => sum + (parseFloat(ord.total_amount) || 0), 0) / customerOrders.length : 0;
+
+    console.log(`📊 Customer ${customer.email} details: ${paidInvoices.length}/${customerInvoices.length} paid invoices, spend: ${totalSpent}, avg order: ${avgOrderValue}`);
 
     return {
       ...customer,
@@ -836,12 +850,14 @@ class SimpleDatabase {
       return orderCount > 1;
     }).length;
 
-    // Calculate total customer lifetime value
+    // Calculate total customer lifetime value from PAID invoices only
     const totalCLV = customers.reduce((sum, customer) => {
-      const customerInvoices = this.data.invoices.filter(i => i.customer_email === customer.email);
-      const customerTotal = customerInvoices.reduce((invSum, inv) => invSum + (inv.grand_total || 0), 0);
+      const customerInvoices = this.data.invoices.filter(i => i.customer_email === customer.email && i.status === 'paid');
+      const customerTotal = customerInvoices.reduce((invSum, inv) => invSum + (parseFloat(inv.grand_total) || 0), 0);
       return sum + customerTotal;
     }, 0);
+
+    console.log(`📊 Customer Stats: ${totalCustomers} total, ${activeCustomers} active, CLV: ${totalCLV}`);
 
     return {
       total_customers: totalCustomers,
