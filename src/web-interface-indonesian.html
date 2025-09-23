@@ -2012,6 +2012,9 @@
         ✅ Changes saved
     </div>
 
+    <!-- Mobile Notifications System -->
+    <script src="/mobile-notifications.js"></script>
+
     <script>
         // Dynamic URL Management
         function getBaseUrl() {
@@ -6192,7 +6195,16 @@ Terima kasih! 🙏`;
                     console.log('✅ Opening merchant dashboard...');
                     const newWindow = window.open('/merchant', '_blank');
                     if (!newWindow) {
-                        alert('Popup blocked. Please allow popups for this site and try again.');
+                        // Use mobile-friendly notification instead of alert
+                        if (window.mobileNotifications) {
+                            window.mobileNotifications.confirmPaymentRedirect('/merchant',
+                                'Your browser blocked the popup. Click "Continue" to open the dashboard in this tab.');
+                        } else {
+                            // Fallback to same tab navigation
+                            if (confirm('Popup blocked. Open dashboard in this tab instead?')) {
+                                window.location.href = '/merchant';
+                            }
+                        }
                     }
                 } else {
                     // User not logged in, open login page in new tab with return URL
@@ -6201,7 +6213,16 @@ Terima kasih! 🙏`;
                     console.log('🔗 Login URL:', loginUrl);
                     const newWindow = window.open(loginUrl, '_blank');
                     if (!newWindow) {
-                        alert('Popup blocked. Please allow popups for this site and try again.');
+                        // Use mobile-friendly notification instead of alert
+                        if (window.mobileNotifications) {
+                            window.mobileNotifications.confirmPaymentRedirect(loginUrl,
+                                'Your browser blocked the popup. Click "Continue" to log in.');
+                        } else {
+                            // Fallback to same tab navigation
+                            if (confirm('Popup blocked. Open login in this tab instead?')) {
+                                window.location.href = loginUrl;
+                            }
+                        }
                     }
                 }
             } catch (error) {
