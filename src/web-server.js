@@ -403,11 +403,33 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logging
+// Request logging with enhanced debugging
 app.use((req, res, next) => {
-  if (config.development.debugMode) {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  }
+  console.log(`🌐 ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log(`🔍 Headers: ${JSON.stringify({
+    'user-agent': req.headers['user-agent']?.substring(0, 50) + '...',
+    'authorization': req.headers.authorization ? 'Present' : 'None',
+    'cookie': req.headers.cookie ? 'Present' : 'None'
+  })}`);
+
+  // Add response interceptor to log what's being served
+  const originalSend = res.send;
+  const originalSendFile = res.sendFile;
+
+  res.send = function(data) {
+    console.log(`📤 Response for ${req.method} ${req.url}: ${res.statusCode} - Data type: ${typeof data}, Length: ${data?.length || 0}`);
+    if (typeof data === 'string' && data.includes('import dotenv')) {
+      console.log(`🚨 WARNING: Serving source code for ${req.url}!`);
+      console.log(`🚨 First 200 chars: ${data.substring(0, 200)}`);
+    }
+    return originalSend.call(this, data);
+  };
+
+  res.sendFile = function(filePath, options, callback) {
+    console.log(`📁 SendFile for ${req.method} ${req.url}: ${filePath}`);
+    return originalSendFile.call(this, filePath, options, callback);
+  };
+
   next();
 });
 
@@ -941,31 +963,68 @@ app.get('/dashboard', (req, res) => {
 });
 
 // Serve the merchant dashboard (Protected)
-app.get('/merchant', authMiddleware.authenticateMerchant, (req, res) => {
-  console.log('🎯 Merchant dashboard route accessed by:', req.merchant?.email);
+app.get('/merchant', (req, res, next) => {
+  console.log('🎯 MERCHANT ROUTE HIT - Before auth middleware');
+  console.log('🔍 Request details:', {
+    url: req.url,
+    method: req.method,
+    headers: {
+      authorization: req.headers.authorization ? 'Present' : 'None',
+      cookie: req.headers.cookie ? 'Present' : 'None'
+    }
+  });
+  next();
+}, authMiddleware.authenticateMerchant, (req, res) => {
+  console.log('🎯 MERCHANT ROUTE - After auth middleware, merchant:', req.merchant?.email);
+
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const filePath = path.join(__dirname, 'merchant-dashboard.html');
-  console.log('📁 Serving file from:', filePath);
+  console.log('📁 Computed file path:', filePath);
+  console.log('📁 __dirname:', __dirname);
 
-  // Verify the file exists before serving
+  // Verify the file exists and is valid before serving
   if (!fs.existsSync(filePath)) {
     console.error('❌ Merchant dashboard file not found:', filePath);
     return res.status(404).send('Dashboard not found');
   }
 
-  console.log('✅ File exists, proceeding to serve dashboard');
+  // Get file stats for debugging
+  const fileStats = fs.statSync(filePath);
+  console.log('📊 File stats:', {
+    size: fileStats.size,
+    isFile: fileStats.isFile(),
+    modified: fileStats.mtime
+  });
+
+  // Read first 100 characters to verify it's HTML
+  const fileStart = fs.readFileSync(filePath, { encoding: 'utf8' }).substring(0, 100);
+  console.log('📄 File starts with:', fileStart);
+
+  if (!fileStart.toLowerCase().includes('<!doctype') && !fileStart.toLowerCase().includes('<html')) {
+    console.error('❌ File is not HTML:', filePath);
+    return res.status(500).send('Invalid file type');
+  }
+
+  console.log('✅ File validation passed, serving dashboard');
 
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
   res.set('Content-Type', 'text/html; charset=utf-8');
 
-  res.sendFile(filePath, (err) => {
+  // Use absolute path for sendFile
+  const absoluteFilePath = path.resolve(filePath);
+  console.log('📁 Absolute file path for sendFile:', absoluteFilePath);
+
+  res.sendFile(absoluteFilePath, (err) => {
     if (err) {
       console.error('❌ Error serving merchant dashboard:', err);
-      res.status(500).send('Error loading dashboard');
+      console.error('❌ Error details:', err.message);
+      if (!res.headersSent) {
+        res.status(500).send('Error loading dashboard');
+      }
     } else {
-      console.log('✅ Merchant dashboard served successfully');
+      console.log('✅ Merchant dashboard served successfully via sendFile');
     }
   });
 });
