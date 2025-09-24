@@ -1188,8 +1188,26 @@
         let currentInvoice = null;
         let selectedPaymentMethod = 'credit_card';
 
+        // Safe HTML escaping function to prevent template string issues
+        const escapeHtml = (text) => {
+            if (!text || typeof text !== 'string') return text || '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+                '/': '&#x2F;',
+                '`': '&#x60;',
+                '=': '&#x3D;'
+            };
+            return text.replace(/[&<>"'\/`=]/g, function (s) {
+                return map[s];
+            });
+        };
+
         // Unified Invoice Template Generator
-        function generateUnifiedInvoiceTemplate(invoiceData, context = 'preview') {
+        function generateUnifiedInvoiceTemplate(invoice, context = 'preview') {
             // Get business profile for logo and category
             const savedProfile = localStorage.getItem('businessProfile');
             let businessLogo = '';
@@ -2042,23 +2060,6 @@
                 };
             }
 
-            // Safe HTML escaping function to prevent template string issues
-            const escapeHtml = (text) => {
-                if (!text || typeof text !== 'string') return text || '';
-                const map = {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;',
-                    '/': '&#x2F;',
-                    '`': '&#x60;',
-                    '=': '&#x3D;'
-                };
-                return text.replace(/[&<>"'\/`=]/g, function (s) {
-                    return map[s];
-                });
-            };
 
             // Premium branding helper function to adjust color brightness
             const adjustBrightness = (hex, percent) => {
