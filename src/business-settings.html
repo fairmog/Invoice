@@ -1094,14 +1094,14 @@
                                 <h4 style="color: var(--text-primary, #2D3748); margin-bottom: 15px;">👁️ Live Preview</h4>
                                 <div id="brandingPreview" style="border: 2px solid #E2E8F0; border-radius: 8px; overflow: hidden; background: white; max-width: 500px;">
                                     <!-- Preview header -->
-                                    <div id="previewHeader" style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 8px 12px; text-align: center; font-size: 12px;">
+                                    <div id="previewHeader" style="background: #311d6b; color: white; padding: 8px 12px; text-align: center; font-size: 12px;">
                                         <span id="previewHeaderText">Powered by Aspree Invoice Generator</span>
                                     </div>
                                     <div style="padding: 12px; font-size: 12px; text-align: center; color: #666;">
                                         Your invoice content here...
                                     </div>
                                     <!-- Preview footer -->
-                                    <div id="previewFooter" style="background: linear-gradient(135deg, #311d6b, #4a2b7a); color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                                    <div id="previewFooter" style="background: #311d6b; color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
                                         <div>Terms & Contact Info</div>
                                         <div id="previewFooterLogo">
                                             <img src="/assets/aspri-logo.png" alt="Aspree" style="height: 24px; width: auto; opacity: 0.9;">
@@ -1497,10 +1497,10 @@
                 }
             
             // Update colors and text
-            previewHeader.style.background = `linear-gradient(135deg, ${headerBgColor}, ${adjustBrightness(headerBgColor, 20)})`;
+            previewHeader.style.background = headerBgColor;
             previewHeaderText.textContent = headerText;
             previewHeaderText.style.color = headerTextColor;
-            previewFooter.style.background = `linear-gradient(135deg, ${footerBgColor}, ${adjustBrightness(footerBgColor, 20)})`;
+            previewFooter.style.background = footerBgColor;
             previewFooter.style.color = footerTextColor;
             
             // Update header logo (add if not exists, update if exists)
