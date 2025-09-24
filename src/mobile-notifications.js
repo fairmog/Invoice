@@ -22,6 +22,21 @@ class MobileNotifications {
     createToastContainer() {
         if (document.getElementById('toast-container')) return;
 
+        // Check if document.body exists
+        if (!document.body) {
+            // If DOM not ready, wait for it
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.createToastContainer();
+                });
+                return;
+            } else {
+                // DOM is complete but body doesn't exist - this shouldn't happen
+                console.error('Document ready but body not found');
+                return;
+            }
+        }
+
         const container = document.createElement('div');
         container.id = 'toast-container';
         container.className = 'toast-container';
@@ -30,6 +45,21 @@ class MobileNotifications {
 
     createModalOverlay() {
         if (document.getElementById('modal-overlay')) return;
+
+        // Check if document.body exists
+        if (!document.body) {
+            // If DOM not ready, wait for it
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.createModalOverlay();
+                });
+                return;
+            } else {
+                // DOM is complete but body doesn't exist - this shouldn't happen
+                console.error('Document ready but body not found');
+                return;
+            }
+        }
 
         const overlay = document.createElement('div');
         overlay.id = 'modal-overlay';
@@ -571,17 +601,23 @@ class MobileNotifications {
     }
 }
 
-// Create global instance
-window.mobileNotifications = new MobileNotifications();
+// Create global instance when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.mobileNotifications = new MobileNotifications();
+    });
+} else {
+    window.mobileNotifications = new MobileNotifications();
+}
 
 // Global convenience functions
-window.showToast = (message, type, duration) => window.mobileNotifications.showToast(message, type, duration);
-window.showSuccess = (message, duration) => window.mobileNotifications.success(message, duration);
-window.showError = (message, duration) => window.mobileNotifications.error(message, duration);
-window.showWarning = (message, duration) => window.mobileNotifications.warning(message, duration);
-window.showInfo = (message, duration) => window.mobileNotifications.info(message, duration);
+window.showToast = (message, type, duration) => window.mobileNotifications?.showToast(message, type, duration);
+window.showSuccess = (message, duration) => window.mobileNotifications?.success(message, duration);
+window.showError = (message, duration) => window.mobileNotifications?.error(message, duration);
+window.showWarning = (message, duration) => window.mobileNotifications?.warning(message, duration);
+window.showInfo = (message, duration) => window.mobileNotifications?.info(message, duration);
 
 // Enhanced alert/confirm/prompt replacements
-window.mobileAlert = (message, title) => window.mobileNotifications.alert(message, title);
-window.mobileConfirm = (message, title) => window.mobileNotifications.confirm(message, title);
-window.mobilePrompt = (message, defaultValue, title) => window.mobileNotifications.prompt(message, defaultValue, title);
+window.mobileAlert = (message, title) => window.mobileNotifications?.alert(message, title);
+window.mobileConfirm = (message, title) => window.mobileNotifications?.confirm(message, title);
+window.mobilePrompt = (message, defaultValue, title) => window.mobileNotifications?.prompt(message, defaultValue, title);
