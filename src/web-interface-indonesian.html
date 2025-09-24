@@ -4704,26 +4704,132 @@
 
         function printInvoice() {
             if (!currentInvoiceData) {
-                alert('Tidak ada data faktur untuk dicetak');
+                // Use mobile-friendly notification instead of alert
+                if (window.mobileNotifications) {
+                    window.mobileNotifications.error('Tidak ada data faktur untuk dicetak');
+                } else {
+                    alert('Tidak ada data faktur untuk dicetak');
+                }
                 return;
             }
-            
-            // Create a new window for printing
-            const printWindow = window.open('', '_blank');
-            
-            // Generate print-optimized HTML
-            const printHtml = generatePrintableInvoice(currentInvoiceData);
-            
-            printWindow.document.write(printHtml);
-            printWindow.document.close();
-            
-            // Wait for content to load then print
-            printWindow.onload = function() {
+
+            try {
+                // Generate print-optimized HTML first (before popup)
+                const printHtml = generatePrintableInvoice(currentInvoiceData);
+
+                // Create a new window for printing
+                const printWindow = window.open('', '_blank');
+
+                // Check if popup was blocked
+                if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
+                    console.log('⚠️ Popup blocked, using fallback print method');
+
+                    // Show user-friendly message about popup blocker
+                    if (window.mobileNotifications) {
+                        window.mobileNotifications.showModal({
+                            title: 'Print Invoice',
+                            message: 'Popup was blocked by your browser. Using alternative print method...',
+                            buttons: [
+                                {
+                                    text: 'Print Now',
+                                    action: () => {
+                                        // Fallback: Create temporary print area in current page
+                                        printInvoiceInCurrentPage(printHtml);
+                                        window.mobileNotifications.closeModal();
+                                    },
+                                    primary: true
+                                },
+                                {
+                                    text: 'Cancel',
+                                    action: () => window.mobileNotifications.closeModal()
+                                }
+                            ]
+                        });
+                    } else {
+                        // Fallback for no mobile notifications
+                        if (confirm('Popup was blocked. Use alternative print method?')) {
+                            printInvoiceInCurrentPage(printHtml);
+                        }
+                    }
+                    return;
+                }
+
+                // Popup opened successfully
+                console.log('✅ Print popup opened successfully');
+
+                // Write content to popup
+                printWindow.document.write(printHtml);
+                printWindow.document.close();
+
+                // Wait for content to load then print
+                printWindow.onload = function() {
+                    setTimeout(() => {
+                        try {
+                            printWindow.print();
+                            // Close after print dialog is handled
+                            setTimeout(() => {
+                                printWindow.close();
+                            }, 500);
+                        } catch (printError) {
+                            console.error('❌ Error during printing:', printError);
+                            printWindow.close();
+                        }
+                    }, 100);
+                };
+
+                // Handle case where onload doesn't fire
                 setTimeout(() => {
-                    printWindow.print();
-                    printWindow.close();
-                }, 100);
-            };
+                    if (printWindow && !printWindow.closed) {
+                        try {
+                            printWindow.print();
+                        } catch (printError) {
+                            console.error('❌ Fallback print error:', printError);
+                        }
+                    }
+                }, 1000);
+
+            } catch (error) {
+                console.error('❌ Error in printInvoice:', error);
+
+                // Show user-friendly error message
+                if (window.mobileNotifications) {
+                    window.mobileNotifications.error('Terjadi kesalahan saat mencetak faktur. Silakan coba lagi.');
+                } else {
+                    alert('Terjadi kesalahan saat mencetak faktur. Silakan coba lagi.');
+                }
+            }
+        }
+
+        // Fallback print method for blocked popups
+        function printInvoiceInCurrentPage(printHtml) {
+            try {
+                // Create temporary print container
+                const printContainer = document.createElement('div');
+                printContainer.id = 'temp-print-container';
+                printContainer.style.display = 'none';
+                printContainer.innerHTML = printHtml;
+
+                // Add to body
+                document.body.appendChild(printContainer);
+
+                // Hide current content and show print content
+                const originalContent = document.body.innerHTML;
+                document.body.innerHTML = printHtml;
+
+                // Print current page
+                window.print();
+
+                // Restore original content
+                document.body.innerHTML = originalContent;
+
+                console.log('✅ Fallback print completed');
+
+            } catch (error) {
+                console.error('❌ Error in fallback print:', error);
+
+                // Final fallback - just print current page as is
+                window.print();
+            }
         }
         
         function generatePrintableInvoice(invoiceData) {
