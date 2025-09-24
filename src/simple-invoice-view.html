@@ -2042,24 +2042,6 @@
                 };
             }
         }
-        // Update logo in the template after async loading
-        function updateLogoInTemplate(logoUrl) {
-                    
-                    // Format currency
-                    const formatted = new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                    }).format(numAmount).replace('IDR', 'Rp');
-                    
-                    console.log(`💰 Formatted currency: ${amount} → ${formatted}`);
-                    return formatted;
-                } catch (error) {
-                    console.error('❌ Error formatting currency:', error, 'for amount:', amount);
-                    return 'Rp0';
-                }
-            };
 
             // Safe HTML escaping function to prevent template string issues
             const escapeHtml = (text) => {
