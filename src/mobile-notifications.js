@@ -601,13 +601,20 @@ class MobileNotifications {
     }
 }
 
-// Create global instance when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+// Create global instance when DOM and body are ready
+function initMobileNotifications() {
+    if (document.body) {
         window.mobileNotifications = new MobileNotifications();
-    });
+    } else {
+        // Wait a bit and try again
+        setTimeout(initMobileNotifications, 10);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileNotifications);
 } else {
-    window.mobileNotifications = new MobileNotifications();
+    initMobileNotifications();
 }
 
 // Global convenience functions
