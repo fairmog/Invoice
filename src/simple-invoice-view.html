@@ -431,7 +431,7 @@
             
             /* Preserve footer band styling */
             .footer-band {
-                background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
+                background: #311d6b !important;
                 color: white !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -501,7 +501,7 @@
             
             /* Keep all gradients and colors */
             .footer-band {
-                background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
+                background: #311d6b !important;
                 color: white !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -549,7 +549,7 @@
 
             /* Header band print styles */
             .paper > div:first-child {
-                background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
+                background: #311d6b !important;
                 color: white !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -1138,7 +1138,7 @@
             
             /* Ensure footer background is preserved for contrast */
             .footer-band {
-                background: linear-gradient(135deg, #311d6b, #4a2b7a) !important;
+                background: #311d6b !important;
                 -webkit-print-color-adjust: exact !important;
                 color-adjust: exact !important;
             }
@@ -1188,99 +1188,43 @@
         let currentInvoice = null;
         let selectedPaymentMethod = 'credit_card';
 
-        // Use the same clean invoice generation as the preview
-        function generateUnifiedInvoiceTemplate(invoice, context = 'view') {
-            let businessCategory = 'general';
+        // Unified Invoice Template Generator
+        function generateUnifiedInvoiceTemplate(invoiceData, context = 'preview') {
+            // Get business profile for logo and category
+            const savedProfile = localStorage.getItem('businessProfile');
             let businessLogo = '';
+            let businessCategory = 'general';
             let businessTerms = 'Pembayaran dalam 30 hari';
             let businessProfile = null;
-            
-            console.log('🔧 generateUnifiedInvoiceTemplate called with context:', context);
-            console.log('🔧 Raw invoice data:', invoice);
-            
-            try {
-                // First try to get business profile from enhanced invoice data (provided by API)
-                if (invoice.businessProfile) {
-                    businessProfile = invoice.businessProfile;
-                    businessLogo = businessProfile.logo || invoice.merchant_logo || '';
-                    businessCategory = businessProfile.category || 'general';
-                    businessTerms = businessProfile.termsAndConditions || businessTerms;
-                    console.log('✅ Found business profile in enhanced invoice data:', businessProfile);
-                    console.log('✅ Business logo from enhanced data:', businessLogo);
-                } else {
-                    // Fallback: try to get business profile from invoice metadata (saved invoices)
-                    console.log('🔧 Trying to parse metadata_json:', invoice.metadata_json);
-                    let metadata;
-                    if (typeof invoice.metadata_json === 'string') {
-                        metadata = JSON.parse(invoice.metadata_json || '{}');
-                    } else if (invoice.metadata_json && typeof invoice.metadata_json === 'object') {
-                        metadata = invoice.metadata_json; // Already an object
-                    } else {
-                        metadata = {}; // Default empty object
-                    }
-                    console.log('🔧 Parsed metadata:', metadata);
-                    
-                    businessCategory = metadata.businessCategory || metadata.category || 'general';
-                    if (metadata.businessProfile) {
-                        businessProfile = metadata.businessProfile;
-                        businessLogo = businessProfile.logo || invoice.merchant_logo || '';
-                        businessCategory = businessProfile.category || businessCategory;
-                        businessTerms = businessProfile.termsAndConditions || businessTerms;
-                        console.log('✅ Found business profile in metadata:', businessProfile);
-                        console.log('✅ Business logo from metadata:', businessLogo);
-                    } else {
-                        // Try direct merchant_logo field from enhanced invoice
-                        businessLogo = invoice.merchant_logo || '';
-                        console.log('🔧 Using direct merchant_logo field:', businessLogo);
-                    }
-                }
-                
-                // If no business profile in metadata, try localStorage as fallback (for development/preview)
-                if (!businessProfile) {
-                    console.log('🔧 Trying localStorage fallback...');
-                    try {
-                        const savedProfile = localStorage.getItem('businessProfile');
-                        if (savedProfile) {
-                            businessProfile = JSON.parse(savedProfile);
-                            businessLogo = businessProfile.logo || '';
-                            businessCategory = businessProfile.category || 'general';
-                            businessTerms = businessProfile.termsAndConditions || businessTerms;
-                            console.log('✅ Found business profile in localStorage:', businessProfile);
-                        } else {
-                            console.log('❌ No localStorage business profile available');
-                        }
-                    } catch(localStorageError) {
-                        console.log('❌ Error accessing localStorage:', localStorageError);
-                    }
-                }
-                
-                // Use business profile from invoice data as single source of truth
-                console.log('🔧 Using business profile from invoice data as single source of truth');
-                
-                if (businessProfile) {
-                    // Update contact information and terms in footer using invoice business profile
-                    updateFooterFromBusinessSettings(businessProfile);
-                    console.log('✅ Footer updated with business profile from invoice:', businessProfile);
-                    
-                    // Update logo if available in business profile
-                    if (businessProfile.logoUrl || businessProfile.logo) {
-                        businessLogo = businessProfile.logoUrl || businessProfile.logo;
-                        console.log('✅ Using logo from business profile:', businessLogo);
-                        updateLogoInTemplate(businessLogo);
-                    }
-                } else {
-                    console.log('❌ No business profile found in invoice data, using default footer');
-                }
-            } catch(e) {
-                // Fallback to general if no metadata
-                console.error('❌ Error parsing invoice metadata:', e);
+            if (savedProfile) {
+                businessProfile = JSON.parse(savedProfile);
+                businessLogo = businessProfile.logo || '';
+                businessCategory = businessProfile.category || 'general';
+                businessTerms = businessProfile.termsAndConditions || 'Pembayaran dalam 30 hari';
             }
-            
-            console.log('🔧 Final values:');
-            console.log('  - businessLogo:', businessLogo);
-            console.log('  - businessCategory:', businessCategory);
-            console.log('  - businessTerms:', businessTerms);
-            
+
+            // Logo is now managed by loadBusinessDataFromAPI which syncs database with localStorage
+
+            // Premium branding settings from localStorage business profile
+            const hideAspreeBranding = businessProfile?.hideAspreeBranding || businessProfile?.hide_aspree_branding || false;
+            const customHeaderLogo = businessProfile?.customHeaderLogoUrl || businessProfile?.custom_header_logo_url || null;
+            const customFooterLogo = businessProfile?.customFooterLogoUrl || businessProfile?.custom_footer_logo_url || null;
+            const customHeaderText = businessProfile?.customHeaderText || businessProfile?.custom_header_text || 'Powered by Aspree Invoice Generator';
+            const customHeaderBgColor = businessProfile?.customHeaderBgColor || businessProfile?.custom_header_bg_color || '#311d6b';
+            const customFooterBgColor = businessProfile?.customFooterBgColor || businessProfile?.custom_footer_bg_color || '#311d6b';
+            const customHeaderTextColor = businessProfile?.customHeaderTextColor || businessProfile?.custom_header_text_color || '#ffffff';
+            const customFooterTextColor = businessProfile?.customFooterTextColor || businessProfile?.custom_footer_text_color || '#ffffff';
+
+            console.log('🎨 Premium branding settings:', {
+                hideAspreeBranding,
+                customHeaderLogo,
+                customFooterLogo,
+                customHeaderText,
+                customHeaderBgColor,
+                customFooterBgColor
+            });
+
+            // Category-based titles (consistent across all contexts)
             const getCategoryTitle = (category) => {
                 const categoryTitles = {
                     'trade': 'FAKTUR PENJUALAN',
@@ -1297,25 +1241,809 @@
             };
             
             const invoiceTitle = getCategoryTitle(businessCategory);
-            
+
+            // Currency formatting function
             const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amount || 0).replace('IDR', 'Rp');
+            };
+
+            // Date formatting function
+            const formatDate = (dateString) => {
                 try {
-                    // Handle various input types and validate
-                    let numAmount = 0;
-                    if (amount !== null && amount !== undefined) {
-                        if (typeof amount === 'string') {
-                            // Remove any existing currency symbols and parse
-                            numAmount = parseFloat(amount.replace(/[^\d.-]/g, ''));
-                        } else if (typeof amount === 'number') {
-                            numAmount = amount;
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                } catch (e) {
+                    return dateString;
+                }
+            };
+
+            // Clean Professional CSS styling (no emojis, no purple gradient)
+            const getContextStyles = (context) => {
+                const cleanStyles = `
+                    :root {
+                        --text: #2D3748;
+                        --text-light: #718096;
+                        --border: #E2E8F0;
+                        --bg: #FFFFFF;
+                        --bg-light: #F7FAFC;
+                    }
+
+                    body {
+                        font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+                        font-size: 16px;
+                        line-height: 1.5;
+                        color: var(--text);
+                        background: white;
+                        margin: 0;
+                        padding: 0;
+                    }
+
+                    .paper {
+                        width: 100%;
+                        max-width: 794px;
+                        min-height: 1123px;
+                        margin: 0 auto;
+                        background: var(--bg);
+                        border: 1px solid var(--border);
+                        border-radius: 0;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                        overflow: hidden;
+                        padding: 0;
+                        position: relative;
+                    }
+
+                    .inv-header {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 60px;
+                        padding: 24px 32px 16px 32px;
+                        background: var(--bg);
+                        border-bottom: 2px solid var(--border);
+                        align-items: start;
+                    }
+
+                    .logo-section {
+                        text-align: left;
+                    }
+
+                    .logo-section img {
+                        max-height: 120px;
+                        max-width: 300px;
+                        object-fit: contain;
+                        display: block;
+                        margin-bottom: 6px;
+                    }
+
+                    .logo-section strong {
+                        display: block;
+                        font-size: 28px;
+                        font-weight: 800;
+                        color: var(--text);
+                        margin-top: 4px;
+                        line-height: 1.1;
+                    }
+
+                    .invoice-meta {
+                        text-align: right;
+                    }
+
+                    .invoice-title {
+                        font-size: 28px;
+                        font-weight: 800;
+                        color: var(--text);
+                        margin: 0 0 20px 0;
+                        letter-spacing: 0.5px;
+                    }
+
+                    .invoice-details {
+                        font-size: 15px;
+                        color: var(--text-light);
+                        margin-bottom: 10px;
+                        line-height: 1.4;
+                    }
+
+                    .invoice-details strong {
+                        color: var(--text);
+                        font-weight: 600;
+                        min-width: 100px;
+                        display: inline-block;
+                    }
+
+                    .parties {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 80px;
+                        padding: 20px 32px;
+                        border-bottom: 1px solid var(--border);
+                    }
+
+                    .party-section h3 {
+                        font-size: 14px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        font-weight: 600;
+                        color: var(--text);
+                        margin: 0 0 16px 0;
+                    }
+
+                    .party-section address {
+                        font-style: normal;
+                        font-size: 15px;
+                        line-height: 1.5;
+                        color: var(--text-light);
+                    }
+
+                    .party-section strong {
+                        color: var(--text);
+                        font-weight: 600;
+                        font-size: 16px;
+                        display: block;
+                        margin-bottom: 3px;
+                    }
+
+                    .items-section {
+                        padding: 20px 32px;
+                    }
+
+                    .items-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 0;
+                        border: 1px solid var(--border);
+                        border-radius: 8px;
+                        overflow: hidden;
+                    }
+
+                    .items-table thead th {
+                        background: var(--bg-light);
+                        border-bottom: 2px solid var(--border);
+                        padding: 18px 20px;
+                        font-size: 13px;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        letter-spacing: 0.8px;
+                        color: var(--text);
+                        text-align: left;
+                    }
+
+                    .items-table th:last-child,
+                    .items-table th.text-right { text-align: right; }
+                    .items-table th.text-center { text-align: center; }
+
+                    .items-table tbody td {
+                        padding: 20px;
+                        border-bottom: 1px solid var(--border);
+                        font-size: 15px;
+                        color: var(--text);
+                    }
+
+                    .items-table tbody tr:nth-child(even) {
+                        background: rgba(247, 250, 252, 0.5);
+                    }
+
+                    .items-table tbody tr:last-child td {
+                        border-bottom: none;
+                    }
+
+                    .items-table .text-right { text-align: right; font-weight: 600; }
+                    .items-table .text-center { text-align: center; }
+
+                    .product-name {
+                        font-weight: 500;
+                        color: var(--text);
+                        margin: 0;
+                    }
+
+                    .product-description {
+                        color: var(--text-light);
+                        font-size: 13px;
+                        margin: 2px 0 0 0;
+                    }
+
+                    .summary {
+                        padding: 20px 32px;
+                        border-top: 1px solid var(--border);
+                        background: var(--bg);
+                    }
+
+                    .summary-grid {
+                        display: grid;
+                        grid-template-columns: 1fr auto;
+                        gap: 12px 40px;
+                        max-width: 320px;
+                        margin-left: auto;
+                    }
+
+                    .summary-label {
+                        color: var(--text-light);
+                        font-size: 14px;
+                    }
+
+                    .summary-value {
+                        color: var(--text);
+                        font-size: 15px;
+                        font-weight: 600;
+                        text-align: right;
+                    }
+
+                    .total-label {
+                        color: var(--text) !important;
+                        font-weight: 700 !important;
+                        font-size: 16px !important;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        padding-top: 12px;
+                        border-top: 2px solid var(--text);
+                        margin-top: 8px;
+                    }
+
+                    .total-value {
+                        color: var(--text) !important;
+                        font-weight: 800 !important;
+                        font-size: 20px !important;
+                        padding-top: 12px;
+                        border-top: 2px solid var(--text);
+                        margin-top: 8px;
+                        text-align: right;
+                    }
+
+
+                    /* Compact Notes Styles */
+                    .editable[data-field="notes.publicNotes"] {
+                        min-width: 200px;
+                        display: inline-block;
+                        padding: 2px 4px;
+                        border-radius: 4px;
+                        transition: all 0.2s ease;
+                    }
+
+                    .editable[data-field="notes.publicNotes"]:hover {
+                        background: rgba(49, 29, 107, 0.05);
+                        cursor: text;
+                    }
+
+                    /* Print styles */
+                    @media print {
+                        @page {
+                            margin: 10mm;
+                            size: A4 portrait;
+                        }
+
+                        body {
+                            background: white !important;
+                            padding: 0 !important;
+                        }
+
+                        .paper {
+                            box-shadow: none !important;
+                            border: none !important;
+                            margin: 0 !important;
+                            max-width: none !important;
+                            page-break-inside: avoid !important;
+                        }
+
+                        /* Prevent page breaks within important sections */
+                        .inv-header,
+                        .invoice-table,
+                        .summary-section,
+                        .footer-band {
+                            page-break-inside: avoid !important;
+                        }
+
+                        /* Reduce spacing to fit on one page */
+                        .inv-header {
+                            margin-bottom: 10px !important;
+                        }
+
+                        .invoice-table {
+                            margin-bottom: 10px !important;
+                        }
+
+                        .summary-section {
+                            margin-bottom: 10px !important;
+                        }
+
+                        .edit-indicator {
+                            display: none !important;
+                        }
+
+                        .footer-band {
+                            background: #311d6b !important;
+                            color: white !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                            margin-bottom: 0 !important;
+                            padding-bottom: 0 !important;
+                        }
+
+                        .footer-section img {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                            display: block !important;
+                        }
+
+                        /* Header band print styles */
+                        .paper > div:first-child {
+                            background: #311d6b !important;
+                            color: white !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+
+                        /* Ensure all purple elements print with colors */
+                        * {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+
+                        /* Force single page printing */
+                        html, body {
+                            height: auto !important;
+                            overflow: visible !important;
+                        }
+
+                        /* Reduce font sizes slightly for print to fit more content */
+                        .paper {
+                            font-size: 13px !important;
+                        }
+
+                        /* Compact payment schedule section */
+                        .payment-schedule-section {
+                            margin: 10px 0 !important;
+                            padding: 15px !important;
+                        }
+
+                        /* Ensure footer doesn't create page break */
+                        .footer-band {
+                            page-break-inside: avoid !important;
+                            margin-top: 10px !important;
                         }
                     }
-                    
-                    // Ensure we have a valid number
-                    if (isNaN(numAmount) || !isFinite(numAmount)) {
-                        console.log('⚠️ Invalid amount for currency formatting:', amount, 'defaulting to 0');
-                        numAmount = 0;
-                    }
+
+                    /* Context-specific styles */
+                    ${context === 'preview' ? `
+                        .paper {
+                            margin: 20px auto;
+                        }
+                    ` : ''}
+
+                    ${context === 'print' ? `
+                        body {
+                            background: white !important;
+                            padding: 0;
+                        }
+                        .paper {
+                            box-shadow: none !important;
+                            border: none !important;
+                            margin: 0;
+                        }
+                    ` : ''}
+                `;
+
+                return cleanStyles;
+            };
+
+            // Generate clean professional HTML structure (no emojis)
+            const cleanHTML = `
+                <div class="paper">
+                    <!-- Dynamic Premium/Aspree branding header -->
+                    ${!hideAspreeBranding ? `
+                        <div style="background: linear-gradient(135deg, ${customHeaderBgColor}, ${customHeaderBgColor}aa); color: ${customHeaderTextColor}; padding: 12px 0; text-align: center;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                                ${customHeaderLogo ?
+                                    `<img src="${customHeaderLogo}" alt="Header Logo" style="height: 32px; width: auto; object-fit: contain;">` :
+                                    `<img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">`
+                                }
+                                <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">${customHeaderText}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Header with logo and invoice metadata -->
+                    <div class="inv-header">
+                        <div class="logo-section">
+                            ${businessLogo ?
+                                `<img src="${businessLogo}" alt="Logo">` :
+                                `<div style="background: #f0f0f0; padding: 15px; border-radius: 4px; margin-bottom: 12px; font-size: 18px; color: #666; text-align: center; border: 1px solid #e0e0e0;">LOGO</div>`
+                            }
+                            ${businessProfile && businessProfile.hideBusinessName ? '' :
+                                `<strong>${context === 'preview' ?
+                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant.businessName}<span class="edit-indicator">✏️</span></span>` :
+                                    invoice.merchant.businessName
+                                }</strong>`
+                            }
+                        </div>
+                        <div class="invoice-meta">
+                            <h1 class="invoice-title">${invoiceTitle}</h1>
+                            <div class="invoice-details">
+                                <strong>No:</strong> ${invoice.header.invoiceNumber}
+                            </div>
+                            <div class="invoice-details">
+                                <strong>Tanggal:</strong> ${context === 'preview' ?
+                                    `<span class="editable" data-field="header.invoiceDate" data-type="date">${formatDate(invoice.header.invoiceDate)}<span class="edit-indicator">✏️</span></span>` :
+                                    formatDate(invoice.header.invoiceDate)
+                                }
+                            </div>
+                            <div class="invoice-details">
+                                <strong>Jatuh Tempo:</strong> ${context === 'preview' ?
+                                    `<span class="editable" data-field="header.dueDate" data-type="date">${formatDate(invoice.header.dueDate || invoice.header.invoiceDate)}<span class="edit-indicator">✏️</span></span>` :
+                                    formatDate(invoice.header.dueDate || invoice.header.invoiceDate)
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parties section -->
+                    <div class="parties">
+                        <div class="party-section">
+                            <h3>DARI</h3>
+                            <address>
+                                <strong>${context === 'preview' ?
+                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant.businessName}<span class="edit-indicator">✏️</span></span>` :
+                                    invoice.merchant.businessName
+                                }</strong><br>
+                                ${context === 'preview' ?
+                                    `<span class="editable" data-field="merchant.address" data-type="textarea">${invoice.merchant.address}<span class="edit-indicator">✏️</span></span>` :
+                                    invoice.merchant.address
+                                }<br>
+                                ${context === 'preview' ?
+                                    `<span class="editable" data-field="merchant.phone" data-type="tel">${invoice.merchant.phone}<span class="edit-indicator">✏️</span></span>` :
+                                    invoice.merchant.phone
+                                }<br>
+                                ${context === 'preview' ?
+                                    `<span class="editable" data-field="merchant.email" data-type="email">${invoice.merchant.email}<span class="edit-indicator">✏️</span></span>` :
+                                    invoice.merchant.email
+                                }
+                            </address>
+                        </div>
+                        <div class="party-section">
+                            <h3>KEPADA</h3>
+                            <address>
+                                <strong>${context === 'preview' ?
+                                    `<span class="editable" data-field="customer.name" data-type="text">${invoice.customer.name}<span class="edit-indicator">✏️</span></span>` :
+                                    invoice.customer.name
+                                }</strong><br>
+                                ${context === 'preview' ?
+                                    `<span class="editable" data-field="customer.address" data-type="textarea">${invoice.customer.address}<span class="edit-indicator">✏️</span></span>` :
+                                    invoice.customer.address
+                                }<br>
+                                ${invoice.customer.phone ? (context === 'preview' ?
+                                    `<span class="editable" data-field="customer.phone" data-type="tel">${invoice.customer.phone}<span class="edit-indicator">✏️</span></span><br>` :
+                                    `${invoice.customer.phone}<br>`
+                                ) : ''}
+                                ${invoice.customer.email ? (context === 'preview' ?
+                                    `<span class="editable" data-field="customer.email" data-type="email">${invoice.customer.email}<span class="edit-indicator">✏️</span></span>` :
+                                    invoice.customer.email
+                                ) : ''}
+                            </address>
+                        </div>
+                    </div>
+
+                    <!-- Items section -->
+                    <div class="items-section">
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Produk/Layanan</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-right">Harga Satuan</th>
+                                    <th class="text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${invoice.items.map((item, index) => `
+                                    <tr>
+                                        <td>
+                                            <div class="product-name">${context === 'preview' ?
+                                                `<span class="editable" data-field="items.${index}.productName" data-type="text">${item.productName}<span class="edit-indicator">✏️</span></span>` :
+                                                item.productName
+                                            }</div>
+                                            ${item.description ? `<div class="product-description">${item.description}</div>` : ''}
+                                        </td>
+                                        <td class="text-center">${context === 'preview' ?
+                                            `<span class="editable editable-quantity" data-field="items.${index}.quantity" data-type="number">${item.quantity}<span class="edit-indicator">✏️</span></span>` :
+                                            item.quantity
+                                        }</td>
+                                        <td class="text-right">${context === 'preview' ?
+                                            `<span class="editable editable-price" data-field="items.${index}.unitPrice" data-type="currency">${formatCurrency(item.unitPrice)}<span class="edit-indicator">✏️</span></span>` :
+                                            formatCurrency(item.unitPrice)
+                                        }</td>
+                                        <td class="text-right">${formatCurrency(item.lineTotal)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Compact Notes Section -->
+                    ${(() => {
+                        try {
+                            const notes = invoice.notes;
+
+                            // Collect all notes into an array
+                            const allNotes = [];
+
+                            // List of placeholder/demo texts to filter out
+                            const placeholderTexts = [
+                                'Pembayaran dapat dilakukan melalui transfer bank atau tunai',
+                                'tambahkan catatan tambahan disini, jika tidak ada catatan maka kolom catatan akan dihilangkan',
+                                'Klik untuk menambahkan catatan...',
+                                'Extract special requests from message',
+                                'Extract delivery schedule if mentioned',
+                                'Extract appointment info if service booking',
+                                'Extract payment deadline if mentioned'
+                            ];
+
+                            const isPlaceholderText = (text) => {
+                                if (!text || !text.trim()) return true;
+                                const trimmedText = text.trim();
+                                return placeholderTexts.some(placeholder => trimmedText.includes(placeholder));
+                            };
+
+                            // Only process main user-editable notes (removed AI extraction fields)
+                            if (notes?.publicNotes && notes.publicNotes.trim() && !isPlaceholderText(notes.publicNotes)) allNotes.push(notes.publicNotes.trim());
+                            if (notes?.customNotes && notes.customNotes.trim() && !isPlaceholderText(notes.customNotes)) allNotes.push(notes.customNotes.trim());
+
+                            console.log('🔧 All notes after filtering:', allNotes);
+
+                            // Show section always in preview mode for editing, or only when notes exist in other modes
+                            const hasNotes = allNotes.length > 0;
+                            const showSection = context === 'preview' || hasNotes;
+
+                            if (!showSection) return '';
+
+                            if (context === 'preview') {
+                                // In preview mode, make it editable
+                                const noteContent = hasNotes ? allNotes.join(' | ') : '';
+                                const isEmpty = !noteContent.trim();
+
+                                return `
+                                    <div style="padding: 12px 32px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
+                                        <p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;">
+                                            <strong style="color: var(--text);">Catatan:</strong>
+                                            <span class="editable" data-field="notes.publicNotes" data-type="text" style="color: ${isEmpty ? 'var(--text-light)' : 'var(--text)'}; ${isEmpty ? 'font-style: italic;' : ''}">${isEmpty ? 'tambahkan catatan tambahan disini, jika tidak ada catatan maka kolom catatan akan dihilangkan' : noteContent}<span class="edit-indicator">✏️</span></span>
+                                        </p>
+                                    </div>
+                                `;
+                            } else {
+                                // In other modes, show static content
+                                const combinedNotes = allNotes.length <= 2 ?
+                                    allNotes :
+                                    [allNotes.slice(0, 2).join(' | ')];
+
+                                return `
+                                    <div style="padding: 12px 32px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
+                                        ${combinedNotes.map(note =>
+                                            `<p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;"><strong style="color: var(--text);">Catatan:</strong> ${note}</p>`
+                                        ).join('')}
+                                    </div>
+                                `;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing compact notes:', e);
+                            return '';
+                        }
+                    })()}
+
+                    <!-- Summary section -->
+                    <div class="summary">
+                        <div class="summary-grid">
+                            <div class="summary-label">Subtotal</div>
+                            <div class="summary-value">${formatCurrency(invoice.calculations.subtotal)}</div>
+
+                            <div class="summary-label">${(() => {
+                                const discountType = invoice.calculations.discountType;
+                                const discountValue = invoice.calculations.discountValue;
+                                if (discountType === 'percentage') {
+                                    return `Diskon (${discountValue}%)`;
+                                } else {
+                                    return 'Diskon (Jumlah Tetap)';
+                                }
+                            })()}</div>
+                            <div class="summary-value">${context === 'preview' ?
+                                `<span class="editable" data-field="calculations.discount" data-type="currency">-${formatCurrency(invoice.calculations.discount || 0)}<span class="edit-indicator">✏️</span></span>` :
+                                `-${formatCurrency(invoice.calculations.discount || 0)}`
+                            }</div>
+
+                            <div class="summary-label">Pajak</div>
+                            <div class="summary-value">${context === 'preview' ?
+                                `<span class="editable" data-field="calculations.totalTax" data-type="currency">${formatCurrency(invoice.calculations.totalTax)}<span class="edit-indicator">✏️</span></span>` :
+                                formatCurrency(invoice.calculations.totalTax)
+                            }</div>
+
+                            <div class="summary-label">Biaya Kirim</div>
+                            <div class="summary-value">${context === 'preview' ?
+                                `<span class="editable" data-field="calculations.shippingCost" data-type="currency">${formatCurrency(invoice.calculations.shippingCost)}<span class="edit-indicator">✏️</span></span>` :
+                                formatCurrency(invoice.calculations.shippingCost)
+                            }</div>
+
+                            <div class="summary-label total-label">TOTAL</div>
+                            <div class="summary-value total-value">${formatCurrency(invoice.calculations.grandTotal)}</div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Schedule section -->
+                    ${(() => {
+                        try {
+                            console.log('🔧 Processing payment schedule - Context:', context);
+                            console.log('🔧 invoice.paymentSchedule:', invoice.paymentSchedule);
+                            console.log('🔧 invoice.payment_schedule_json:', invoice.payment_schedule_json);
+
+                            // Handle both direct object (preview) and JSON string (database) formats
+                            let paymentSchedule = null;
+                            if (invoice.paymentSchedule) {
+                                // Direct object format (preview mode)
+                                paymentSchedule = invoice.paymentSchedule;
+                                console.log('✅ Using direct paymentSchedule object:', paymentSchedule);
+                            } else if (invoice.payment_schedule_json) {
+                                // JSON string format (database/view mode)
+                                paymentSchedule = typeof invoice.payment_schedule_json === 'string'
+                                    ? JSON.parse(invoice.payment_schedule_json)
+                                    : invoice.payment_schedule_json;
+                                console.log('✅ Parsed payment_schedule_json:', paymentSchedule);
+                            } else {
+                                console.log('❌ No payment schedule data found');
+                            }
+
+                            if (paymentSchedule && paymentSchedule.scheduleType === 'down_payment') {
+                                return `
+                    <div class="payment-schedule-section" style="padding: 40px 32px; border-top: 1px solid var(--border); background: var(--bg);">
+                        <h3 style="color: var(--text); font-size: 16px; font-weight: 600; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Jadwal Pembayaran
+                        </h3>
+                        <div class="payment-schedule-table" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+                            <div style="background: var(--bg-light); padding: 18px 20px; border-bottom: 2px solid var(--border); display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; font-weight: 700; font-size: 13px; color: var(--text); text-transform: uppercase; letter-spacing: 0.8px;">
+                                <div>Jenis Pembayaran</div>
+                                <div style="text-align: center;">Jatuh Tempo</div>
+                                <div style="text-align: right;">Jumlah</div>
+                            </div>
+                            ${(() => {
+                                // Show complete payment schedule with both phases
+                                const finalAmount = invoice.final_payment_amount || paymentSchedule.remainingBalance.amount;
+                                const currentStage = invoice.payment_stage || 'down_payment';
+
+                                // Determine status indicators
+                                const getStatusIndicator = (phase) => {
+                                    if (currentStage === 'completed' || (currentStage === 'final_payment' && phase === 'down_payment')) {
+                                        return '✅'; // Completed
+                                    } else if (currentStage === phase) {
+                                        return '⏳'; // Current/Pending
+                                    } else {
+                                        return '🔒'; // Future/Locked
+                                    }
+                                };
+
+                                const getPhaseStyle = (phase) => {
+                                    const baseStyle = "padding: 20px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: center;";
+
+                                    if (currentStage === phase) {
+                                        return baseStyle + " background: rgba(139, 95, 255, 0.05); border-left: 4px solid #8B5FFF;";
+                                    } else if (currentStage === 'completed' || (currentStage === 'final_payment' && phase === 'down_payment')) {
+                                        return baseStyle + " opacity: 0.7; background: rgba(72, 187, 120, 0.05);";
+                                    } else {
+                                        return baseStyle + " opacity: 0.6;";
+                                    }
+                                };
+
+                                return `
+                                    <!-- Down Payment Row -->
+                                    <div style="${getPhaseStyle('down_payment')}">
+                                        <div style="font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                                            <span style="font-size: 16px;">${getStatusIndicator('down_payment')}</span>
+                                            ${(() => {
+                                                const dp = paymentSchedule.downPayment;
+                                                if (dp.type === 'fixed') {
+                                                    return 'Uang Muka (Jumlah Tetap)';
+                                                } else {
+                                                    return `Uang Muka (${dp.percentage}%)`;
+                                                }
+                                            })()}
+                                        </div>
+                                        <div style="text-align: center; color: var(--text-light); font-size: 15px;">${context === 'preview' ?
+                                            `<span class="editable" data-field="paymentSchedule.downPayment.dueDate" data-type="date">${formatDate(paymentSchedule.downPayment.dueDate)}<span class="edit-indicator">✏️</span></span>` :
+                                            formatDate(paymentSchedule.downPayment.dueDate)
+                                        }</div>
+                                        <div style="text-align: right; font-weight: 600; font-size: 16px; color: var(--text);">${context === 'preview' ?
+                                            `<span class="editable" data-field="paymentSchedule.downPayment.amount" data-type="currency">${formatCurrency(paymentSchedule.downPayment.amount)}<span class="edit-indicator">✏️</span></span>` :
+                                            formatCurrency(paymentSchedule.downPayment.amount)
+                                        }</div>
+                                    </div>
+                                    <!-- Remaining Payment Row -->
+                                    <div style="${getPhaseStyle('final_payment')}">
+                                        <div style="font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                                            <span style="font-size: 16px;">${getStatusIndicator('final_payment')}</span>
+                                            Sisa Pembayaran
+                                        </div>
+                                        <div style="text-align: center; color: var(--text-light); font-size: 15px;">${context === 'preview' ?
+                                            `<span class="editable" data-field="paymentSchedule.remainingBalance.dueDate" data-type="date">${formatDate(paymentSchedule.remainingBalance.dueDate)}<span class="edit-indicator">✏️</span></span>` :
+                                            formatDate(paymentSchedule.remainingBalance.dueDate)
+                                        }</div>
+                                        <div style="text-align: right; font-weight: 600; font-size: 16px; color: var(--text);">${context === 'preview' ?
+                                            `<span class="editable" data-field="final_payment_amount" data-type="currency">${formatCurrency(finalAmount)}<span class="edit-indicator">✏️</span></span>` :
+                                            formatCurrency(finalAmount)
+                                        }</div>
+                                    </div>
+                                `;
+                            })()}
+                        </div>
+                    </div>
+                    `;
+                            }
+                            return '';
+                        } catch (e) {
+                            console.error('Error parsing payment schedule:', e);
+                            return '';
+                        }
+                    })()}
+
+
+                    <!-- Dynamic Premium/Aspree Footer -->
+                    ${!hideAspreeBranding ? `
+                        <div class="footer-band" style="background: linear-gradient(135deg, ${customFooterBgColor}, ${customFooterBgColor}aa); color: ${customFooterTextColor}; padding: 20px; margin-bottom: 0;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
+                                <div class="footer-section">
+                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
+                                    <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessTerms}</p>
+                                </div>
+                                <div class="footer-section">
+                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
+                                    <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
+                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                            <span style="opacity: 0.7;">📞</span>
+                                            ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
+                                        </li>
+                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                            <span style="opacity: 0.7;">📧</span>
+                                            ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
+                                        </li>
+                                        ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${businessProfile.website}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${invoice.merchant_website}</li>` : ''}
+                                    </ul>
+                                </div>
+                                <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 0; margin-bottom: -30px;">
+                                    ${customFooterLogo ?
+                                        `<img src="${customFooterLogo}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9; object-fit: contain;">` :
+                                        `<img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">`
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            // Return appropriate format based on context
+            if (context === 'print') {
+                return `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Faktur - ${invoice.header.invoiceNumber}</title>
+                        <style>${getContextStyles(context)}</style>
+                    </head>
+                    <body>
+                        ${cleanHTML}
+                    </body>
+                    </html>
+                `;
+            } else {
+                return {
+                    html: cleanHTML,
+                    css: getContextStyles(context)
+                };
+            }
+        }
+        // Update logo in the template after async loading
+        function updateLogoInTemplate(logoUrl) {
                     
                     // Format currency
                     const formatted = new Intl.NumberFormat('id-ID', {
