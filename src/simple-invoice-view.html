@@ -1145,7 +1145,7 @@
         }
     </style>
     <!-- Mobile-friendly notifications -->
-    <script src="/mobile-notifications.js"></script>
+    <script src="/mobile-notifications.js?v=1.1"></script>
 </head>
 <body>
     <div class="container" id="main-container">
@@ -2235,7 +2235,7 @@
             console.log('🎯 Final items count:', items.length);
             items.forEach((item, i) => console.log(`🎯 Item ${i}:`, item.productName, 'x', item.quantity, '@', item.unitPrice));
             
-            const cleanHTML = `
+            const compactHTML = `
                 <div class="paper-wrapper">
                     <div class="paper">
                     <!-- Header band -->
@@ -2649,7 +2649,7 @@
                 </div>
             `;
             
-            return cleanHTML;
+            return compactHTML;
         }
 
         // Update logo in the template after async loading
