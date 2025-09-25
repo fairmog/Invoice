@@ -4030,7 +4030,25 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
       // Add items array for template compatibility
       items: Array.isArray(invoice.items_json)
         ? invoice.items_json
-        : JSON.parse(invoice.items_json || '[]')
+        : JSON.parse(invoice.items_json || '[]'),
+
+      // Add calculations object for template compatibility
+      calculations: (() => {
+        if (invoice.calculations_json) {
+          return typeof invoice.calculations_json === 'string'
+            ? JSON.parse(invoice.calculations_json)
+            : invoice.calculations_json;
+        }
+        // Fallback to flat fields
+        return {
+          subtotal: invoice.subtotal || 0,
+          totalTax: invoice.tax_amount || 0,
+          grandTotal: invoice.grand_total || 0,
+          discount: invoice.discount_amount || 0,
+          shippingCost: invoice.shipping_cost || 0,
+          discountType: 'fixed'
+        };
+      })()
     };
 
     console.log('📄 Enhanced invoice data for consistent display:', {
@@ -4040,7 +4058,9 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
       hasCustomerObject: !!enhancedInvoice.customer,
       customerName: enhancedInvoice.customer?.name,
       hasItemsArray: !!enhancedInvoice.items,
-      itemCount: enhancedInvoice.items?.length || 0
+      itemCount: enhancedInvoice.items?.length || 0,
+      hasCalculationsObject: !!enhancedInvoice.calculations,
+      subtotal: enhancedInvoice.calculations?.subtotal || 0
     });
     
     res.json({
@@ -4266,7 +4286,25 @@ app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMercha
       // Add items array for template compatibility
       items: Array.isArray(invoice.items_json)
         ? invoice.items_json
-        : JSON.parse(invoice.items_json || '[]')
+        : JSON.parse(invoice.items_json || '[]'),
+
+      // Add calculations object for template compatibility
+      calculations: (() => {
+        if (invoice.calculations_json) {
+          return typeof invoice.calculations_json === 'string'
+            ? JSON.parse(invoice.calculations_json)
+            : invoice.calculations_json;
+        }
+        // Fallback to flat fields
+        return {
+          subtotal: invoice.subtotal || 0,
+          totalTax: invoice.tax_amount || 0,
+          grandTotal: invoice.grand_total || 0,
+          discount: invoice.discount_amount || 0,
+          shippingCost: invoice.shipping_cost || 0,
+          discountType: 'fixed'
+        };
+      })()
     };
 
     res.json({
