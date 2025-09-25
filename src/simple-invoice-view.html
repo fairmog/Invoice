@@ -3289,8 +3289,10 @@
             try {
                 const invoiceHTML = generateUnifiedInvoiceTemplate(invoice, 'view');
                 const paymentHTML = generatePaymentSection(invoice);
-                
-                const combinedHTML = `${invoiceHTML}${paymentHTML}`;
+
+                // Handle both string and object return types from generateUnifiedInvoiceTemplate
+                const htmlContent = typeof invoiceHTML === 'object' ? invoiceHTML.html : invoiceHTML;
+                const combinedHTML = `${htmlContent}${paymentHTML}`;
                 document.getElementById('invoice-container').innerHTML = combinedHTML;
                 document.getElementById('invoice-container').style.display = 'block';
             } catch (templateError) {
