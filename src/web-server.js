@@ -4669,7 +4669,20 @@ app.get('/api/customer/invoice/:token', async (req, res) => {
         taxEnabled: currentBusinessSettings.taxEnabled || false,
         taxRate: currentBusinessSettings.taxRate || 0,
         termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
-      }
+      },
+
+      // Add customer object structure for template compatibility (same as /api/invoices/:id)
+      customer: {
+        name: String(invoice.customer_name || ''),
+        address: String(invoice.customer_address || ''),
+        phone: String(invoice.customer_phone || ''),
+        email: String(invoice.customer_email || '')
+      },
+
+      // Add items array for template compatibility
+      items: Array.isArray(invoice.items_json)
+        ? invoice.items_json
+        : JSON.parse(invoice.items_json || '[]')
     };
     
     console.log('📄 Enhanced customer invoice data for consistent display:', {
