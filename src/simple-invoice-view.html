@@ -1242,6 +1242,18 @@
                 customFooterBgColor
             });
 
+            // Normalize customer data to ensure consistent structure
+            // Handle both flat structure (customer_name) and object structure (customer.name)
+            if (!invoice.customer || typeof invoice.customer !== 'object' || !invoice.customer.name) {
+                invoice.customer = {
+                    name: invoice.customer_name || (invoice.customer && typeof invoice.customer === 'string' ? invoice.customer : '') || '',
+                    address: invoice.customer_address || '',
+                    phone: invoice.customer_phone || '',
+                    email: invoice.customer_email || ''
+                };
+                console.log('🔧 Normalized customer data:', invoice.customer);
+            }
+
             // Category-based titles (consistent across all contexts)
             const getCategoryTitle = (category) => {
                 const categoryTitles = {
