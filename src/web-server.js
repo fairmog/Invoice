@@ -4021,10 +4021,10 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
 
       // Add customer object structure for template compatibility
       customer: {
-        name: invoice.customer_name,
-        address: invoice.customer_address,
-        phone: invoice.customer_phone,
-        email: invoice.customer_email
+        name: String(invoice.customer_name || ''),
+        address: String(invoice.customer_address || ''),
+        phone: String(invoice.customer_phone || ''),
+        email: String(invoice.customer_email || '')
       },
 
       // Add items array for template compatibility
@@ -4033,20 +4033,35 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
         : JSON.parse(invoice.items_json || '[]'),
 
       // Add calculations object for template compatibility
-      calculations: (() => {
+calculations: (() => {
+        let calc;
         if (invoice.calculations_json) {
-          return typeof invoice.calculations_json === 'string'
+          calc = typeof invoice.calculations_json === 'string'
             ? JSON.parse(invoice.calculations_json)
             : invoice.calculations_json;
+        } else {
+          // Fallback to flat fields
+          calc = {
+            subtotal: invoice.subtotal || 0,
+            totalTax: invoice.tax_amount || 0,
+            grandTotal: invoice.grand_total || 0,
+            discount: invoice.discount_amount || 0,
+            shippingCost: invoice.shipping_cost || 0,
+            discountType: 'fixed'
+          };
         }
-        // Fallback to flat fields
+
+        // Sanitize all values to ensure they are primitives
         return {
-          subtotal: invoice.subtotal || 0,
-          totalTax: invoice.tax_amount || 0,
-          grandTotal: invoice.grand_total || 0,
-          discount: invoice.discount_amount || 0,
-          shippingCost: invoice.shipping_cost || 0,
-          discountType: 'fixed'
+          subtotal: Number(calc.subtotal) || 0,
+          totalTax: Number(calc.totalTax || calc.tax_amount || calc.taxAmount) || 0,
+          grandTotal: Number(calc.grandTotal || calc.grand_total) || 0,
+          discount: Number(calc.discount || calc.discount_amount) || 0,
+          shippingCost: Number(calc.shippingCost || calc.shipping_cost) || 0,
+          discountType: String(calc.discountType || 'fixed'),
+          taxRate: Number(calc.taxRate || calc.tax_rate) || 0,
+          taxEnabled: Boolean(calc.taxEnabled || calc.tax_enabled),
+          currency: String(calc.currency || 'IDR')
         };
       })()
     };
@@ -4277,10 +4292,10 @@ app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMercha
 
       // Add customer object structure for template compatibility
       customer: {
-        name: invoice.customer_name,
-        address: invoice.customer_address,
-        phone: invoice.customer_phone,
-        email: invoice.customer_email
+        name: String(invoice.customer_name || ''),
+        address: String(invoice.customer_address || ''),
+        phone: String(invoice.customer_phone || ''),
+        email: String(invoice.customer_email || '')
       },
 
       // Add items array for template compatibility
@@ -4289,20 +4304,35 @@ app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMercha
         : JSON.parse(invoice.items_json || '[]'),
 
       // Add calculations object for template compatibility
-      calculations: (() => {
+calculations: (() => {
+        let calc;
         if (invoice.calculations_json) {
-          return typeof invoice.calculations_json === 'string'
+          calc = typeof invoice.calculations_json === 'string'
             ? JSON.parse(invoice.calculations_json)
             : invoice.calculations_json;
+        } else {
+          // Fallback to flat fields
+          calc = {
+            subtotal: invoice.subtotal || 0,
+            totalTax: invoice.tax_amount || 0,
+            grandTotal: invoice.grand_total || 0,
+            discount: invoice.discount_amount || 0,
+            shippingCost: invoice.shipping_cost || 0,
+            discountType: 'fixed'
+          };
         }
-        // Fallback to flat fields
+
+        // Sanitize all values to ensure they are primitives
         return {
-          subtotal: invoice.subtotal || 0,
-          totalTax: invoice.tax_amount || 0,
-          grandTotal: invoice.grand_total || 0,
-          discount: invoice.discount_amount || 0,
-          shippingCost: invoice.shipping_cost || 0,
-          discountType: 'fixed'
+          subtotal: Number(calc.subtotal) || 0,
+          totalTax: Number(calc.totalTax || calc.tax_amount || calc.taxAmount) || 0,
+          grandTotal: Number(calc.grandTotal || calc.grand_total) || 0,
+          discount: Number(calc.discount || calc.discount_amount) || 0,
+          shippingCost: Number(calc.shippingCost || calc.shipping_cost) || 0,
+          discountType: String(calc.discountType || 'fixed'),
+          taxRate: Number(calc.taxRate || calc.tax_rate) || 0,
+          taxEnabled: Boolean(calc.taxEnabled || calc.tax_enabled),
+          currency: String(calc.currency || 'IDR')
         };
       })()
     };
