@@ -1,3876 +1,7427 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
-    <title>Invoice View</title>
-    <style>
-        /* Clean Professional CSS Variables */
-        :root {
-            --text: #2D3748;
-            --text-light: #718096;
-            --border: #E2E8F0;
-            --bg: #FFFFFF;
-            --bg-light: #F7FAFC;
-            --success: #48BB78;
-            --error: #F56565;
-            --info: #4299E1;
-            --warning: #ED8936;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            font-size: 16px;
-            line-height: 1.5;
-            color: var(--text);
-            background: white;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .paper-wrapper {
-            width: fit-content;
-            margin: 0 auto;
-            transform-origin: top center;
-            transform: scale(var(--mobile-scale-factor, 1));
-            transition: transform 0.3s ease;
-        }
-        
-        .paper {
-            width: 210mm; /* A4 width */
-            min-height: 297mm; /* A4 height */
-            max-width: none;
-            margin: 0;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            padding: 0;
-            position: relative;
-            margin-bottom: 20px;
-        }
-        
-        .inv-header {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            padding: 24px 32px 16px 32px;
-            background: var(--bg);
-            border-bottom: 2px solid var(--border);
-            align-items: start;
-            border-radius: 8px 8px 0 0;
-        }
-        
-        .logo-section {
-            text-align: left;
-        }
-        
-        .logo-section img {
-            max-height: 120px;
-            max-width: 300px;
-            object-fit: contain;
-            display: block;
-            margin-bottom: 6px;
-        }
-        
-        .logo-section strong {
-            display: block;
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--text);
-            margin-top: 4px;
-            line-height: 1.1;
-        }
-        
-        .invoice-meta {
-            text-align: right;
-        }
-        
-        .invoice-title {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--text);
-            margin: 0 0 20px 0;
-            letter-spacing: 0.5px;
-        }
-        
-        .invoice-details {
-            font-size: 15px;
-            color: var(--text-light);
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-        
-        .invoice-details strong {
-            color: var(--text);
-            font-weight: 600;
-            min-width: 100px;
-            display: inline-block;
-        }
-        
-        .parties {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            padding: 20px 32px;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg);
-            border-radius: 8px;
-            margin: 0 12px;
-        }
-        
-        .party-section h3 {
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-            color: var(--text);
-            margin: 0 0 16px 0;
-        }
-        
-        .party-section address {
-            font-style: normal;
-            font-size: 15px;
-            line-height: 1.5;
-            color: var(--text-light);
-        }
-        
-        .party-section strong {
-            color: var(--text);
-            font-weight: 600;
-            font-size: 16px;
-            display: block;
-            margin-bottom: 3px;
-        }
-        
-        .items-section {
-            padding: 20px 32px;
-        }
-        
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .items-table thead th {
-            background: var(--bg-light);
-            border-bottom: 2px solid var(--border);
-            padding: 18px 20px;
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text);
-            text-align: left;
-        }
-        
-        .items-table th:last-child,
-        .items-table th.text-right { text-align: right; }
-        .items-table th.text-center { text-align: center; }
-        
-        .items-table tbody td {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
-            font-size: 15px;
-            color: var(--text);
-        }
-        
-        .items-table tbody tr:nth-child(even) {
-            background: rgba(247, 250, 252, 0.5);
-        }
-        
-        .items-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .items-table .text-right { text-align: right; font-weight: 600; }
-        .items-table .text-center { text-align: center; }
-        
-        .product-name {
-            font-weight: 500;
-            color: var(--text);
-            margin: 0;
-        }
-        
-        .product-description {
-            color: var(--text-light);
-            font-size: 13px;
-            margin: 2px 0 0 0;
-        }
-        
-        .summary {
-            padding: 20px 32px;
-            border-top: 1px solid var(--border);
-            background: var(--bg);
-        }
-        
-        .summary-grid {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 12px 40px;
-            max-width: 320px;
-            margin-left: auto;
-        }
-        
-        .summary-label {
-            color: var(--text-light);
-            font-size: 14px;
-        }
-        
-        .summary-value {
-            color: var(--text);
-            font-size: 15px;
-            font-weight: 600;
-            text-align: right;
-        }
-        
-        .total-label {
-            color: var(--text) !important;
-            font-weight: 700 !important;
-            font-size: 16px !important;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding-top: 12px;
-            border-top: 2px solid var(--text);
-            margin-top: 8px;
-        }
-        
-        .total-value {
-            color: var(--text) !important;
-            font-weight: 800 !important;
-            font-size: 20px !important;
-            padding-top: 12px;
-            border-top: 2px solid var(--text);
-            margin-top: 8px;
-        }
-        
-        .payment-stage-note {
-            font-size: 12px;
-            color: var(--warning);
-            font-weight: 600;
-            margin-top: 4px;
-            margin-top: 8px;
-            text-align: right;
-        }
+// @ts-nocheck
+/* eslint-disable */
+import dotenv from 'dotenv';
+dotenv.config();
 
-        /* Payment section styling (separate from invoice) */
-        .payment-section {
-            background: var(--bg-light);
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            padding: 25px;
-            margin-top: 20px;
-            text-align: center;
-        }
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import cors from 'cors';
+import https from 'https';
+import http from 'http';
+import compression from 'compression';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import fetch from 'node-fetch';
+import multer from 'multer';
+import config from '../config/config.js';
+import SSLManager from './ssl-manager.js';
+import WhatsAppInvoiceGenerator from './whatsapp-invoice-generator.js';
+// PDF Generator removed - using Print functionality instead
+import SupabaseDatabase from './supabase-database.js';
+import CloudinaryService from './cloudinary-service.js';
+import XenditService from './xendit-service.js';
 
-        .payment-section h3 {
-            color: var(--text);
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
+import SimpleEmailService from './simple-email-service.js';
+import AIAutoLearning from './ai-auto-learning.js';
+import AuthService from './auth/auth-service.js';
+import authMiddleware from './middleware/auth-middleware.js';
+// Removed business guidelines import - using simplified single format
 
-        .payment-methods {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-        .payment-method {
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            padding: 15px 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 600;
-        }
+const app = express();
+const PORT = config.server.port;
 
-        .payment-method:hover {
-            border-color: var(--text);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
+// Trust proxy for Render deployment (fixes X-Forwarded-For header issues)
+app.set('trust proxy', 1);
 
-        .payment-method.active {
-            border-color: var(--text);
-            background: var(--bg-light);
-            color: var(--text);
-            font-weight: 600;
-        }
+// Performance optimization: In-memory cache for frequently accessed data
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-        .payment-method span {
-            font-size: 1.8rem;
-        }
+// Cache helper functions
+const getCacheKey = (prefix, ...args) => `${prefix}:${args.join(':')}`;
 
-        .pay-btn {
-            background: var(--text);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            min-width: 200px;
-        }
+const getFromCache = (key) => {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    performanceMetrics.cacheStats.hits++;
+    return cached.data;
+  }
+  cache.delete(key);
+  performanceMetrics.cacheStats.misses++;
+  return null;
+};
 
-        .pay-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
+const setCache = (key, data) => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+  
+  // Cleanup old cache entries every 100 sets
+  if (cache.size % 100 === 0) {
+    const now = Date.now();
+    for (const [key, value] of cache.entries()) {
+      if (now - value.timestamp > CACHE_TTL) {
+        cache.delete(key);
+      }
+    }
+  }
+};
 
-        .pay-btn:disabled {
-            background: var(--text-light);
-            cursor: not-allowed;
-            transform: none;
-        }
+// Performance optimization: Async queue for heavy operations
+const heavyOperationQueue = [];
+let isProcessingQueue = false;
 
-        .paid-notice {
-            background: rgba(72, 187, 120, 0.1);
-            border: 2px solid var(--success);
-            color: var(--success);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            font-weight: 600;
-            margin-top: 20px;
-        }
+const processHeavyOperations = async () => {
+  if (isProcessingQueue || heavyOperationQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  while (heavyOperationQueue.length > 0) {
+    const operation = heavyOperationQueue.shift();
+    try {
+      await operation();
+    } catch (error) {
+      console.error('Heavy operation failed:', error);
+    }
+  }
+  
+  isProcessingQueue = false;
+};
 
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 200px;
-            font-size: 1.2rem;
-            color: var(--text-light);
-        }
+// Schedule heavy operations processing
+setInterval(processHeavyOperations, 1000);
 
-        .error {
-            background: rgba(245, 101, 101, 0.1);
-            border: 2px solid var(--error);
-            color: var(--error);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            font-weight: 600;
-            margin: 20px 0;
-        }
+// Performance metrics tracking
+const performanceMetrics = {
+  requests: {
+    total: 0,
+    successful: 0,
+    failed: 0,
+    slow: 0 // requests over 200ms
+  },
+  averageResponseTime: 0,
+  responseTimeHistory: [],
+  cacheHitRate: 0,
+  cacheStats: {
+    hits: 0,
+    misses: 0
+  }
+};
 
-        .payment-status {
-            margin: 15px 0;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-align: center;
-        }
+// Update performance metrics
+const updatePerformanceMetrics = (duration, successful = true) => {
+  performanceMetrics.requests.total++;
+  
+  if (successful) {
+    performanceMetrics.requests.successful++;
+  } else {
+    performanceMetrics.requests.failed++;
+  }
+  
+  if (duration > 200) {
+    performanceMetrics.requests.slow++;
+  }
+  
+  // Keep only last 100 response times for rolling average
+  performanceMetrics.responseTimeHistory.push(duration);
+  if (performanceMetrics.responseTimeHistory.length > 100) {
+    performanceMetrics.responseTimeHistory.shift();
+  }
+  
+  // Calculate average response time
+  const sum = performanceMetrics.responseTimeHistory.reduce((a, b) => a + b, 0);
+  performanceMetrics.averageResponseTime = Math.round(sum / performanceMetrics.responseTimeHistory.length);
+  
+  // Calculate cache hit rate
+  const totalCacheRequests = performanceMetrics.cacheStats.hits + performanceMetrics.cacheStats.misses;
+  if (totalCacheRequests > 0) {
+    performanceMetrics.cacheHitRate = Math.round((performanceMetrics.cacheStats.hits / totalCacheRequests) * 100);
+  }
+};
 
-        .payment-status.success {
-            background: rgba(72, 187, 120, 0.1);
-            border: 2px solid var(--success);
-            color: var(--success);
-        }
+// Performance monitoring middleware
+const performanceMonitor = (req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const route = req.route ? req.route.path : req.path;
+    const successful = res.statusCode < 400;
+    
+    // Update performance metrics
+    if (req.path.startsWith('/api/')) {
+      updatePerformanceMetrics(duration, successful);
+    }
+    
+    // Log slow requests (over 200ms for API endpoints)
+    if (duration > 200 && req.path.startsWith('/api/')) {
+      console.warn(`⚠️  Slow API request: ${req.method} ${route} - ${duration}ms`);
+    }
+    
+    // Log very slow requests (over 2 seconds for PDF generation)
+    if (duration > 2000 && req.path.includes('pdf')) {
+      console.warn(`⚠️  Very slow PDF generation: ${req.method} ${route} - ${duration}ms`);
+    }
+  });
+  
+  next();
+};
 
-        .payment-status.error {
-            background: rgba(245, 101, 101, 0.1);
-            border: 2px solid var(--error);
-            color: var(--error);
-        }
+// Initialize services: database, cloudinary, auth, and other services
+const database = new SupabaseDatabase();
+const cloudinaryService = new CloudinaryService();
+const generator = new WhatsAppInvoiceGenerator();
+const emailService = new SimpleEmailService();
+// PDF Generator removed - using Print functionality instead  
+const authService = new AuthService(database, emailService);
+const xenditService = new XenditService();
 
-        .payment-status.processing {
-            background: rgba(66, 153, 225, 0.1);
-            border: 2px solid var(--info);
-            color: var(--info);
-        }
+// Function to get current business settings
+async function getCurrentBusinessSettings(merchantId = null) {
+  try {
+    console.log('🔍 getCurrentBusinessSettings called for merchantId:', merchantId);
+    const dbSettings = await database.getBusinessSettings(merchantId) || {};
+    console.log('🔍 Raw dbSettings from database:', dbSettings);
+    
+    // FIXED: Prioritize merchant-specific database settings over environment variables
+    // Environment variables should only be used as fallbacks when no merchant data exists
+    return {
+      name: dbSettings.name || process.env.MERCHANT_NAME || config.merchant.businessName,
+      email: dbSettings.email || process.env.MERCHANT_EMAIL || config.merchant.email,
+      address: dbSettings.address || process.env.MERCHANT_ADDRESS || config.merchant.address,
+      phone: dbSettings.phone || process.env.MERCHANT_PHONE || config.merchant.phone,
+      website: dbSettings.website || process.env.MERCHANT_WEBSITE || config.merchant.website,
+      taxId: dbSettings.taxId || process.env.MERCHANT_TAX_ID || config.merchant.taxId,
+      taxEnabled: dbSettings.taxEnabled !== undefined ? dbSettings.taxEnabled : (process.env.MERCHANT_TAX_ENABLED === 'true' || config.merchant.taxEnabled || false),
+      taxRate: dbSettings.taxRate !== undefined ? dbSettings.taxRate : (parseFloat(process.env.MERCHANT_TAX_RATE) || config.merchant.taxRate || 0),
+      taxName: dbSettings.taxName || process.env.MERCHANT_TAX_NAME || config.merchant.taxName || 'PPN',
+      taxDescription: dbSettings.taxDescription || process.env.MERCHANT_TAX_DESCRIPTION || config.merchant.taxDescription || '',
+      logoUrl: dbSettings.logoUrl || null,
+      logoFilename: dbSettings.logoFilename || null,
+      hideBusinessName: dbSettings.hideBusinessName || false,
+      termsAndConditions: dbSettings.termsAndConditions || ''
+    };
+  } catch (error) {
+    console.error('Error getting business settings:', error);
+    // Fallback to config values if database fails
+    return {
+      name: process.env.MERCHANT_NAME || config.merchant.businessName,
+      email: process.env.MERCHANT_EMAIL || config.merchant.email,
+      address: process.env.MERCHANT_ADDRESS || config.merchant.address,
+      phone: process.env.MERCHANT_PHONE || config.merchant.phone,
+      website: process.env.MERCHANT_WEBSITE || config.merchant.website,
+      taxId: process.env.MERCHANT_TAX_ID || config.merchant.taxId,
+      taxEnabled: process.env.MERCHANT_TAX_ENABLED === 'true' || config.merchant.taxEnabled || false,
+      taxRate: parseFloat(process.env.MERCHANT_TAX_RATE) || config.merchant.taxRate || 0,
+      taxName: process.env.MERCHANT_TAX_NAME || config.merchant.taxName || 'PPN',
+      taxDescription: process.env.MERCHANT_TAX_DESCRIPTION || config.merchant.taxDescription || '',
+      logoUrl: null,
+      logoFilename: null,
+      hideBusinessName: false,
+      termsAndConditions: ''
+    };
+  }
+}
+const sslManager = new SSLManager();
+const aiAutoLearning = new AIAutoLearning(database);
 
-        /* Print styles - maintain exact screen appearance */
-        @media print {
-            @page {
-                margin: 10mm;
-                size: A4 portrait;
-            }
-            
-            /* Remove grid lines and ensure clean print */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                box-shadow: none !important;
-            }
-            
-            /* Clean white backgrounds for most elements */
-            body, .container, .paper, .parties, .summary {
-                background: white !important;
-                border: none !important;
-            }
-            
-            /* Preserve footer band styling */
-            .footer-band {
-                background: #311d6b !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            .footer-band h4, .footer-band p, .footer-band ul, .footer-band li {
-                color: white !important;
-            }
-            
-            /* Preserve essential borders for table structure */
-            .items-table, .items-table th, .items-table td {
-                border: 1px solid #e2e8f0 !important;
-            }
-            
-            /* Ensure single page layout */
-            .paper {
-                page-break-inside: avoid !important;
-                height: auto !important;
-                min-height: auto !important;
-                max-height: none !important;
-            }
-            
-            /* Prevent unnecessary page breaks */
-            .parties, .items-section, .summary, .footer-band {
-                page-break-inside: avoid !important;
-            }
-            
-            /* Compact print layout */
-            .container {
-                max-width: none !important;
-                padding: 0 !important;
-            }
-            
-            .paper-wrapper {
-                transform: none !important;
-            }
-            
-            /* Keep all original styling intact */
-            body {
-                background: white !important;
-                padding: 20px !important;
-                font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
-                font-size: 16px !important;
-                line-height: 1.5 !important;
-                color: var(--text) !important;
-            }
-            
-            /* Keep original paper styling */
-            .paper {
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-                border-radius: 12px !important;
-                background: white !important;
-                margin: 0 auto !important;
-                max-width: 800px !important;
-                page-break-inside: avoid !important;
-                overflow: visible !important;
-            }
-            
-            /* Hide only management actions, keep everything else */
-            .payment-section {
-                display: block !important;
-            }
-            
-            .paid-notice {
-                display: block !important;
-            }
-            
-            /* Keep all gradients and colors */
-            .footer-band {
-                background: #311d6b !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            /* Ensure all colors print exactly */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            /* Hide all price/money related elements */
-            .summary-section,
-            .summary-label,
-            .summary-value,
-            .total-label,
-            .total-value,
-            .payment-section {
-                display: none !important;
-            }
-            
-            /* Hide price columns in invoice table */
-            th:contains("Harga Satuan"),
-            th:contains("Total"),
-            th:nth-child(4), /* Harga Satuan column */
-            th:nth-child(5), /* Total column */
-            td:nth-child(4), /* Harga Satuan data */
-            td:nth-child(5)  /* Total data */ {
-                display: none !important;
-            }
-            
-            /* Hide specific price table headers and cells */
-            .invoice-table th:nth-child(4),
-            .invoice-table th:nth-child(5),
-            .invoice-table td:nth-child(4),
-            .invoice-table td:nth-child(5) {
-                display: none !important;
-            }
+// Merchant configuration (Indonesian market)
+const merchantConfig = {
+  businessName: config.merchant.businessName,
+  address: config.merchant.address,
+  phone: config.merchant.phone,
+  email: config.merchant.email,
+  website: config.merchant.website,
+  taxId: config.merchant.taxId,
+  paymentTerms: "NET_30",
+  catalog: [
+    {
+      id: "prod_001",
+      name: "iPhone 15 Pro",
+      description: "Latest iPhone with Pro features",
+      sku: "IPHONE15PRO",
+      category: "Smartphones",
+      price: 16500000,
+      tags: ["apple", "iphone", "smartphone", "mobile"]
+    },
+    {
+      id: "prod_002",
+      name: "Samsung Galaxy S24",
+      description: "Premium Android smartphone",
+      sku: "GALAXYS24",
+      category: "Smartphones", 
+      price: 14800000,
+      tags: ["samsung", "galaxy", "android", "smartphone"]
+    },
+    {
+      id: "prod_003",
+      name: "AirPods Pro",
+      description: "Wireless earbuds with noise cancellation",
+      sku: "AIRPODSPRO",
+      category: "Audio",
+      price: 4100000,
+      tags: ["apple", "airpods", "wireless", "earbuds"]
+    },
+    {
+      id: "prod_004",
+      name: "MacBook Pro 14",
+      description: "Professional laptop with M3 chip",
+      sku: "MBP14M3",
+      category: "Laptops",
+      price: 33000000,
+      tags: ["apple", "macbook", "laptop", "m3"]
+    },
+    {
+      id: "prod_005",
+      name: "Phone Case",
+      description: "Protective phone case",
+      sku: "PHONECASE",
+      category: "Accessories",
+      price: 500000,
+      tags: ["case", "protection", "accessory"]
+    },
+    {
+      id: "prod_006",
+      name: "Wireless Charger",
+      description: "Fast wireless charging pad",
+      sku: "WIRELESSCHARGER",
+      category: "Accessories",
+      price: 825000,
+      tags: ["wireless", "charger", "accessory"]
+    }
+  ]
+};
 
-            .footer-section img {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                display: block !important;
-            }
+// Performance optimization middleware
+app.use(compression()); // Gzip compression for responses
 
-            /* Header band print styles */
-            .paper > div:first-child {
-                background: #311d6b !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
+// Security headers - Temporarily disabled for development debugging
+// TODO: Re-enable with proper CSP configuration for production
+if (!config.isDevelopment) {
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, etc.)
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+  }));
+}
 
-            /* Ensure all purple elements print with colors */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            /* Force single page printing */
-            html, body {
-                height: auto !important;
-                overflow: visible !important;
-            }
-            
-            /* Reduce font sizes slightly for print to fit more content */
-            .paper {
-                font-size: 13px !important;
-            }
-            
-            /* Compact payment schedule section */
-            .payment-schedule-section {
-                margin: 10px 0 !important;
-                padding: 15px !important;
-            }
-            
-            /* Ensure footer doesn't create page break */
-            .footer-band {
-                page-break-inside: avoid !important;
-                margin-top: 10px !important;
-            }
-        }
+app.use(performanceMonitor); // Performance monitoring
 
-        /* Mobile responsive - Smart A4 Scaling */
-        @media (max-width: 768px) {
-            body {
-                padding: 8px;
-                font-size: 14px;
-                line-height: 1.4;
-            }
-            
-            .container {
-                padding: 8px;
-                overflow-x: auto;
-                overflow-y: visible;
-                position: relative;
-                width: 100%;
-                min-height: 100vh;
-            }
-            
-            .paper-wrapper {
-                /* Smart scaling - maintains A4 aspect ratio with better readability */
-                transform: scale(var(--mobile-scale-factor, 0.6));
-                transform-origin: top center;
-            }
-            
-            .paper {
-                /* Keep A4 dimensions - no cramping */
-                width: 210mm;
-                min-height: 297mm;
-                border: 1px solid var(--border);
-                border-radius: 0;
-            }
-            
-            /* Mobile zoom controls */
-            .mobile-zoom-controls {
-                position: fixed;
-                top: 50%;
-                right: 8px;
-                transform: translateY(-50%);
-                z-index: 1000;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                background: rgba(255, 255, 255, 0.95);
-                border-radius: 20px;
-                padding: 8px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                backdrop-filter: blur(8px);
-            }
+// Rate limiting for API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-            .zoom-btn {
-                width: 40px;
-                height: 40px;
-                border: none;
-                background: #4299E1;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                font-weight: bold;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 6px rgba(66, 153, 225, 0.3);
-                touch-action: manipulation;
-            }
+// Auth-specific rate limiting (more lenient for login flows)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 200 auth requests per windowMs (more generous for dev/testing)
+  message: 'Too many authentication requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-            .zoom-btn:hover, .zoom-btn:active {
-                background: #3182CE;
-                transform: scale(1.05);
-            }
+// Stricter rate limiting for AI/PDF endpoints
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 AI/PDF requests per windowMs
+  message: 'Too many AI/PDF requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-            .zoom-indicator {
-                position: fixed;
-                top: 20px;
-                right: 8px;
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 6px 12px;
-                border-radius: 12px;
-                font-size: 12px;
-                font-weight: 500;
-                z-index: 1001;
-                pointer-events: none;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-            }
+// Apply rate limiting to specific API groups (excluding auth endpoints)
+app.use('/api/business', apiLimiter);
+app.use('/api/products', apiLimiter);
+app.use('/api/customers', apiLimiter);
+app.use('/api/orders', apiLimiter);
+app.use('/api/invoices', apiLimiter);
+app.use('/api/premium', apiLimiter);
+app.use('/api/upload', apiLimiter);
+app.use('/api/remove', apiLimiter);
 
-            .zoom-indicator.show {
-                opacity: 1;
-            }
+// Apply auth-specific rate limiting only to auth endpoints
+app.use('/api/auth', authLimiter);
+app.use('/api/generate-invoice', aiLimiter);
+app.use('/api/generate-pdf', aiLimiter);
+app.use('/api/export/', aiLimiter);
 
-            .pan-indicator {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 8px 16px;
-                border-radius: 16px;
-                font-size: 12px;
-                z-index: 1001;
-                display: none;
-            }
+// Middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
-            .pan-indicator.show {
-                display: none;
-            }
-            
-            .party-section address {
-                font-size: 14px;
-            }
-            
-            .party-section strong {
-                font-size: 15px;
-            }
-            
-            .items-section {
-                padding: 16px;
-                margin: 0;
-            }
-            
-            .items-table {
-                font-size: 12px;
-            }
-            
-            .items-table th,
-            .items-table td {
-                padding: 10px 6px;
-            }
-            
-            /* Hide less important columns on very small screens */
-            .items-table th:nth-child(3),
-            .items-table td:nth-child(3) {
-                display: none;
-            }
-            
-            .summary {
-                padding: 16px;
-                margin: 0;
-            }
-            
-            .summary-grid {
-                gap: 6px 15px;
-                font-size: 14px;
-            }
-            
-            .summary-total {
-                font-size: 18px;
-            }
-            
-            .payment-methods {
-                grid-template-columns: 1fr;
-                gap: 12px;
-                margin: 16px 0;
-            }
-            
-            .payment-method {
-                padding: 14px 16px;
-                font-size: 14px;
-            }
-            
-            .payment-method span {
-                font-size: 1.5rem;
-            }
-            
-            .payment-details {
-                margin-top: 12px !important;
-                padding: 16px !important;
-            }
-            
-            .payment-details h4 {
-                font-size: 16px;
-                margin-bottom: 12px;
-            }
-            
-            .pay-btn {
-                padding: 12px 25px;
-                font-size: 1rem;
-                width: 100%;
-                margin-top: 15px;
-            }
-            
-            /* Mobile footer adjustments */
-            .footer-band {
-                padding: 16px !important;
-                margin: 0 !important;
-            }
-            
-            .footer-band > div:first-child {
-                grid-template-columns: 1fr 1fr 120px !important; /* Three columns: terms, contact, logo */
-                gap: 16px !important;
-                align-items: flex-start !important;
-                margin-bottom: 0 !important;
-            }
-            
-            /* Logo positioned at same level as headers */
-            .footer-band .footer-section:last-child {
-                display: flex;
-                justify-content: flex-end !important;
-                align-items: flex-start !important;
-                margin: 0 !important;
-                padding-top: 0 !important;
-            }
-            
-            .footer-band h4 {
-                font-size: 16px;
-            }
-            
-            .footer-band p, 
-            .footer-band li {
-                font-size: 13px;
-            }
-            
-            /* Action buttons mobile optimization */
-            .management-actions {
-                padding: 15px 10px;
-                gap: 10px;
-            }
-            
-            .action-btn {
-                padding: 12px 20px;
-                font-size: 14px;
-                min-width: auto;
-            }
-            
-            /* Payment upload section mobile */
-            #payment-upload-section {
-                margin-top: 15px;
-            }
-            
-            #payment-upload-section h4 {
-                font-size: 16px;
-            }
-            
-            .file-upload-area {
-                padding: 20px !important;
-            }
-            
-            .file-upload-area p {
-                font-size: 13px;
-            }
-            
-            /* Mobile Payment Section Gap Fix - Reduce gap between invoice and payment */
-            .paper-wrapper + .paper-wrapper {
-                margin-top: 5px !important;
-            }
-            
-            /* Payment section specific mobile adjustments */
-            .payment-section {
-                margin-top: 0px !important;
-            }
-            
-            /* Reduce paper wrapper gap for payment section on mobile */
-            .paper-wrapper + .paper-wrapper {
-                margin-top: 1px !important;
-            }
-        }
-        
-        /* Extra small screens (phones in portrait) */
-        @media (max-width: 480px) {
-            body {
-                padding: 4px;
-                font-size: 13px;
-                line-height: 1.3;
-            }
-            
-            .container {
-                padding: 4px;
-                overflow-x: auto;
-                overflow-y: visible;
-                width: 100%;
-                min-height: 100vh;
-            }
-            
-            .paper-wrapper {
-                /* Smaller scale for very small screens with better readability */
-                transform: scale(var(--mobile-scale-factor, 0.5));
-            }
-            
-            .paper {
-                /* Maintain A4 dimensions */
-                width: 210mm;
-                min-height: 297mm;
-                border: 1px solid var(--border);
-            }
-            
-            .parties {
-                padding: 16px;
-                gap: 20px;
-                background: var(--bg-light) !important;
-                margin: 0 8px;
-                border-radius: 8px;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-            }
-            
-            .items-section {
-                padding: 16px 8px;
-                background: white !important;
-                margin: 8px;
-                border-radius: 8px;
-            }
-            
-            /* Keep table structure but optimize for mobile */
-            .items-section {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            .items-table {
-                min-width: 650px; /* Ensure all columns fit properly */
-                font-size: 13px;
-                width: 100%;
-            }
-            
-            .items-table th {
-                font-size: 12px;
-                padding: 12px 8px;
-                white-space: nowrap;
-            }
-            
-            .items-table td {
-                padding: 12px 8px;
-                font-size: 13px;
-                border-bottom: 1px solid var(--border);
-            }
-            
-            .items-table td:first-child {
-                min-width: 180px; /* Product name column */
-            }
-            
-            .items-table th:nth-child(2),
-            .items-table td:nth-child(2) {
-                min-width: 60px; /* QTY column */
-                text-align: center;
-            }
-            
-            .items-table th:nth-child(3),
-            .items-table td:nth-child(3) {
-                min-width: 120px; /* Harga Satuan column */
-                text-align: right;
-            }
-            
-            .items-table th:nth-child(4),
-            .items-table td:nth-child(4) {
-                min-width: 120px; /* Total column */
-                text-align: right;
-            }
-            
-            .summary {
-                padding: 12px;
-                background: white !important;
-                margin: 0 8px;
-                border-radius: 8px;
-            }
-            
-            .summary-grid {
-                font-size: 13px;
-                gap: 8px 16px !important;
-                max-width: 280px !important;
-                margin-left: auto !important;
-            }
-            
-            .summary-total {
-                font-size: 16px;
-                font-weight: 700;
-                border-top: 2px solid var(--text) !important;
-                padding-top: 8px !important;
-            }
-            
-            .summary-grid {
-                gap: 4px 12px;
-                font-size: 13px;
-            }
-            
-            .summary-total {
-                font-size: 16px;
-            }
-            
-            .payment-method {
-                padding: 12px;
-                font-size: 13px;
-                background: white !important;
-                margin: 4px 8px;
-                border-radius: 8px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-            
-            /* Mobile scaling adjustments */
-            .paper {
-                padding: 16px !important;
-            }
-            
-            .payment-method span {
-                font-size: 1.3rem;
-            }
-            
-            /* Extra small mobile - Even tighter gap for very small screens */
-            .paper-wrapper + .paper-wrapper {
-                margin-top: 2px !important;
-            }
-            
-            .payment-section {
-                margin-top: 0px !important;
-            }
-            
-            /* Even tighter spacing for very small screens */
-            .paper-wrapper + .paper-wrapper {
-                margin-top: 0px !important;
-            }
-        }
+// CORS Configuration
+if (config.security.enableCors) {
+  app.use(cors({
+    origin: config.security.corsOrigin,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  }));
+}
 
-        /* Loading animation */
-        .loading::after {
-            content: '';
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--border);
-            border-top: 4px solid var(--text);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 15px;
-        }
+// Security headers
+app.use((req, res, next) => {
+  // Explicitly allow all inline scripts and event handlers in development
+  if (config.isDevelopment) {
+    res.header('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; script-src-attr * 'unsafe-inline' 'unsafe-hashes'; style-src * 'unsafe-inline'; img-src * data: blob:; connect-src *; font-src *; object-src *; media-src *; frame-src *;");
+    // Allow framing in development mode
+    res.header('X-Frame-Options', 'SAMEORIGIN');
+  } else {
+    // Strict security in production with blob support for image previews
+    res.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https:; font-src 'self' data: https:; object-src 'none'; media-src 'self' blob: https:; frame-src 'self';");
+    res.header('X-Frame-Options', 'DENY');
+  }
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-XSS-Protection', '1; mode=block');
+  if (config.isProduction) {
+    res.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+// Request logging with enhanced debugging
+app.use((req, res, next) => {
+  console.log(`🌐 ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log(`🔍 Headers: ${JSON.stringify({
+    'user-agent': req.headers['user-agent']?.substring(0, 50) + '...',
+    'authorization': req.headers.authorization ? 'Present' : 'None',
+    'cookie': req.headers.cookie ? 'Present' : 'None'
+  })}`);
 
-        /* Utility classes */
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        
-        /* Management Actions Styles */
-        .management-actions {
-            max-width: 800px;
-            margin: 20px auto;
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .action-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            min-width: 120px;
-        }
-        
-        .action-btn.primary {
-            background: #2563EB;
-            color: white;
-        }
-        
-        .action-btn.primary:hover {
-            background: #1D4ED8;
-            transform: translateY(-1px);
-        }
-        
-        .action-btn.success {
-            background: #48BB78;
-            color: white;
-        }
-        
-        .action-btn.success:hover {
-            background: #38A169;
-            transform: translateY(-1px);
-        }
-        
-        .action-btn.secondary {
-            background: #718096;
-            color: white;
-        }
-        
-        .action-btn.secondary:hover {
-            background: #4A5568;
-            transform: translateY(-1px);
-        }
-        
-        @media print {
-            .management-actions {
-                display: none !important;
-            }
-            .payment-confirmation-status {
-                display: none !important;
-            }
-            .zoom-indicator, .pan-indicator {
-                display: none !important;
-            }
-            .zoom-controls {
-                display: none !important;
-            }
-            
-            /* Keep original layout - no optimization changes */
-            .container {
-                max-width: 800px !important;
-                margin: 0 auto !important;
-                padding: 0 !important;
-                box-shadow: none !important;
-            }
-            
-            .paper {
-                border: none !important;
-                box-shadow: none !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                page-break-inside: avoid;
-            }
-            
-            /* Ensure good contrast for printing */
-            h1, h2, h3, h4, h5, h6 {
-                color: #000 !important;
-            }
-            
-            /* Hide interactive elements */
-            .loading, .error {
-                display: none !important;
-            }
-            
-            /* Optimize table printing */
-            table {
-                border-collapse: collapse !important;
-                page-break-inside: avoid;
-            }
-            
-            th, td {
-                border: 1px solid #000 !important;
-                padding: 8px !important;
-            }
-            
-            /* Force page breaks appropriately */
-            .page-break {
-                page-break-after: always;
-            }
-            
-            /* Preserve white text in footer band */
-            .footer-band,
-            .footer-band h4,
-            .footer-band p,
-            .footer-band ul,
-            .footer-band li {
-                color: white !important;
-            }
-            
-            /* Ensure footer background is preserved for contrast */
-            .footer-band {
-                background: #311d6b !important;
-                -webkit-print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-        }
-    </style>
-    <!-- Mobile-friendly notifications -->
-    <script src="/mobile-notifications.js?v=1.1"></script>
-</head>
-<body>
-    <div class="container" id="main-container">
-        <div id="loading" class="loading">Loading invoice...</div>
-        <div id="error" class="error" style="display: none;"></div>
-        <div id="invoice-container" style="display: none;">
-            <!-- Invoice will be loaded here -->
-        </div>
-        
-        <!-- Mobile Zoom Controls (only visible on mobile) -->
-        <div class="mobile-zoom-controls" id="mobile-zoom-controls" style="display: none;">
-            <button class="zoom-btn" id="zoom-in-btn" onclick="adjustZoom(0.1)" title="Zoom In">+</button>
-            <button class="zoom-btn" id="fit-screen-btn" onclick="fitToScreen()" title="Fit to Screen">⌂</button>
-            <button class="zoom-btn" id="zoom-out-btn" onclick="adjustZoom(-0.1)" title="Zoom Out">−</button>
-        </div>
-        
-        <!-- Zoom Indicator -->
-        <div class="zoom-indicator" id="zoom-indicator">100%</div>
-        
-        <!-- Pan Indicator -->
-        <div class="pan-indicator" id="pan-indicator">
-            📱 Drag to pan around the invoice
-        </div>
-        
-        <!-- Action buttons for management context -->
-        <div id="management-actions" class="management-actions" style="display: none;">
-            <button id="print-btn" class="action-btn primary" onclick="window.print()">
-                🖨️ Print
-            </button>
-            <button id="whatsapp-btn" class="action-btn secondary" onclick="shareInvoiceWhatsApp()">
-                📲 Share via WhatsApp
-            </button>
-            <button id="close-btn" class="action-btn secondary" onclick="window.close()">
-                ❌ Close
-            </button>
-        </div>
-    </div>
+  // Add response interceptor to log what's being served
+  const originalSend = res.send;
+  const originalSendFile = res.sendFile;
 
-    <script>
-        let currentInvoice = null;
-        let selectedPaymentMethod = 'credit_card';
+  res.send = function(data) {
+    console.log(`📤 Response for ${req.method} ${req.url}: ${res.statusCode} - Data type: ${typeof data}, Length: ${data?.length || 0}`);
+    if (typeof data === 'string' && data.includes('import dotenv')) {
+      console.log(`🚨 WARNING: Serving source code for ${req.url}!`);
+      console.log(`🚨 First 200 chars: ${data.substring(0, 200)}`);
+    }
+    return originalSend.call(this, data);
+  };
 
-        // Safe HTML escaping function to prevent template string issues
-        const escapeHtml = (text) => {
-            if (!text || typeof text !== 'string') return text || '';
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;',
-                '/': '&#x2F;',
-                '`': '&#x60;',
-                '=': '&#x3D;'
-            };
-            return text.replace(/[&<>"'\/`=]/g, function (s) {
-                return map[s];
-            });
+  res.sendFile = function(filePath, options, callback) {
+    console.log(`📁 SendFile for ${req.method} ${req.url}: ${filePath}`);
+    return originalSendFile.call(this, filePath, options, callback);
+  };
+
+  next();
+});
+
+// Serve only specific static files - prevent direct access to source files
+app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// Serve only specific files that should be publicly accessible
+app.use('/favicon.ico', express.static(path.join(__dirname, '..', 'favicon.ico')));
+
+// Serve mobile notifications script
+app.get('/mobile-notifications.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+  res.sendFile(path.join(__dirname, 'mobile-notifications.js'));
+});
+
+// Block direct access to source files and other sensitive directories
+app.use('/src', (req, res) => {
+  res.status(403).json({ error: 'Direct access to source files is not allowed' });
+});
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'payment-confirmations');
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `payment-${req.params.id || 'unknown'}-${uniqueSuffix}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Allow only images and PDFs
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPG, PNG, GIF and PDF files are allowed.'));
+    }
+  }
+});
+
+// Configure multer for custom header/footer logo uploads
+const customLogoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Determine upload directory based on fieldname
+    let subDir = 'custom-headers'; // default for header logos
+    if (file.fieldname === 'footerLogo' || file.fieldname.includes('footer')) {
+      subDir = 'custom-footers';
+    }
+    
+    const uploadDir = path.join(__dirname, '..', 'uploads', subDir);
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    try {
+      // Get merchant ID from authenticated request
+      const merchantId = req.merchant ? req.merchant.id : 'unknown';
+      
+      // Generate merchant-specific filename
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const logoType = (file.fieldname === 'footerLogo' || file.fieldname.includes('footer')) ? 'footer' : 'header';
+      
+      const filename = `merchant_${merchantId}_${logoType}_logo_${uniqueSuffix}${ext}`;
+      cb(null, filename);
+    } catch (error) {
+      console.error('Error generating filename:', error);
+      // Fallback filename generation
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, `logo-${uniqueSuffix}${ext}`);
+    }
+  }
+});
+
+const customLogoUpload = multer({
+  storage: customLogoStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit for logos
+  },
+  fileFilter: function (req, file, cb) {
+    // Allow only image files for logos
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPEG, PNG, GIF, WebP) are allowed for logos'));
+    }
+  }
+});
+
+// Configure multer for business logo uploads using Cloudinary
+const logoUpload = cloudinaryService.getMulterConfig();
+
+// Serve the HTML interface - redirect to login if not authenticated
+app.get('/', authMiddleware.optionalAuth, (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  
+  // If authenticated, redirect to invoice generator
+  if (req.merchant) {
+    return res.redirect('/generator');
+  }
+  
+  // Otherwise, redirect to login
+  res.redirect('/auth/login');
+});
+
+// Test endpoint to serve fresh content with timestamp
+app.get('/fresh', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  try {
+    let content = fs.readFileSync(path.join(__dirname, 'web-interface-indonesian.html'), 'utf8');
+    content = content.replace('<title>', `<title>Fresh ${Date.now()} - `);
+    res.send(content);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Minimal test endpoint
+app.get('/test', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(__dirname, '..', 'temp', 'test-minimal.html'));
+});
+
+// ==========================================
+// AUTHENTICATION ROUTES
+// ==========================================
+
+// Serve authentication pages
+app.get('/auth/login', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-login.html'));
+});
+
+app.get('/auth/register', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-register.html'));
+});
+
+app.get('/auth/forgot-password', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-forgot-password.html'));
+});
+
+app.get('/auth/reset-password', authMiddleware.redirectIfAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth', 'merchant-reset-password.html'));
+});
+
+// Email verification page
+app.get('/auth/verify-email', (req, res) => {
+  const token = req.query.token;
+  if (!token) {
+    return res.status(400).send('Missing verification token');
+  }
+  
+  // For now, redirect to a simple success page or handle verification
+  res.redirect(`/auth/login?message=verify-email&token=${token}`);
+});
+
+// Authentication API Routes
+app.use('/api/auth', authMiddleware.authRateLimit());
+
+// Register new merchant
+app.post('/api/auth/register', 
+  authMiddleware.logAuthEvent('REGISTER'), 
+  async (req, res) => {
+    try {
+      const { fullName, businessName, email, password, agreeTerms } = req.body;
+
+      // Validate required fields
+      if (!businessName || !email || !password) {
+        return res.status(400).json({
+          success: false,
+          error: 'Business name, email, and password are required'
+        });
+      }
+
+      if (!agreeTerms) {
+        return res.status(400).json({
+          success: false,
+          error: 'You must agree to the terms and conditions'
+        });
+      }
+
+      // Register merchant
+      const result = await authService.registerMerchant({
+        fullName,
+        businessName,
+        email,
+        password
+      });
+
+      res.json(result);
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Registration failed. Please try again.'
+      });
+    }
+  }
+);
+
+// Login merchant
+app.post('/api/auth/login',
+  authMiddleware.logAuthEvent('LOGIN'),
+  async (req, res) => {
+    try {
+      const { email, password, rememberMe } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email and password are required'
+        });
+      }
+
+      // Login merchant
+      const result = await authService.loginMerchant(email, password, rememberMe);
+      
+      // Set secure cookie if successful
+      if (result.success && result.token) {
+        const cookieOptions = {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000 // 30 days or 7 days
         };
-
-        // Unified Invoice Template Generator
-        function generateUnifiedInvoiceTemplate(invoice, context = 'preview') {
-            // Get business profile for logo and category
-            const savedProfile = localStorage.getItem('businessProfile');
-            let businessLogo = '';
-            let businessCategory = 'general';
-            let businessTerms = 'Pembayaran dalam 30 hari';
-            let businessProfile = null;
-            if (savedProfile) {
-                businessProfile = JSON.parse(savedProfile);
-                businessLogo = businessProfile.logo || '';
-                businessCategory = businessProfile.category || 'general';
-                businessTerms = businessProfile.termsAndConditions || 'Pembayaran dalam 30 hari';
-            }
-
-            // Logo is now managed by loadBusinessDataFromAPI which syncs database with localStorage
-
-            // Premium branding settings from localStorage business profile
-            const hideAspreeBranding = businessProfile?.hideAspreeBranding || businessProfile?.hide_aspree_branding || false;
-            const customHeaderLogo = businessProfile?.customHeaderLogoUrl || businessProfile?.custom_header_logo_url || null;
-            const customFooterLogo = businessProfile?.customFooterLogoUrl || businessProfile?.custom_footer_logo_url || null;
-            const customHeaderText = businessProfile?.customHeaderText || businessProfile?.custom_header_text || 'Powered by Aspree Invoice Generator';
-            const customHeaderBgColor = businessProfile?.customHeaderBgColor || businessProfile?.custom_header_bg_color || '#311d6b';
-            const customFooterBgColor = businessProfile?.customFooterBgColor || businessProfile?.custom_footer_bg_color || '#311d6b';
-            const customHeaderTextColor = businessProfile?.customHeaderTextColor || businessProfile?.custom_header_text_color || '#ffffff';
-            const customFooterTextColor = businessProfile?.customFooterTextColor || businessProfile?.custom_footer_text_color || '#ffffff';
-
-            console.log('🎨 Premium branding settings:', {
-                hideAspreeBranding,
-                customHeaderLogo,
-                customFooterLogo,
-                customHeaderText,
-                customHeaderBgColor,
-                customFooterBgColor
-            });
-
-            // Category-based titles (consistent across all contexts)
-            const getCategoryTitle = (category) => {
-                const categoryTitles = {
-                    'trade': 'FAKTUR PENJUALAN',
-                    'services': 'FAKTUR JASA',
-                    'manufacturing': 'FAKTUR PRODUKSI',
-                    'logistics': 'FAKTUR PENGIRIMAN',
-                    'digital_creative': 'FAKTUR LISENSI DIGITAL',
-                    'agriculture': 'FAKTUR PERTANIAN',
-                    'construction': 'FAKTUR KONSTRUKSI',
-                    'tourism': 'FAKTUR PERHOTELAN',
-                    'general': 'FAKTUR'
-                };
-                return categoryTitles[category] || 'FAKTUR';
-            };
-            
-            const invoiceTitle = getCategoryTitle(businessCategory);
-
-            // Currency formatting function
-            const formatCurrency = (amount) => {
-                return new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }).format(amount || 0).replace('IDR', 'Rp');
-            };
-
-            // Date formatting function
-            const formatDate = (dateString) => {
-                try {
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                    });
-                } catch (e) {
-                    return dateString;
-                }
-            };
-
-            // Clean Professional CSS styling (no emojis, no purple gradient)
-            const getContextStyles = (context) => {
-                const cleanStyles = `
-                    :root {
-                        --text: #2D3748;
-                        --text-light: #718096;
-                        --border: #E2E8F0;
-                        --bg: #FFFFFF;
-                        --bg-light: #F7FAFC;
-                    }
-
-                    body {
-                        font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: var(--text);
-                        background: white;
-                        margin: 0;
-                        padding: 0;
-                    }
-
-                    .paper {
-                        width: 100%;
-                        max-width: 794px;
-                        min-height: 1123px;
-                        margin: 0 auto;
-                        background: var(--bg);
-                        border: 1px solid var(--border);
-                        border-radius: 0;
-                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-                        overflow: hidden;
-                        padding: 0;
-                        position: relative;
-                    }
-
-                    .inv-header {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 60px;
-                        padding: 24px 32px 16px 32px;
-                        background: var(--bg);
-                        border-bottom: 2px solid var(--border);
-                        align-items: start;
-                    }
-
-                    .logo-section {
-                        text-align: left;
-                    }
-
-                    .logo-section img {
-                        max-height: 120px;
-                        max-width: 300px;
-                        object-fit: contain;
-                        display: block;
-                        margin-bottom: 6px;
-                    }
-
-                    .logo-section strong {
-                        display: block;
-                        font-size: 28px;
-                        font-weight: 800;
-                        color: var(--text);
-                        margin-top: 4px;
-                        line-height: 1.1;
-                    }
-
-                    .invoice-meta {
-                        text-align: right;
-                    }
-
-                    .invoice-title {
-                        font-size: 28px;
-                        font-weight: 800;
-                        color: var(--text);
-                        margin: 0 0 20px 0;
-                        letter-spacing: 0.5px;
-                    }
-
-                    .invoice-details {
-                        font-size: 15px;
-                        color: var(--text-light);
-                        margin-bottom: 10px;
-                        line-height: 1.4;
-                    }
-
-                    .invoice-details strong {
-                        color: var(--text);
-                        font-weight: 600;
-                        min-width: 100px;
-                        display: inline-block;
-                    }
-
-                    .parties {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 80px;
-                        padding: 20px 32px;
-                        border-bottom: 1px solid var(--border);
-                    }
-
-                    .party-section h3 {
-                        font-size: 14px;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                        font-weight: 600;
-                        color: var(--text);
-                        margin: 0 0 16px 0;
-                    }
-
-                    .party-section address {
-                        font-style: normal;
-                        font-size: 15px;
-                        line-height: 1.5;
-                        color: var(--text-light);
-                    }
-
-                    .party-section strong {
-                        color: var(--text);
-                        font-weight: 600;
-                        font-size: 16px;
-                        display: block;
-                        margin-bottom: 3px;
-                    }
-
-                    .items-section {
-                        padding: 20px 32px;
-                    }
-
-                    .items-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin: 0;
-                        border: 1px solid var(--border);
-                        border-radius: 8px;
-                        overflow: hidden;
-                    }
-
-                    .items-table thead th {
-                        background: var(--bg-light);
-                        border-bottom: 2px solid var(--border);
-                        padding: 18px 20px;
-                        font-size: 13px;
-                        font-weight: 700;
-                        text-transform: uppercase;
-                        letter-spacing: 0.8px;
-                        color: var(--text);
-                        text-align: left;
-                    }
-
-                    .items-table th:last-child,
-                    .items-table th.text-right { text-align: right; }
-                    .items-table th.text-center { text-align: center; }
-
-                    .items-table tbody td {
-                        padding: 20px;
-                        border-bottom: 1px solid var(--border);
-                        font-size: 15px;
-                        color: var(--text);
-                    }
-
-                    .items-table tbody tr:nth-child(even) {
-                        background: rgba(247, 250, 252, 0.5);
-                    }
-
-                    .items-table tbody tr:last-child td {
-                        border-bottom: none;
-                    }
-
-                    .items-table .text-right { text-align: right; font-weight: 600; }
-                    .items-table .text-center { text-align: center; }
-
-                    .product-name {
-                        font-weight: 500;
-                        color: var(--text);
-                        margin: 0;
-                    }
-
-                    .product-description {
-                        color: var(--text-light);
-                        font-size: 13px;
-                        margin: 2px 0 0 0;
-                    }
-
-                    .summary {
-                        padding: 20px 32px;
-                        border-top: 1px solid var(--border);
-                        background: var(--bg);
-                    }
-
-                    .summary-grid {
-                        display: grid;
-                        grid-template-columns: 1fr auto;
-                        gap: 12px 40px;
-                        max-width: 320px;
-                        margin-left: auto;
-                    }
-
-                    .summary-label {
-                        color: var(--text-light);
-                        font-size: 14px;
-                    }
-
-                    .summary-value {
-                        color: var(--text);
-                        font-size: 15px;
-                        font-weight: 600;
-                        text-align: right;
-                    }
-
-                    .total-label {
-                        color: var(--text) !important;
-                        font-weight: 700 !important;
-                        font-size: 16px !important;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                        padding-top: 12px;
-                        border-top: 2px solid var(--text);
-                        margin-top: 8px;
-                    }
-
-                    .total-value {
-                        color: var(--text) !important;
-                        font-weight: 800 !important;
-                        font-size: 20px !important;
-                        padding-top: 12px;
-                        border-top: 2px solid var(--text);
-                        margin-top: 8px;
-                        text-align: right;
-                    }
-
-
-                    /* Compact Notes Styles */
-                    .editable[data-field="notes.publicNotes"] {
-                        min-width: 200px;
-                        display: inline-block;
-                        padding: 2px 4px;
-                        border-radius: 4px;
-                        transition: all 0.2s ease;
-                    }
-
-                    .editable[data-field="notes.publicNotes"]:hover {
-                        background: rgba(49, 29, 107, 0.05);
-                        cursor: text;
-                    }
-
-                    /* Print styles */
-                    @media print {
-                        @page {
-                            margin: 10mm;
-                            size: A4 portrait;
-                        }
-
-                        body {
-                            background: white !important;
-                            padding: 0 !important;
-                        }
-
-                        .paper {
-                            box-shadow: none !important;
-                            border: none !important;
-                            margin: 0 !important;
-                            max-width: none !important;
-                            page-break-inside: avoid !important;
-                        }
-
-                        /* Prevent page breaks within important sections */
-                        .inv-header,
-                        .invoice-table,
-                        .summary-section,
-                        .footer-band {
-                            page-break-inside: avoid !important;
-                        }
-
-                        /* Reduce spacing to fit on one page */
-                        .inv-header {
-                            margin-bottom: 10px !important;
-                        }
-
-                        .invoice-table {
-                            margin-bottom: 10px !important;
-                        }
-
-                        .summary-section {
-                            margin-bottom: 10px !important;
-                        }
-
-                        .edit-indicator {
-                            display: none !important;
-                        }
-
-                        .footer-band {
-                            background: #311d6b !important;
-                            color: white !important;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                            margin-bottom: 0 !important;
-                            padding-bottom: 0 !important;
-                        }
-
-                        .footer-section img {
-                            -webkit-print-color-adjust: exact !important;
-                            print-color-adjust: exact !important;
-                            display: block !important;
-                        }
-
-                        /* Header band print styles */
-                        .paper > div:first-child {
-                            background: #311d6b !important;
-                            color: white !important;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                        }
-
-                        /* Ensure all purple elements print with colors */
-                        * {
-                            -webkit-print-color-adjust: exact !important;
-                            print-color-adjust: exact !important;
-                        }
-
-                        /* Force single page printing */
-                        html, body {
-                            height: auto !important;
-                            overflow: visible !important;
-                        }
-
-                        /* Reduce font sizes slightly for print to fit more content */
-                        .paper {
-                            font-size: 13px !important;
-                        }
-
-                        /* Compact payment schedule section */
-                        .payment-schedule-section {
-                            margin: 10px 0 !important;
-                            padding: 15px !important;
-                        }
-
-                        /* Ensure footer doesn't create page break */
-                        .footer-band {
-                            page-break-inside: avoid !important;
-                            margin-top: 10px !important;
-                        }
-                    }
-
-                    /* Context-specific styles */
-                    ${context === 'preview' ? `
-                        .paper {
-                            margin: 20px auto;
-                        }
-                    ` : ''}
-
-                    ${context === 'print' ? `
-                        body {
-                            background: white !important;
-                            padding: 0;
-                        }
-                        .paper {
-                            box-shadow: none !important;
-                            border: none !important;
-                            margin: 0;
-                        }
-                    ` : ''}
-                `;
-
-                return cleanStyles;
-            };
-
-            // Generate clean professional HTML structure (no emojis)
-            const cleanHTML = `
-                <div class="paper">
-                    <!-- Dynamic Premium/Aspree branding header -->
-                    ${!hideAspreeBranding ? `
-                        <div style="background: linear-gradient(135deg, ${customHeaderBgColor}, ${customHeaderBgColor}aa); color: ${customHeaderTextColor}; padding: 12px 0; text-align: center;">
-                            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                                ${customHeaderLogo ?
-                                    `<img src="${customHeaderLogo}" alt="Header Logo" style="height: 32px; width: auto; object-fit: contain;">` :
-                                    `<img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">`
-                                }
-                                <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">${customHeaderText}</p>
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    <!-- Header with logo and invoice metadata -->
-                    <div class="inv-header">
-                        <div class="logo-section">
-                            ${businessLogo ?
-                                `<img src="${businessLogo}" alt="Logo">` :
-                                `<div style="background: #f0f0f0; padding: 15px; border-radius: 4px; margin-bottom: 12px; font-size: 18px; color: #666; text-align: center; border: 1px solid #e0e0e0;">LOGO</div>`
-                            }
-                            ${businessProfile && businessProfile.hideBusinessName ? '' :
-                                `<strong>${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant.businessName}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.businessName
-                                }</strong>`
-                            }
-                        </div>
-                        <div class="invoice-meta">
-                            <h1 class="invoice-title">${invoiceTitle}</h1>
-                            <div class="invoice-details">
-                                <strong>No:</strong> ${invoice.header.invoiceNumber}
-                            </div>
-                            <div class="invoice-details">
-                                <strong>Tanggal:</strong> ${context === 'preview' ?
-                                    `<span class="editable" data-field="header.invoiceDate" data-type="date">${formatDate(invoice.header.invoiceDate)}<span class="edit-indicator">✏️</span></span>` :
-                                    formatDate(invoice.header.invoiceDate)
-                                }
-                            </div>
-                            <div class="invoice-details">
-                                <strong>Jatuh Tempo:</strong> ${context === 'preview' ?
-                                    `<span class="editable" data-field="header.dueDate" data-type="date">${formatDate(invoice.header.dueDate || invoice.header.invoiceDate)}<span class="edit-indicator">✏️</span></span>` :
-                                    formatDate(invoice.header.dueDate || invoice.header.invoiceDate)
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Parties section -->
-                    <div class="parties">
-                        <div class="party-section">
-                            <h3>DARI</h3>
-                            <address>
-                                <strong>${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant.businessName}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.businessName
-                                }</strong><br>
-                                ${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.address" data-type="textarea">${invoice.merchant.address}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.address
-                                }<br>
-                                ${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.phone" data-type="tel">${invoice.merchant.phone}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.phone
-                                }<br>
-                                ${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.email" data-type="email">${invoice.merchant.email}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.email
-                                }
-                            </address>
-                        </div>
-                        <div class="party-section">
-                            <h3>KEPADA</h3>
-                            <address>
-                                <strong>${context === 'preview' ?
-                                    `<span class="editable" data-field="customer.name" data-type="text">${invoice.customer.name}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.customer.name
-                                }</strong><br>
-                                ${context === 'preview' ?
-                                    `<span class="editable" data-field="customer.address" data-type="textarea">${invoice.customer.address}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.customer.address
-                                }<br>
-                                ${invoice.customer.phone ? (context === 'preview' ?
-                                    `<span class="editable" data-field="customer.phone" data-type="tel">${invoice.customer.phone}<span class="edit-indicator">✏️</span></span><br>` :
-                                    `${invoice.customer.phone}<br>`
-                                ) : ''}
-                                ${invoice.customer.email ? (context === 'preview' ?
-                                    `<span class="editable" data-field="customer.email" data-type="email">${invoice.customer.email}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.customer.email
-                                ) : ''}
-                            </address>
-                        </div>
-                    </div>
-
-                    <!-- Items section -->
-                    <div class="items-section">
-                        <table class="items-table">
-                            <thead>
-                                <tr>
-                                    <th>Produk/Layanan</th>
-                                    <th class="text-center">Qty</th>
-                                    <th class="text-right">Harga Satuan</th>
-                                    <th class="text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${invoice.items.map((item, index) => `
-                                    <tr>
-                                        <td>
-                                            <div class="product-name">${context === 'preview' ?
-                                                `<span class="editable" data-field="items.${index}.productName" data-type="text">${item.productName}<span class="edit-indicator">✏️</span></span>` :
-                                                item.productName
-                                            }</div>
-                                            ${item.description ? `<div class="product-description">${item.description}</div>` : ''}
-                                        </td>
-                                        <td class="text-center">${context === 'preview' ?
-                                            `<span class="editable editable-quantity" data-field="items.${index}.quantity" data-type="number">${item.quantity}<span class="edit-indicator">✏️</span></span>` :
-                                            item.quantity
-                                        }</td>
-                                        <td class="text-right">${context === 'preview' ?
-                                            `<span class="editable editable-price" data-field="items.${index}.unitPrice" data-type="currency">${formatCurrency(item.unitPrice)}<span class="edit-indicator">✏️</span></span>` :
-                                            formatCurrency(item.unitPrice)
-                                        }</td>
-                                        <td class="text-right">${formatCurrency(item.lineTotal)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Compact Notes Section -->
-                    ${(() => {
-                        try {
-                            const notes = invoice.notes;
-
-                            // Collect all notes into an array
-                            const allNotes = [];
-
-                            // List of placeholder/demo texts to filter out
-                            const placeholderTexts = [
-                                'Pembayaran dapat dilakukan melalui transfer bank atau tunai',
-                                'tambahkan catatan tambahan disini, jika tidak ada catatan maka kolom catatan akan dihilangkan',
-                                'Klik untuk menambahkan catatan...',
-                                'Extract special requests from message',
-                                'Extract delivery schedule if mentioned',
-                                'Extract appointment info if service booking',
-                                'Extract payment deadline if mentioned'
-                            ];
-
-                            const isPlaceholderText = (text) => {
-                                if (!text || !text.trim()) return true;
-                                const trimmedText = text.trim();
-                                return placeholderTexts.some(placeholder => trimmedText.includes(placeholder));
-                            };
-
-                            // Only process main user-editable notes (removed AI extraction fields)
-                            if (notes?.publicNotes && notes.publicNotes.trim() && !isPlaceholderText(notes.publicNotes)) allNotes.push(notes.publicNotes.trim());
-                            if (notes?.customNotes && notes.customNotes.trim() && !isPlaceholderText(notes.customNotes)) allNotes.push(notes.customNotes.trim());
-
-                            console.log('🔧 All notes after filtering:', allNotes);
-
-                            // Show section always in preview mode for editing, or only when notes exist in other modes
-                            const hasNotes = allNotes.length > 0;
-                            const showSection = context === 'preview' || hasNotes;
-
-                            if (!showSection) return '';
-
-                            if (context === 'preview') {
-                                // In preview mode, make it editable
-                                const noteContent = hasNotes ? allNotes.join(' | ') : '';
-                                const isEmpty = !noteContent.trim();
-
-                                return `
-                                    <div style="padding: 12px 32px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
-                                        <p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;">
-                                            <strong style="color: var(--text);">Catatan:</strong>
-                                            <span class="editable" data-field="notes.publicNotes" data-type="text" style="color: ${isEmpty ? 'var(--text-light)' : 'var(--text)'}; ${isEmpty ? 'font-style: italic;' : ''}">${isEmpty ? 'tambahkan catatan tambahan disini, jika tidak ada catatan maka kolom catatan akan dihilangkan' : noteContent}<span class="edit-indicator">✏️</span></span>
-                                        </p>
-                                    </div>
-                                `;
-                            } else {
-                                // In other modes, show static content
-                                const combinedNotes = allNotes.length <= 2 ?
-                                    allNotes :
-                                    [allNotes.slice(0, 2).join(' | ')];
-
-                                return `
-                                    <div style="padding: 12px 32px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
-                                        ${combinedNotes.map(note =>
-                                            `<p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;"><strong style="color: var(--text);">Catatan:</strong> ${note}</p>`
-                                        ).join('')}
-                                    </div>
-                                `;
-                            }
-                        } catch (e) {
-                            console.error('Error parsing compact notes:', e);
-                            return '';
-                        }
-                    })()}
-
-                    <!-- Summary section -->
-                    <div class="summary">
-                        <div class="summary-grid">
-                            <div class="summary-label">Subtotal</div>
-                            <div class="summary-value">${formatCurrency(invoice.calculations.subtotal)}</div>
-
-                            <div class="summary-label">${(() => {
-                                const discountType = invoice.calculations.discountType;
-                                const discountValue = invoice.calculations.discountValue;
-                                if (discountType === 'percentage') {
-                                    return `Diskon (${discountValue}%)`;
-                                } else {
-                                    return 'Diskon (Jumlah Tetap)';
-                                }
-                            })()}</div>
-                            <div class="summary-value">${context === 'preview' ?
-                                `<span class="editable" data-field="calculations.discount" data-type="currency">-${formatCurrency(invoice.calculations.discount || 0)}<span class="edit-indicator">✏️</span></span>` :
-                                `-${formatCurrency(invoice.calculations.discount || 0)}`
-                            }</div>
-
-                            <div class="summary-label">Pajak</div>
-                            <div class="summary-value">${context === 'preview' ?
-                                `<span class="editable" data-field="calculations.totalTax" data-type="currency">${formatCurrency(invoice.calculations.totalTax)}<span class="edit-indicator">✏️</span></span>` :
-                                formatCurrency(invoice.calculations.totalTax)
-                            }</div>
-
-                            <div class="summary-label">Biaya Kirim</div>
-                            <div class="summary-value">${context === 'preview' ?
-                                `<span class="editable" data-field="calculations.shippingCost" data-type="currency">${formatCurrency(invoice.calculations.shippingCost)}<span class="edit-indicator">✏️</span></span>` :
-                                formatCurrency(invoice.calculations.shippingCost)
-                            }</div>
-
-                            <div class="summary-label total-label">TOTAL</div>
-                            <div class="summary-value total-value">${formatCurrency(invoice.calculations.grandTotal)}</div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Schedule section -->
-                    ${(() => {
-                        try {
-                            console.log('🔧 Processing payment schedule - Context:', context);
-                            console.log('🔧 invoice.paymentSchedule:', invoice.paymentSchedule);
-                            console.log('🔧 invoice.payment_schedule_json:', invoice.payment_schedule_json);
-
-                            // Handle both direct object (preview) and JSON string (database) formats
-                            let paymentSchedule = null;
-                            if (invoice.paymentSchedule) {
-                                // Direct object format (preview mode)
-                                paymentSchedule = invoice.paymentSchedule;
-                                console.log('✅ Using direct paymentSchedule object:', paymentSchedule);
-                            } else if (invoice.payment_schedule_json) {
-                                // JSON string format (database/view mode)
-                                paymentSchedule = typeof invoice.payment_schedule_json === 'string'
-                                    ? JSON.parse(invoice.payment_schedule_json)
-                                    : invoice.payment_schedule_json;
-                                console.log('✅ Parsed payment_schedule_json:', paymentSchedule);
-                            } else {
-                                console.log('❌ No payment schedule data found');
-                            }
-
-                            if (paymentSchedule && paymentSchedule.scheduleType === 'down_payment') {
-                                return `
-                    <div class="payment-schedule-section" style="padding: 40px 32px; border-top: 1px solid var(--border); background: var(--bg);">
-                        <h3 style="color: var(--text); font-size: 16px; font-weight: 600; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                            Jadwal Pembayaran
-                        </h3>
-                        <div class="payment-schedule-table" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
-                            <div style="background: var(--bg-light); padding: 18px 20px; border-bottom: 2px solid var(--border); display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; font-weight: 700; font-size: 13px; color: var(--text); text-transform: uppercase; letter-spacing: 0.8px;">
-                                <div>Jenis Pembayaran</div>
-                                <div style="text-align: center;">Jatuh Tempo</div>
-                                <div style="text-align: right;">Jumlah</div>
-                            </div>
-                            ${(() => {
-                                // Show complete payment schedule with both phases
-                                const finalAmount = invoice.final_payment_amount || paymentSchedule.remainingBalance.amount;
-                                const currentStage = invoice.payment_stage || 'down_payment';
-
-                                // Determine status indicators
-                                const getStatusIndicator = (phase) => {
-                                    if (currentStage === 'completed' || (currentStage === 'final_payment' && phase === 'down_payment')) {
-                                        return '✅'; // Completed
-                                    } else if (currentStage === phase) {
-                                        return '⏳'; // Current/Pending
-                                    } else {
-                                        return '🔒'; // Future/Locked
-                                    }
-                                };
-
-                                const getPhaseStyle = (phase) => {
-                                    const baseStyle = "padding: 20px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: center;";
-
-                                    if (currentStage === phase) {
-                                        return baseStyle + " background: rgba(139, 95, 255, 0.05); border-left: 4px solid #8B5FFF;";
-                                    } else if (currentStage === 'completed' || (currentStage === 'final_payment' && phase === 'down_payment')) {
-                                        return baseStyle + " opacity: 0.7; background: rgba(72, 187, 120, 0.05);";
-                                    } else {
-                                        return baseStyle + " opacity: 0.6;";
-                                    }
-                                };
-
-                                return `
-                                    <!-- Down Payment Row -->
-                                    <div style="${getPhaseStyle('down_payment')}">
-                                        <div style="font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                                            <span style="font-size: 16px;">${getStatusIndicator('down_payment')}</span>
-                                            ${(() => {
-                                                const dp = paymentSchedule.downPayment;
-                                                if (dp.type === 'fixed') {
-                                                    return 'Uang Muka (Jumlah Tetap)';
-                                                } else {
-                                                    return `Uang Muka (${dp.percentage}%)`;
-                                                }
-                                            })()}
-                                        </div>
-                                        <div style="text-align: center; color: var(--text-light); font-size: 15px;">${context === 'preview' ?
-                                            `<span class="editable" data-field="paymentSchedule.downPayment.dueDate" data-type="date">${formatDate(paymentSchedule.downPayment.dueDate)}<span class="edit-indicator">✏️</span></span>` :
-                                            formatDate(paymentSchedule.downPayment.dueDate)
-                                        }</div>
-                                        <div style="text-align: right; font-weight: 600; font-size: 16px; color: var(--text);">${context === 'preview' ?
-                                            `<span class="editable" data-field="paymentSchedule.downPayment.amount" data-type="currency">${formatCurrency(paymentSchedule.downPayment.amount)}<span class="edit-indicator">✏️</span></span>` :
-                                            formatCurrency(paymentSchedule.downPayment.amount)
-                                        }</div>
-                                    </div>
-                                    <!-- Remaining Payment Row -->
-                                    <div style="${getPhaseStyle('final_payment')}">
-                                        <div style="font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                                            <span style="font-size: 16px;">${getStatusIndicator('final_payment')}</span>
-                                            Sisa Pembayaran
-                                        </div>
-                                        <div style="text-align: center; color: var(--text-light); font-size: 15px;">${context === 'preview' ?
-                                            `<span class="editable" data-field="paymentSchedule.remainingBalance.dueDate" data-type="date">${formatDate(paymentSchedule.remainingBalance.dueDate)}<span class="edit-indicator">✏️</span></span>` :
-                                            formatDate(paymentSchedule.remainingBalance.dueDate)
-                                        }</div>
-                                        <div style="text-align: right; font-weight: 600; font-size: 16px; color: var(--text);">${context === 'preview' ?
-                                            `<span class="editable" data-field="final_payment_amount" data-type="currency">${formatCurrency(finalAmount)}<span class="edit-indicator">✏️</span></span>` :
-                                            formatCurrency(finalAmount)
-                                        }</div>
-                                    </div>
-                                `;
-                            })()}
-                        </div>
-                    </div>
-                    `;
-                            }
-                            return '';
-                        } catch (e) {
-                            console.error('Error parsing payment schedule:', e);
-                            return '';
-                        }
-                    })()}
-
-
-                    <!-- Dynamic Premium/Aspree Footer -->
-                    ${!hideAspreeBranding ? `
-                        <div class="footer-band" style="background: linear-gradient(135deg, ${customFooterBgColor}, ${customFooterBgColor}aa); color: ${customFooterTextColor}; padding: 20px; margin-bottom: 0;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
-                                <div class="footer-section">
-                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
-                                    <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessTerms}</p>
-                                </div>
-                                <div class="footer-section">
-                                    <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
-                                    <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
-                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">📞</span>
-                                            ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
-                                        </li>
-                                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                            <span style="opacity: 0.7;">📧</span>
-                                            ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
-                                        </li>
-                                        ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${businessProfile.website}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${invoice.merchant_website}</li>` : ''}
-                                    </ul>
-                                </div>
-                                <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 0; margin-bottom: -30px;">
-                                    ${customFooterLogo ?
-                                        `<img src="${customFooterLogo}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9; object-fit: contain;">` :
-                                        `<img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">`
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-
-            // Return appropriate format based on context
-            if (context === 'print') {
-                return `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>Faktur - ${invoice.header.invoiceNumber}</title>
-                        <style>${getContextStyles(context)}</style>
-                    </head>
-                    <body>
-                        ${cleanHTML}
-                    </body>
-                    </html>
-                `;
-            } else {
-                return {
-                    html: cleanHTML,
-                    css: getContextStyles(context)
-                };
-            }
-
-
-            // Premium branding helper function to adjust color brightness
-            const adjustBrightness = (hex, percent) => {
-                // Remove # if present
-                const cleanHex = hex.replace('#', '');
-                const num = parseInt(cleanHex, 16);
-                const amt = Math.round(2.55 * percent);
-                const R = (num >> 16) + amt;
-                const G = (num >> 8 & 0x00FF) + amt;
-                const B = (num & 0x0000FF) + amt;
-                return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
-                    (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
-                    (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
-            };
-
-
-            let items = [];
-            console.log('🔧 Processing invoice items...');
-            console.log('🔧 Full invoice object:', invoice);
-            console.log('🔧 Raw items_json:', invoice.items_json);
-            console.log('🔧 Type:', typeof invoice.items_json);
-            console.log('🔧 Is Array:', Array.isArray(invoice.items_json));
-            
-            try {
-                // Strategy 1: Direct array items_json
-                if (Array.isArray(invoice.items_json)) {
-                    items = invoice.items_json;
-                    console.log('✅ Items parsed as direct array:', items);
-                } 
-                // Strategy 2: String JSON items_json
-                else if (typeof invoice.items_json === 'string' && invoice.items_json.trim() !== '') {
-                    try {
-                        items = JSON.parse(invoice.items_json);
-                        if (!Array.isArray(items)) {
-                            items = [items]; // Convert single object to array
-                        }
-                        console.log('✅ Items parsed from JSON string:', items);
-                    } catch (parseError) {
-                        console.log('❌ Failed to parse items_json as JSON:', parseError);
-                        items = [];
-                    }
-                } 
-                // Strategy 3: Object items_json (convert to array)
-                else if (invoice.items_json && typeof invoice.items_json === 'object') {
-                    items = [invoice.items_json];
-                    console.log('✅ Items converted from single object:', items);
-                } 
-                // Strategy 4: Try invoice.items field
-                else if (invoice.items && Array.isArray(invoice.items)) {
-                    items = invoice.items;
-                    console.log('✅ Found items in invoice.items field:', items);
-                } 
-                // Strategy 5: Try calculations_json
-                else if (invoice.calculations_json) {
-                    console.log('🔧 Trying calculations_json fallback...');
-                    try {
-                        let calc = typeof invoice.calculations_json === 'string' 
-                            ? JSON.parse(invoice.calculations_json) 
-                            : invoice.calculations_json;
-                        if (calc && calc.items && Array.isArray(calc.items)) {
-                            items = calc.items;
-                            console.log('✅ Found items in calculations_json:', items);
-                        } else if (calc && calc.invoice && calc.invoice.items) {
-                            items = calc.invoice.items;
-                            console.log('✅ Found items in calculations_json.invoice.items:', items);
-                        }
-                    } catch (calcError) {
-                        console.log('❌ Error parsing calculations_json:', calcError);
-                    }
-                } 
-                // Strategy 6: Try metadata_json
-                else if (invoice.metadata_json) {
-                    console.log('🔧 Trying metadata_json fallback...');
-                    try {
-                        let metadata = typeof invoice.metadata_json === 'string' 
-                            ? JSON.parse(invoice.metadata_json) 
-                            : invoice.metadata_json;
-                        if (metadata && metadata.items && Array.isArray(metadata.items)) {
-                            items = metadata.items;
-                            console.log('✅ Found items in metadata_json:', items);
-                        } else if (metadata && metadata.invoice && metadata.invoice.items) {
-                            items = metadata.invoice.items;
-                            console.log('✅ Found items in metadata_json.invoice.items:', items);
-                        }
-                    } catch (metaError) {
-                        console.log('❌ Error parsing metadata_json:', metaError);
-                    }
-                }
-                
-                // Strategy 7: Create fallback from basic invoice data if still no items
-                if (!items || items.length === 0) {
-                    console.log('🔧 Creating fallback item from basic invoice data...');
-                    const fallbackItem = {
-                        productName: 'Invoice Item',
-                        quantity: 1,
-                        unitPrice: invoice.grand_total || invoice.total || 0,
-                        lineTotal: invoice.grand_total || invoice.total || 0,
-                        description: 'Generated from invoice total'
-                    };
-                    items = [fallbackItem];
-                    console.log('✅ Created fallback item:', items);
-                }
-                
-                // Validate and fix items structure
-                if (Array.isArray(items)) {
-                    items = items.map((item, index) => {
-                        console.log(`🔧 Processing item ${index}:`, item);
-                        
-                        // Enhanced field mapping with more fallback names and validation
-                        let productName = item.productName || item.product_name || item.name || item.productname || 
-                                         item.itemName || item.item_name || item.title || `Item ${index + 1}`;
-                        
-                        let quantity = parseInt(item.quantity || item.qty || item.amount || item.count || 1);
-                        if (isNaN(quantity) || quantity <= 0) {
-                            quantity = 1;
-                            console.log(`⚠️ Invalid quantity for item ${index}, defaulting to 1`);
-                        }
-                        
-                        let unitPrice = parseFloat(item.unitPrice || item.unit_price || item.price || item.unitprice || 
-                                                  item.pricePerUnit || item.rate || item.cost || 0);
-                        if (isNaN(unitPrice) || unitPrice < 0) {
-                            unitPrice = 0;
-                            console.log(`⚠️ Invalid unit price for item ${index}, defaulting to 0`);
-                        }
-                        
-                        let lineTotal = parseFloat(item.lineTotal || item.line_total || item.total || item.linetotal || 
-                                                  item.itemTotal || item.subTotal || 0);
-                        if (isNaN(lineTotal) || lineTotal < 0) {
-                            lineTotal = 0;
-                            console.log(`⚠️ Invalid line total for item ${index}, will calculate`);
-                        }
-                        
-                        // Calculate line total if missing or invalid
-                        if (!lineTotal || lineTotal === 0) {
-                            lineTotal = quantity * unitPrice;
-                            console.log(`📊 Calculated line total for item ${index}: ${quantity} × ${unitPrice} = ${lineTotal}`);
-                        }
-                        
-                        const processedItem = {
-                            productName: String(productName).trim(),
-                            quantity: quantity,
-                            unitPrice: unitPrice,
-                            lineTotal: lineTotal,
-                            description: String(item.description || item.desc || item.note || '').trim()
-                        };
-                        
-                        // Validation check
-                        if (!processedItem.productName || processedItem.productName === '') {
-                            processedItem.productName = `Item ${index + 1}`;
-                            console.log(`⚠️ Empty product name for item ${index}, using fallback`);
-                        }
-                        
-                        console.log(`✅ Processed item ${index}:`, processedItem);
-                        return processedItem;
-                    });
-                    
-                    console.log('✅ Final processed items:', items);
-                }
-                
-            } catch (e) {
-                console.error('❌ Error parsing items:', e);
-                console.log('🔧 Creating fallback items...');
-                
-                // Create a fallback item to help with debugging
-                items = [{
-                    productName: 'Debug: Items parsing failed',
-                    quantity: 1,
-                    unitPrice: 0,
-                    lineTotal: 0,
-                    description: 'Error: ' + (e.message || 'Unknown parsing error')
-                }];
-            }
-            
-            console.log('🎯 Final items count:', items.length);
-            items.forEach((item, i) => console.log(`🎯 Item ${i}:`, item.productName, 'x', item.quantity, '@', item.unitPrice));
-            
-            const compactHTML = `
-                <div class="paper-wrapper">
-                    <div class="paper">
-                    <!-- Header band -->
-                    ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
-                    <div style="background: ${businessProfile?.premiumActive && businessProfile.customHeaderBgColor ? 
-                        `linear-gradient(135deg, ${businessProfile.customHeaderBgColor}, ${adjustBrightness(businessProfile.customHeaderBgColor, 20)})` : 
-                        'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: ${businessProfile?.premiumActive && businessProfile.customHeaderTextColor ? businessProfile.customHeaderTextColor : 'white'}; padding: 12px 0; text-align: center;">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                            ${businessProfile?.premiumActive && businessProfile.customHeaderLogoUrl ? 
-                                `<img src="${businessProfile.customHeaderLogoUrl}" alt="Header Logo" style="height: 32px; width: auto;">` :
-                                `<img src="/assets/aspree-header-logo.png" alt="Aspree Logo" style="height: 32px; width: auto;">`
-                            }
-                            <p style="font-size: 14px; font-weight: 600; margin: 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; color: ${businessProfile?.premiumActive && businessProfile.customHeaderTextColor ? businessProfile.customHeaderTextColor : 'white'};">
-                                ${businessProfile?.premiumActive && businessProfile.customHeaderText ? 
-                                    businessProfile.customHeaderText : 
-                                    'Powered by Aspree Invoice Generator'
-                                }
-                            </p>
-                        </div>
-                    </div>
-                    `}
-                    
-                    <div class="inv-header">
-                        <div class="logo-section">
-                            ${businessLogo ? 
-                                `<img src="${businessLogo}" alt="Logo">` : 
-                                `<div style="background: #f0f0f0; padding: 15px; border-radius: 4px; margin-bottom: 12px; font-size: 18px; color: #666; text-align: center; border: 1px solid #e0e0e0;">LOGO</div>`
-                            }
-                            ${businessProfile && businessProfile.hideBusinessName ? '' : `<strong>${invoice.merchant_name || '-'}</strong>`}
-                        </div>
-                        <div class="invoice-meta">
-                            <h1 class="invoice-title">${invoiceTitle}</h1>
-                            <div class="invoice-details">
-                                <strong>No:</strong> ${invoice.invoice_number || 'INV-UNKNOWN'}
-                            </div>
-                            <div class="invoice-details">
-                                <strong>Tanggal:</strong> ${formatDate(invoice.invoice_date || invoice.created_at || new Date().toISOString())}
-                            </div>
-                            <div class="invoice-details">
-                                <strong>Jatuh Tempo:</strong> ${formatDate(invoice.due_date || invoice.invoice_date || new Date().toISOString())}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="parties">
-                        <div class="party-section">
-                            <h3>DARI</h3>
-                            <address>
-                                <strong>${invoice.merchant_name || 'Business Name'}</strong><br>
-                                ${invoice.merchant_address ? invoice.merchant_address + '<br>' : ''}
-                                ${invoice.merchant_phone ? invoice.merchant_phone + '<br>' : ''}
-                                ${invoice.merchant_email || ''}
-                            </address>
-                        </div>
-                        <div class="party-section">
-                            <h3>KEPADA</h3>
-                            <address>
-                                <strong>${invoice.customer_name || 'Customer Name'}</strong><br>
-                                ${invoice.customer_address ? invoice.customer_address + '<br>' : ''}
-                                ${invoice.customer_phone ? invoice.customer_phone + '<br>' : ''}
-                                ${invoice.customer_email || ''}
-                            </address>
-                        </div>
-                    </div>
-                    
-                    <div class="items-section">
-                        <table class="items-table">
-                            <thead>
-                                <tr>
-                                    <th>Produk/Layanan</th>
-                                    <th class="text-center">Qty</th>
-                                    <th class="text-right">Harga Satuan</th>
-                                    <th class="text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items.length === 0 ? 
-                                    '<tr><td colspan="4" style="text-align: center; color: #666;">No items found</td></tr>' :
-                                    items.map(item => `
-                                        <tr>
-                                            <td data-label="Produk/Layanan">
-                                                <div class="product-name">${item.productName || 'Product'}</div>
-                                                ${item.description && item.description.trim() ? `<div class="product-description">${item.description}</div>` : ''}
-                                            </td>
-                                            <td class="text-center" data-label="QTY">${item.quantity || 1}</td>
-                                            <td class="text-right" data-label="Harga Satuan">${formatCurrency(item.unitPrice || 0)}</td>
-                                            <td class="text-right" data-label="Total">${formatCurrency(item.lineTotal || 0)}</td>
-                                        </tr>
-                                    `).join('')
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Compact Notes Section -->
-                    ${(() => {
-                        try {
-                            console.log('🔧 Processing notes - raw notes_json:', invoice.notes_json);
-                            let notes = null;
-                            if (invoice.notes_json) {
-                                if (typeof invoice.notes_json === 'string') {
-                                    try {
-                                        notes = JSON.parse(invoice.notes_json);
-                                    } catch (e) {
-                                        console.log('❌ Failed to parse notes_json as string:', e);
-                                        notes = null;
-                                    }
-                                } else if (typeof invoice.notes_json === 'object') {
-                                    notes = invoice.notes_json; // Already an object
-                                }
-                            }
-                            console.log('🔧 Parsed notes:', notes);
-                            
-                            // Collect all notes into an array
-                            const allNotes = [];
-                            
-                            // List of placeholder/demo texts to filter out
-                            const placeholderTexts = [
-                                'Pembayaran dapat dilakukan melalui transfer bank atau tunai',
-                                'tambahkan catatan tambahan disini, jika tidak ada catatan maka kolom catatan akan dihilangkan',
-                                'Klik untuk menambahkan catatan...',
-                                'Extract special requests from message',
-                                'Extract delivery schedule if mentioned',
-                                'Extract appointment info if service booking',
-                                'Extract payment deadline if mentioned'
-                            ];
-                            
-                            const isPlaceholderText = (text) => {
-                                if (!text || !text.trim()) return true;
-                                const trimmedText = text.trim();
-                                return placeholderTexts.some(placeholder => trimmedText.includes(placeholder));
-                            };
-                            
-                            // Only process main user-editable notes (removed AI extraction fields)
-                            if (notes) {
-                                if (notes.publicNotes && notes.publicNotes.trim() && !isPlaceholderText(notes.publicNotes)) {
-                                    allNotes.push(notes.publicNotes.trim());
-                                    console.log('✅ Added publicNotes:', notes.publicNotes.trim());
-                                }
-                                if (notes.customNotes && notes.customNotes.trim() && !isPlaceholderText(notes.customNotes)) {
-                                    allNotes.push(notes.customNotes.trim());
-                                    console.log('✅ Added customNotes:', notes.customNotes.trim());
-                                }
-                            }
-                            
-                            console.log('🔧 All notes collected:', allNotes);
-                            
-                            // Only show notes if they exist
-                            if (allNotes.length === 0) {
-                                console.log('❌ No notes found, hiding section');
-                                return '';
-                            }
-                            
-                            // Combine notes intelligently, max 2 rows
-                            const combinedNotes = allNotes.length <= 2 ? 
-                                allNotes : 
-                                [allNotes.slice(0, 2).join(' | ')];
-                            
-                            console.log('✅ Final combined notes:', combinedNotes);
-                            
-                            return `
-                                <div style="padding: 12px 32px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(247, 250, 252, 0.3);">
-                                    ${combinedNotes.map(note => 
-                                        `<p style="margin: 0; font-size: 14px; color: var(--text-light); line-height: 1.4;"><strong style="color: var(--text);">Catatan:</strong> ${note}</p>`
-                                    ).join('')}
-                                </div>
-                            `;
-                        } catch (e) {
-                            console.error('❌ Error parsing compact notes:', e);
-                            return '';
-                        }
-                    })()}
-                    
-                    ${(() => {
-                        // Calculate totals with proper fallbacks and validation
-                        console.log('💰 Calculating invoice totals...');
-                        console.log('💰 Raw invoice totals:', {
-                            subtotal: invoice.subtotal,
-                            discount: invoice.discount,
-                            tax_amount: invoice.tax_amount,
-                            shipping_cost: invoice.shipping_cost,
-                            grand_total: invoice.grand_total
-                        });
-                        console.log('💰 Raw invoice totals types:', {
-                            subtotal: typeof invoice.subtotal,
-                            discount: typeof invoice.discount,
-                            tax_amount: typeof invoice.tax_amount,
-                            shipping_cost: typeof invoice.shipping_cost,
-                            grand_total: typeof invoice.grand_total
-                        });
-                        
-                        // Calculate subtotal from items if not provided
-                        let calculatedSubtotal = parseFloat(invoice.subtotal || 0);
-                        if (!calculatedSubtotal || calculatedSubtotal === 0) {
-                            calculatedSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.lineTotal) || 0), 0);
-                            console.log('📊 Calculated subtotal from items:', calculatedSubtotal);
-                        }
-                        
-                        const discount = parseFloat(invoice.discount || 0);
-                        const taxAmount = parseFloat(invoice.tax_amount || 0);
-                        const shippingCost = parseFloat(invoice.shipping_cost || 0);
-                        
-                        // Calculate grand total if not provided
-                        let grandTotal = parseFloat(invoice.grand_total || 0);
-                        if (!grandTotal || grandTotal === 0) {
-                            grandTotal = calculatedSubtotal - discount + taxAmount + shippingCost;
-                            console.log('📊 Calculated grand total:', grandTotal);
-                        }
-                        
-                        const totals = {
-                            subtotal: calculatedSubtotal,
-                            discount: discount,
-                            taxAmount: taxAmount,
-                            shippingCost: shippingCost,
-                            grandTotal: grandTotal
-                        };
-                        
-                        console.log('✅ Final calculated totals:', totals);
-                        
-                        return `
-                    <div class="summary">
-                        <div class="summary-grid">
-                            <div class="summary-label">Subtotal</div>
-                            <div class="summary-value">${formatCurrency(totals.subtotal)}</div>
-                            
-                            ${totals.discount !== undefined && totals.discount !== null && totals.discount > 0 ? `
-                            <div class="summary-label">${(() => {
-                                const discountType = invoice.calculations?.discountType || invoice.discount_type;
-                                const discountValue = invoice.calculations?.discountValue || invoice.discount_value;
-                                if (discountType === 'percentage' && discountValue) {
-                                    return `Diskon (${discountValue}%)`;
-                                } else if (discountType === 'fixed' || discountType === 'amount') {
-                                    return 'Diskon (Jumlah Tetap)';
-                                } else {
-                                    return 'Diskon';
-                                }
-                            })()}</div>
-                            <div class="summary-value">-${formatCurrency(totals.discount)}</div>
-                            ` : ''}
-                            
-                            ${totals.taxAmount > 0 ? `
-                            <div class="summary-label">Pajak</div>
-                            <div class="summary-value">${formatCurrency(totals.taxAmount)}</div>
-                            ` : ''}
-                            
-                            ${totals.shippingCost > 0 ? `
-                            <div class="summary-label">Biaya Kirim</div>
-                            <div class="summary-value">${formatCurrency(totals.shippingCost)}</div>
-                            ` : ''}
-                            
-                            <div class="summary-label total-label">TOTAL</div>
-                            <div class="summary-value total-value">${formatCurrency(totals.grandTotal)}</div>
-                        </div>
-                    </div>`;
-                    })()}
-
-                    <!-- Payment Schedule section -->
-                    ${(() => {
-                        console.log('🔧🔧🔧 ============PAYMENT SCHEDULE PROCESSING============ 🔧🔧🔧');
-                        console.log('🔧 Universal payment schedule processing started');
-                        console.log('🔧 Raw payment_schedule_json:', invoice.payment_schedule_json);
-                        console.log('🔧 Type of payment_schedule_json:', typeof invoice.payment_schedule_json);
-                        console.log('🔧 Discount amount:', invoice.discount_amount);
-                        console.log('🔧 Discount amount type:', typeof invoice.discount_amount);
-                        console.log('🔧 Discount amount parsed:', parseFloat(invoice.discount_amount));
-                        console.log('🔧 Discount amount > 0?', parseFloat(invoice.discount_amount) > 0);
-                        console.log('🔧 Boolean discount_amount:', !!invoice.discount_amount);
-                        
-                        // STEP 1: Try to parse payment_schedule_json first (preferred method)
-                        if (invoice.payment_schedule_json) {
-                            try {
-                                let paymentSchedule = null;
-                                if (typeof invoice.payment_schedule_json === 'string') {
-                                    console.log('🔧 Attempting to parse string payment schedule...');
-                                    try {
-                                        paymentSchedule = JSON.parse(invoice.payment_schedule_json);
-                                        console.log('✅ Successfully parsed payment schedule from string:', paymentSchedule);
-                                    } catch (e) {
-                                        console.log('❌ Failed to parse payment_schedule_json as string:', e);
-                                        console.log('❌ Raw string was:', invoice.payment_schedule_json);
-                                        // Continue to fallback logic below
-                                    }
-                                } else if (typeof invoice.payment_schedule_json === 'object') {
-                                    paymentSchedule = invoice.payment_schedule_json; // Already an object
-                                    console.log('✅ Using object payment schedule:', paymentSchedule);
-                                }
-                                
-                                if (paymentSchedule && paymentSchedule.scheduleType === 'down_payment') {
-                                    console.log('✅ Payment schedule section will be rendered from payment_schedule_json!');
-                                    return `
-                                    <div class="payment-schedule-section" style="padding: 20px 32px; border-top: 1px solid var(--border); background: var(--bg);">
-                                        <h3 style="color: var(--text); font-size: 16px; font-weight: 600; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                            Jadwal Pembayaran
-                                        </h3>
-                                        <div class="payment-schedule-table" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
-                                            <div style="background: var(--bg-light); padding: 18px 20px; border-bottom: 2px solid var(--border); display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; font-weight: 700; font-size: 13px; color: var(--text); text-transform: uppercase; letter-spacing: 0.8px;">
-                                                <div>Jenis Pembayaran</div>
-                                                <div style="text-align: center;">Jatuh Tempo</div>
-                                                <div style="text-align: right;">Jumlah</div>
-                                            </div>
-                                            ${(() => {
-                                                // Show complete payment schedule with both phases
-                                                const finalAmount = invoice.final_payment_amount || paymentSchedule.remainingBalance.amount;
-                                                const currentStage = invoice.payment_stage || 'down_payment';
-                                                
-                                                // Determine status indicators
-                                                const getStatusIndicator = (phase) => {
-                                                    if (currentStage === 'completed' || (currentStage === 'final_payment' && phase === 'down_payment')) {
-                                                        return '✅'; // Completed
-                                                    } else if (currentStage === phase) {
-                                                        return '⏳'; // Current/Pending
-                                                    } else {
-                                                        return '🔒'; // Future/Locked
-                                                    }
-                                                };
-                                                
-                                                const getPhaseStyle = (phase) => {
-                                                    const baseStyle = "padding: 20px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: center;";
-                                                    
-                                                    if (currentStage === phase) {
-                                                        return baseStyle + " background: rgba(139, 95, 255, 0.05); border-left: 4px solid #8B5FFF;";
-                                                    } else if (currentStage === 'completed' || (currentStage === 'final_payment' && phase === 'down_payment')) {
-                                                        return baseStyle + " opacity: 0.7; background: rgba(72, 187, 120, 0.05);";
-                                                    } else {
-                                                        return baseStyle + " opacity: 0.6;";
-                                                    }
-                                                };
-                                                
-                                                return `
-                                                    <!-- Down Payment Row -->
-                                                    <div style="${getPhaseStyle('down_payment')}">
-                                                        <div style="font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                                                            <span style="font-size: 16px;">${getStatusIndicator('down_payment')}</span>
-                                                            ${(() => {
-                                                                const dp = paymentSchedule.downPayment;
-                                                                if (dp.type === 'fixed') {
-                                                                    return 'Uang Muka (Jumlah Tetap)';
-                                                                } else {
-                                                                    return `Uang Muka (${dp.percentage}%)`;
-                                                                }
-                                                            })()}
-                                                        </div>
-                                                        <div style="text-align: center; color: var(--text-light); font-size: 15px;">${formatDate(paymentSchedule.downPayment.dueDate)}</div>
-                                                        <div style="text-align: right; font-weight: 600; font-size: 16px; color: var(--text);">${formatCurrency(paymentSchedule.downPayment.amount)}</div>
-                                                    </div>
-                                                    <!-- Remaining Payment Row -->
-                                                    <div style="${getPhaseStyle('final_payment')}">
-                                                        <div style="font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                                                            <span style="font-size: 16px;">${getStatusIndicator('final_payment')}</span>
-                                                            Sisa Pembayaran
-                                                        </div>
-                                                        <div style="text-align: center; color: var(--text-light); font-size: 15px;">${formatDate(paymentSchedule.remainingBalance.dueDate)}</div>
-                                                        <div style="text-align: right; font-weight: 600; font-size: 16px; color: var(--text);">${formatCurrency(finalAmount)}</div>
-                                                    </div>
-                                                `;
-                                            })()}
-                                        </div>
-                                    </div>
-                                    `;
-                                }
-                            } catch (e) {
-                                console.error('❌ Error parsing payment schedule:', e);
-                            }
-                        }
-                        
-                        // STEP 2: Only show payment schedule for ACTUAL payment schedules
-                        // DO NOT show payment schedule for regular discounts
-                        // Only show if there's explicit payment schedule data (not discount_amount)
-                        console.log('✅ No payment schedule detected - discount_amount should not trigger payment schedule');
-                        console.log('   Discount should only appear in invoice summary, not as payment schedule');
-                        
-                        // No payment schedule found
-                        console.log('✅ No payment schedule detected - showing standard invoice');
-                        return '';
-                    })()}
-
-                    <!-- Footer band with terms and contact -->
-                    <div class="footer-band" style="background: ${businessProfile?.premiumActive && businessProfile.customFooterBgColor ? 
-                        `linear-gradient(135deg, ${businessProfile.customFooterBgColor}, ${adjustBrightness(businessProfile.customFooterBgColor, 20)})` : 
-                        'linear-gradient(135deg, #311d6b, #4a2b7a)'}; color: white; padding: 20px; margin-bottom: 0;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 200px; gap: 32px; align-items: start; margin-bottom: 24px;">
-                            <div class="footer-section">
-                                <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Syarat & Ketentuan</h4>
-                                <p style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8;">${businessTerms}</p>
-                            </div>
-                            <div class="footer-section">
-                                <h4 style="font-size: 14px; font-weight: 600; margin: 0 0 16px 0; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px;">Kontak</h4>
-                                <ul style="font-size: 13px; line-height: 1.6; margin: 0; opacity: 0.8; list-style: none; padding: 0;">
-                                    <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                        <span style="opacity: 0.7;">📞</span>
-                                        ${businessProfile ? (businessProfile.phone || invoice.merchant_phone) : invoice.merchant_phone || '-'}
-                                    </li>
-                                    <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                                        <span style="opacity: 0.7;">📧</span>
-                                        ${businessProfile ? (businessProfile.email || invoice.merchant_email) : invoice.merchant_email || '-'}
-                                    </li>
-                                    ${businessProfile && businessProfile.website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${escapeHtml(businessProfile.website)}</li>` : invoice.merchant_website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${escapeHtml(invoice.merchant_website)}</li>` : ''}
-                                </ul>
-                            </div>
-                            ${businessProfile && businessProfile.premiumActive && businessProfile.hideAspreeBranding ? '' : `
-                            <div class="footer-section" style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 20px 0 0 0; margin: 0;">
-                                ${businessProfile?.premiumActive && businessProfile.customFooterLogoUrl ? 
-                                    `<img src="${businessProfile.customFooterLogoUrl}" alt="Footer Logo" style="height: 120px; width: auto; opacity: 0.9;">` :
-                                    `<img src="/assets/aspri-logo.png" alt="aspree.id" style="height: 120px; width: auto; opacity: 0.9;">`
-                                }
-                            </div>
-                            `}
-                        </div>
-                    </div>
-                    </div>
-                </div>
-            `;
-            
-            return compactHTML;
-        }
-
-        // Update logo in the template after async loading
-        function updateLogoInTemplate(logoUrl) {
-            try {
-                // Find the logo img element and update it
-                const logoElements = document.querySelectorAll('.logo-section img');
-                logoElements.forEach(logoElement => {
-                    logoElement.src = logoUrl;
-                    logoElement.style.display = 'block';
-                });
-
-                // Also update any LOGO placeholder divs
-                const placeholders = document.querySelectorAll('.logo-section div');
-                placeholders.forEach(placeholder => {
-                    if (placeholder.textContent === 'LOGO') {
-                        placeholder.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-height: 120px; max-width: 300px; object-fit: contain; border-radius: 4px; margin-bottom: 6px;">`;
-                    }
-                });
-
-                console.log('✅ Logo updated in template:', logoUrl);
-            } catch (error) {
-                console.error('❌ Error updating logo in template:', error);
-            }
-        }
-
-        function updateFooterFromBusinessSettings(businessSettings) {
-            try {
-                console.log('🔄 Updating footer with business settings:', businessSettings);
-                
-                // Update terms and conditions
-                const termsSection = document.querySelector('.footer-section p');
-                if (termsSection && businessSettings.termsAndConditions) {
-                    termsSection.textContent = businessSettings.termsAndConditions;
-                    console.log('✅ Terms updated:', businessSettings.termsAndConditions);
-                }
-                
-                // Update contact information
-                const contactList = document.querySelector('.footer-section ul');
-                if (contactList && businessSettings) {
-                    const phone = businessSettings.phone || '-';
-                    const email = businessSettings.email || '-';
-                    const website = businessSettings.website || '';
-                    
-                    contactList.innerHTML = `
-                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                            <span style="opacity: 0.7;">📞</span>
-                            ${phone}
-                        </li>
-                        <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                            <span style="opacity: 0.7;">📧</span>
-                            ${email}
-                        </li>
-                        ${website ? `<li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;"><span style="opacity: 0.7;">🌐</span>${website}</li>` : ''}
-                    `;
-                    console.log('✅ Contact information updated:', { phone, email, website });
-                }
-                
-                console.log('✅ Footer successfully updated with business settings');
-            } catch (error) {
-                console.error('❌ Error updating footer from business settings:', error);
-            }
-        }
-
-        // Generate payment schedule breakdown for online payment section
-        function generatePaymentScheduleBreakdown(invoice, paymentInfo, formatCurrency) {
-            try {
-                let paymentSchedule = null;
-                
-                // Parse payment schedule data
-                if (invoice.payment_schedule_json) {
-                    if (typeof invoice.payment_schedule_json === 'string') {
-                        paymentSchedule = JSON.parse(invoice.payment_schedule_json);
-                    } else if (typeof invoice.payment_schedule_json === 'object') {
-                        paymentSchedule = invoice.payment_schedule_json;
-                    }
-                }
-                
-                // If we have payment schedule data, show detailed breakdown
-                if (paymentSchedule && paymentSchedule.scheduleType === 'down_payment') {
-                    console.log('💰 Showing payment schedule breakdown in online payment section');
-                    return `
-                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 20px; overflow: hidden;">
-                            <div style="background: #f8fafc; padding: 16px; border-bottom: 1px solid #e2e8f0;">
-                                <h4 style="margin: 0; font-size: 16px; font-weight: 600; color: #2d3748;">💳 Jadwal Pembayaran</h4>
-                            </div>
-                            <div style="padding: 20px;">
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                    <div style="padding: 16px; background: ${paymentInfo.stage === 'down_payment' ? 'rgba(49, 29, 107, 0.1)' : '#f8fafc'}; border-radius: 8px; ${paymentInfo.stage === 'down_payment' ? 'border: 2px solid #311d6b;' : 'border: 1px solid #e2e8f0;'}">
-                                        <div style="font-size: 12px; color: #718096; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">${(() => {
-                                            const dp = paymentSchedule.downPayment;
-                                            if (dp.type === 'fixed') {
-                                                return 'Uang Muka (Jumlah Tetap)';
-                                            } else {
-                                                return `Uang Muka (${dp.percentage}%)`;
-                                            }
-                                        })()}</div>
-                                        <div style="font-size: 18px; font-weight: 700; color: ${paymentInfo.stage === 'down_payment' ? '#311d6b' : '#2d3748'};">${formatCurrency(paymentSchedule.downPayment.amount)}</div>
-                                        <div style="font-size: 12px; color: #718096; margin-top: 4px;">${paymentInfo.stage === 'down_payment' ? '← Sedang dibayar' : 'Selesai'}</div>
-                                    </div>
-                                    <div style="padding: 16px; background: ${paymentInfo.stage === 'final_payment' ? 'rgba(49, 29, 107, 0.1)' : '#f8fafc'}; border-radius: 8px; ${paymentInfo.stage === 'final_payment' ? 'border: 2px solid #311d6b;' : 'border: 1px solid #e2e8f0;'}">
-                                        <div style="font-size: 12px; color: #718096; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Sisa Pembayaran</div>
-                                        <div style="font-size: 18px; font-weight: 700; color: ${paymentInfo.stage === 'final_payment' ? '#311d6b' : '#2d3748'};">${formatCurrency(invoice.final_payment_amount || paymentSchedule.remainingBalance.amount)}</div>
-                                        <div style="font-size: 12px; color: #718096; margin-top: 4px;">${paymentInfo.stage === 'final_payment' ? '← Sedang dibayar' : (paymentInfo.stage === 'down_payment' ? 'Menunggu' : 'Selesai')}</div>
-                                    </div>
-                                </div>
-                                <div style="padding: 12px; background: #f0fff4; border: 1px solid #c6f6d5; border-radius: 6px;">
-                                    <div style="font-size: 13px; color: #2f855a; font-weight: 500;">
-                                        ${paymentInfo.stage === 'down_payment' 
-                                            ? `✨ Anda sedang membayar uang muka sebesar ${formatCurrency(paymentSchedule.downPayment.amount)}` 
-                                            : `✨ Sisa pembayaran sebesar ${formatCurrency(invoice.final_payment_amount || paymentSchedule.remainingBalance.amount)}`
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                // No fallback for discount_amount - only show payment schedule for actual schedules
-                console.log('✅ No payment schedule breakdown needed for regular discount invoices');
-                
-                return '';
-            } catch (e) {
-                console.error('Error generating payment schedule breakdown:', e);
-                return '';
-            }
-        }
-
-        // Load payment methods configuration
-        let paymentMethods = null;
         
-        async function loadPaymentMethods() {
-            try {
-                // Try to load from localStorage first (business profile settings)
-                const businessProfile = localStorage.getItem('businessProfile');
-                if (businessProfile) {
-                    const profile = JSON.parse(businessProfile);
-                    if (profile.paymentMethods) {
-                        paymentMethods = profile.paymentMethods;
-                        console.log('💳 Payment methods loaded from business profile:', paymentMethods);
-                        return;
-                    }
-                }
-                
-                // Fallback to API call
-                const response = await fetch('/api/payment-methods');
-                const apiResponse = await response.json();
-                
-                // Handle the API response structure properly
-                if (apiResponse.success && apiResponse.paymentMethods) {
-                    paymentMethods = apiResponse.paymentMethods;
-                } else {
-                    paymentMethods = apiResponse;
-                }
-                console.log('💳 Payment methods loaded from API:', paymentMethods);
-            } catch (error) {
-                console.error('Error loading payment methods:', error);
-                paymentMethods = { bankTransfer: { enabled: false } }; // Fallback
-            }
-        }
-        
-        // Generate payment methods based on configuration
-        function generatePaymentMethodsHTML() {
-            if (!paymentMethods) {
-                return `
-                    <div class="payment-method active" data-method="credit_card">
-                        <span>💳</span> Credit Card
-                    </div>
-                    <div class="payment-method" data-method="bank_transfer">
-                        <span>🏦</span> Bank Transfer
-                    </div>
-                    <div class="payment-method" data-method="e_wallet">
-                        <span>📱</span> E-Wallet
-                    </div>
-                    <div class="payment-method" data-method="convenience_store">
-                        <span>🏪</span> Convenience Store
-                    </div>
-                `;
-            }
+        res.cookie('merchantToken', result.token, cookieOptions);
+      }
 
-            let methodsHTML = '';
-            let firstMethod = '';
-            
-            // Check for Xendit payment gateway (prioritize as it's online payment)
-            const xenditEnabled = paymentMethods.xendit?.enabled;
-            if (xenditEnabled) {
-                const xenditMethods = paymentMethods.xendit?.paymentMethods || {};
-                let xenditMethodsText = [];
-                
-                if (xenditMethods.bankTransfer) xenditMethodsText.push('Bank Transfer');
-                if (xenditMethods.ewallet) xenditMethodsText.push('E-Wallet');
-                if (xenditMethods.creditCard) xenditMethodsText.push('Kartu Kredit');
-                if (xenditMethods.retailOutlet) xenditMethodsText.push('Retail');
-                
-                const methodText = xenditMethodsText.length > 0 ? xenditMethodsText.join(', ') : 'Pembayaran Online';
-                
-                methodsHTML += `
-                    <div class="payment-method ${firstMethod === '' ? 'active' : ''}" data-method="xendit">
-                        <span>💳</span> ${methodText} (Xendit)
-                    </div>
-                `;
-                if (firstMethod === '') {
-                    firstMethod = 'xendit';
-                    selectedPaymentMethod = 'xendit'; // Set default
-                }
-            }
-            
-            // Check for bank transfer (supports both localStorage and API structure)
-            const bankTransferEnabled = paymentMethods.bankTransfer?.enabled || paymentMethods.bank_transfer?.enabled;
-            if (bankTransferEnabled) {
-                const bankName = paymentMethods.bankTransfer?.bankName || paymentMethods.bank_transfer?.bank_name || 'Bank Transfer';
-                methodsHTML += `
-                    <div class="payment-method ${firstMethod === '' ? 'active' : ''}" data-method="bank_transfer">
-                        <span>🏦</span> ${bankName}
-                    </div>
-                `;
-                if (firstMethod === '') {
-                    firstMethod = 'bank_transfer';
-                    selectedPaymentMethod = 'bank_transfer'; // Set default
-                }
-            }
-            
-            // Check for QRIS
-            if (paymentMethods.qris?.enabled) {
-                methodsHTML += `
-                    <div class="payment-method ${firstMethod === '' ? 'active' : ''}" data-method="qris">
-                        <span>📱</span> QRIS
-                    </div>
-                `;
-                if (firstMethod === '') {
-                    firstMethod = 'qris';
-                    selectedPaymentMethod = 'qris';
-                }
-            }
-            
-            // Check for E-Wallet
-            if (paymentMethods.ewallet?.enabled) {
-                const ewalletTypes = paymentMethods.ewallet?.types || 'E-Wallet';
-                methodsHTML += `
-                    <div class="payment-method ${firstMethod === '' ? 'active' : ''}" data-method="ewallet">
-                        <span>📱</span> ${ewalletTypes}
-                    </div>
-                `;
-                if (firstMethod === '') {
-                    firstMethod = 'ewallet';
-                    selectedPaymentMethod = 'ewallet';
-                }
-            }
-            
-            // Check for Cash
-            if (paymentMethods.cash?.enabled) {
-                methodsHTML += `
-                    <div class="payment-method ${firstMethod === '' ? 'active' : ''}" data-method="cash">
-                        <span>💵</span> Cash
-                    </div>
-                `;
-                if (firstMethod === '') {
-                    firstMethod = 'cash';
-                    selectedPaymentMethod = 'cash';
-                }
-            }
-            
-            // If no methods are configured, show a message
-            if (methodsHTML === '') {
-                methodsHTML = `
-                    <div style="text-align: center; padding: 20px; color: #666; border: 2px dashed #ddd; border-radius: 8px;">
-                        <p><strong>No payment methods configured</strong></p>
-                        <p>Please configure payment methods in business settings</p>
-                    </div>
-                `;
-            }
-            
-            return methodsHTML;
-        }
+      res.json(result);
 
-        // Generate bank transfer details
-        function generateBankTransferDetails() {
-            if (!paymentMethods?.bankTransfer?.enabled && !paymentMethods?.bank_transfer?.enabled) return '';
-            
-            const bankInfo = paymentMethods.bankTransfer || paymentMethods.bank_transfer;
-            // Show by default if it's the only payment method enabled
-            const displayStyle = selectedPaymentMethod === 'bank_transfer' ? 'block' : 'none';
-            return `
-                <div id="bank-transfer-details" class="payment-details" style="display: ${displayStyle}; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-top: 15px;">
-                    <h4 style="color: #2d3748; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-                        <span>🏦</span> Bank Transfer Details
-                    </h4>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                        <div>
-                            <label style="display: block; font-weight: 600; color: #4a5568; font-size: 13px; margin-bottom: 4px;">BANK NAME</label>
-                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-weight: 600;">${bankInfo.bankName || bankInfo.bank_name || '-'}</div>
-                        </div>
-                        <div>
-                            <label style="display: block; font-weight: 600; color: #4a5568; font-size: 13px; margin-bottom: 4px;">ACCOUNT NUMBER</label>
-                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-family: monospace; font-weight: 600; font-size: 16px;">${bankInfo.accountNumber || bankInfo.account_number || '-'}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr ${bankInfo.bankBranch ? '1fr' : ''}; gap: 15px; margin-bottom: 15px;">
-                        <div>
-                            <label style="display: block; font-weight: 600; color: #4a5568; font-size: 13px; margin-bottom: 4px;">ACCOUNT HOLDER</label>
-                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-weight: 600;">${bankInfo.accountHolderName || bankInfo.account_holder_name || bankInfo.accountName || '-'}</div>
-                        </div>
-                        ${(bankInfo.bankBranch || bankInfo.bank_branch) ? `
-                        <div>
-                            <label style="display: block; font-weight: 600; color: #4a5568; font-size: 13px; margin-bottom: 4px;">BRANCH</label>
-                            <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${bankInfo.bankBranch || bankInfo.bank_branch}</div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    ${bankInfo.instructions ? `
-                    <div style="background: rgba(66, 153, 225, 0.1); border: 1px solid rgba(66, 153, 225, 0.2); border-radius: 6px; padding: 15px;">
-                        <h5 style="margin: 0 0 8px 0; color: #2b6cb0; font-size: 14px;">📋 Transfer Instructions</h5>
-                        <p style="margin: 0; color: #2d3748; font-size: 14px; line-height: 1.4;">${bankInfo.instructions}</p>
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-        }
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Login failed. Please try again.'
+      });
+    }
+  }
+);
 
-        // Generate Xendit payment details
-        function generateXenditDetails() {
-            if (!paymentMethods?.xendit?.enabled) return '';
-            
-            const displayStyle = selectedPaymentMethod === 'xendit' ? 'block' : 'none';
-            const xenditMethods = paymentMethods.xendit?.paymentMethods || {};
-            
-            return `
-                <div id="xendit-details" class="payment-details" style="display: ${displayStyle}; background: #f8f9fa; border: 1px solid #4299E1; border-radius: 8px; padding: 20px; margin-top: 15px;">
-                    <h4 style="color: #2d3748; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-                        <span>💳</span> Pembayaran Online (Xendit)
-                    </h4>
-                    
-                    <div style="background: #e6f3ff; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                        <p style="color: #1a365d; font-size: 14px; margin: 0; line-height: 1.5;">
-                            <strong>🚀 Bayar secara langsung dengan metode berikut:</strong>
-                        </p>
-                        <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
-                            ${xenditMethods.bankTransfer ? '<span style="background: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">🏦 Bank Transfer</span>' : ''}
-                            ${xenditMethods.ewallet ? '<span style="background: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">📱 E-Wallet</span>' : ''}
-                            ${xenditMethods.creditCard ? '<span style="background: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">💳 Kartu Kredit</span>' : ''}
-                            ${xenditMethods.retailOutlet ? '<span style="background: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">🏪 Retail</span>' : ''}
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <button id="xendit-pay-btn" onclick="processXenditPayment()" style="
-                            background: linear-gradient(135deg, #4299E1 0%, #3182CE 100%);
-                            color: white;
-                            border: none;
-                            padding: 15px 20px;
-                            border-radius: 8px;
-                            font-weight: 600;
-                            font-size: 16px;
-                            cursor: pointer;
-                            transition: all 0.3s ease;
-                            box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
-                        ">
-                            💳 Bayar Sekarang dengan Xendit
-                        </button>
-                        
-                        <div style="text-align: center; color: #666; font-size: 12px;">
-                            Anda akan diarahkan ke halaman pembayaran Xendit yang aman
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Generate separate payment section
-        function generatePaymentSection(invoice) {
-            if (invoice.status === 'paid') {
-                return `
-                    <div class="paper-wrapper" style="margin-top: 20px;">
-                        <div class="paper">
-                            <div class="paid-notice">
-                                ✅ Invoice ini telah dibayar lunas. Terima kasih!
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // Check if payment confirmation is pending approval
-            if (invoice.payment_status === 'confirmation_pending') {
-                return `
-                    <div class="paper-wrapper" style="margin-top: 20px;">
-                        <div class="paper payment-confirmation-status">
-                        <div style="background: rgba(66, 153, 225, 0.1); border: 2px solid #4299e1; border-radius: 8px; padding: 20px; text-align: center;">
-                            <h3 style="color: #2b6cb0; margin-bottom: 15px;">⏳ Menunggu Konfirmasi Pembayaran</h3>
-                            <p style="color: #4a5568; margin-bottom: 15px;">
-                                Bukti pembayaran Anda telah diterima dan sedang dalam proses review oleh merchant.
-                                Anda akan mendapat notifikasi setelah pembayaran dikonfirmasi.
-                            </p>
-                            ${invoice.payment_confirmation_date ? `
-                                <div style="background: white; border-radius: 6px; padding: 12px; margin-top: 15px;">
-                                    <small style="color: #666;">
-                                        Upload pada: ${new Date(invoice.payment_confirmation_date).toLocaleDateString('id-ID', {
-                                            day: 'numeric', month: 'long', year: 'numeric',
-                                            hour: '2-digit', minute: '2-digit'
-                                        })}
-                                    </small>
-                                </div>
-                            ` : ''}
-                        </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            if (invoice.status === 'sent' || invoice.status === 'draft' || invoice.status === 'dp_paid') {
-                const formatCurrency = (amount) => {
-                    return new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                    }).format(amount || 0).replace('IDR', 'Rp');
-                };
-                
-                // Smart payment amount logic based on payment stage
-                const getPaymentInfo = () => {
-                    try {
-                        console.log('🔧 Current invoice payment stage:', invoice.payment_stage);
-                        console.log('🔧 Current invoice payment status:', invoice.payment_status);
-                        
-                        // Check if there's a payment schedule
-                        if (invoice.payment_schedule_json) {
-                            let paymentSchedule = null;
-                            if (typeof invoice.payment_schedule_json === 'string') {
-                                try {
-                                    paymentSchedule = JSON.parse(invoice.payment_schedule_json);
-                                } catch (e) {
-                                    console.log('❌ Failed to parse payment_schedule_json in payment section:', e);
-                                    paymentSchedule = null;
-                                }
-                            } else if (typeof invoice.payment_schedule_json === 'object') {
-                                paymentSchedule = invoice.payment_schedule_json; // Already an object
-                            }
-                            
-                            if (paymentSchedule && paymentSchedule.scheduleType === 'down_payment') {
-                                console.log('🔧 Down payment schedule detected for payment section:', paymentSchedule);
-                                console.log('🔧 Down payment amount:', paymentSchedule.downPayment?.amount);
-                                console.log('🔧 Down payment percentage:', paymentSchedule.downPayment?.percentage);
-                                
-                                // Use actual payment stage from invoice data
-                                const currentStage = invoice.payment_stage || 'down_payment';
-                                
-                                if (currentStage === 'down_payment') {
-                                    return {
-                                        amount: paymentSchedule.downPayment.amount,
-                                        label: (() => {
-                                            const dp = paymentSchedule.downPayment;
-                                            if (dp.type === 'fixed') {
-                                                return 'Bayar Uang Muka (Jumlah Tetap)';
-                                            } else {
-                                                return `Bayar Uang Muka (${dp.percentage}%)`;
-                                            }
-                                        })(),
-                                        description: `Uang muka untuk invoice ini. Sisa pembayaran: ${formatCurrency(paymentSchedule.remainingBalance.amount)}`,
-                                        stage: 'down_payment'
-                                    };
-                                } else if (currentStage === 'final_payment') {
-                                    // Use final_payment_amount if available, otherwise use remainingBalance.amount
-                                    const finalAmount = invoice.final_payment_amount || paymentSchedule.remainingBalance.amount;
-                                    return {
-                                        amount: finalAmount,
-                                        label: 'Bayar Sisa Pembayaran',
-                                        description: 'Pembayaran terakhir untuk menyelesaikan invoice ini',
-                                        stage: 'final_payment'
-                                    };
-                                } else if (currentStage === 'completed') {
-                                    return {
-                                        amount: 0,
-                                        label: 'Invoice Lunas',
-                                        description: 'Invoice ini telah dibayar lunas',
-                                        stage: 'completed'
-                                    };
-                                }
-                            }
-                        }
-                        
-                        // NO FALLBACK for discount_amount - discount should not be treated as down payment
-                        console.log('✅ discount_amount detected but NOT treating as down payment');
-                        console.log('   Regular discount invoices should show "Bayar Invoice" with full amount');
-                        
-                        // Default: full payment
-                        return {
-                            amount: invoice.grand_total,
-                            label: 'Bayar Invoice',
-                            description: 'Pembayaran penuh untuk invoice ini',
-                            stage: 'full_payment'
-                        };
-                    } catch (e) {
-                        console.error('Error determining payment info:', e);
-                        return {
-                            amount: invoice.grand_total,
-                            label: 'Bayar Invoice',
-                            description: 'Pembayaran penuh untuk invoice ini',
-                            stage: 'full_payment'
-                        };
-                    }
-                };
-                
-                const paymentInfo = getPaymentInfo();
-                console.log('💳 Payment info determined:', paymentInfo);
-                
-                return `
-                    <div class="paper-wrapper" style="margin-top: 1px;">
-                        <div class="paper" style="padding: 20px;">
-                        <div class="payment-section">
-                            <h3>Pembayaran Online</h3>
-                            
-                            <!-- Payment Stage Indicator -->
-                            <div style="background: rgba(49, 29, 107, 0.1); border: 1px solid rgba(49, 29, 107, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                                <div style="font-size: 14px; font-weight: 600; color: #311d6b; margin-bottom: 8px;">${paymentInfo.label}</div>
-                                <div style="font-size: 13px; color: #666; line-height: 1.4;">${paymentInfo.description}</div>
-                                <div style="font-size: 20px; font-weight: 700; color: #311d6b; margin-top: 12px;">${formatCurrency(paymentInfo.amount)}</div>
-                            </div>
-                            
-                            ${paymentInfo.stage === 'down_payment' || paymentInfo.stage === 'final_payment' ? generatePaymentScheduleBreakdown(invoice, paymentInfo, formatCurrency) : ''}
-                            
-                            <p>Pilih metode pembayaran:</p>
-                            
-                            <div class="payment-methods">
-                                ${generatePaymentMethodsHTML()}
-                            </div>
-                            
-                            ${generateBankTransferDetails()}
-                            ${generateXenditDetails()}
-
-                            <div id="payment-status" class="payment-status" style="display: none;"></div>
-
-                            <!-- Payment Confirmation Upload Form -->
-                            <div id="payment-upload-section" style="margin-top: 20px;">
-                                <button id="confirm-payment-btn" class="pay-btn" onclick="showUploadForm()">
-                                    🔄 Konfirmasi Pembayaran - ${formatCurrency(paymentInfo.amount)}
-                                </button>
-                                
-                                <div id="upload-form" style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-                                    <h4 style="color: #2d3748; margin-bottom: 15px;">📎 Upload Bukti Pembayaran</h4>
-                                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
-                                        Upload foto atau file PDF bukti transfer Anda. File maksimal 10MB.
-                                    </p>
-                                    
-                                    <form id="payment-confirmation-form" enctype="multipart/form-data">
-                                        <div style="margin-bottom: 15px;">
-                                            <label style="display: block; font-weight: 600; color: #4a5568; font-size: 14px; margin-bottom: 5px;">
-                                                Pilih File Bukti Transfer
-                                            </label>
-                                            <input type="file" id="payment-file" name="paymentProof" accept="image/*,.pdf" required
-                                                   style="width: 100%; padding: 10px; border: 2px dashed #cbd5e0; border-radius: 6px; background: white;">
-                                            <small style="color: #666; display: block; margin-top: 5px;">
-                                                Format yang didukung: JPG, PNG, GIF, PDF (maksimal 10MB)
-                                            </small>
-                                        </div>
-                                        
-                                        <div style="margin-bottom: 15px;">
-                                            <label style="display: block; font-weight: 600; color: #4a5568; font-size: 14px; margin-bottom: 5px;">
-                                                Catatan Tambahan (Opsional)
-                                            </label>
-                                            <textarea id="payment-notes" name="notes" rows="3" 
-                                                      placeholder="Contoh: Transfer dari rekening BCA a.n. John Doe pada tanggal 20 Jan 2024"
-                                                      style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; resize: vertical;"></textarea>
-                                        </div>
-                                        
-                                        <div id="file-preview" style="display: none; margin-bottom: 15px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
-                                            <div style="display: flex; align-items: center; gap: 10px;">
-                                                <img id="preview-image" style="max-width: 100px; max-height: 100px; border-radius: 4px; display: none;">
-                                                <div>
-                                                    <div id="file-name" style="font-weight: 600; color: #2d3748;"></div>
-                                                    <div id="file-size" style="color: #666; font-size: 12px;"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                                            <button type="button" onclick="hideUploadForm()" 
-                                                    style="padding: 10px 20px; background: #f7fafc; color: #4a5568; border: 1px solid #cbd5e0; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                                Batal
-                                            </button>
-                                            <button type="submit" id="upload-btn"
-                                                    style="padding: 10px 20px; background: #48bb78; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                                                📤 Upload Bukti Pembayaran
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            return '';
-        }
-
-        function displayInvoice(invoice) {
-            document.getElementById('loading').style.display = 'none';
-            currentInvoice = invoice;
-            
-            // Load invoice data
-            console.log('📄 Loading invoice:', invoice.invoice_number);
-            
-            try {
-                if (invoice.metadata_json) {
-                    let metadata;
-                    if (typeof invoice.metadata_json === 'string') {
-                        metadata = JSON.parse(invoice.metadata_json);
-                    } else {
-                        metadata = invoice.metadata_json; // Already an object
-                    }
-                    console.log('🔍 Parsed metadata:', metadata);
-                    console.log('🔍 Business profile in metadata:', metadata.businessProfile);
-                }
-            } catch (e) {
-                console.error('❌ Error parsing metadata:', e);
-            }
-            
-            try {
-                const invoiceHTML = generateUnifiedInvoiceTemplate(invoice, 'view');
-                const paymentHTML = generatePaymentSection(invoice);
-                
-                const combinedHTML = `${invoiceHTML}${paymentHTML}`;
-                document.getElementById('invoice-container').innerHTML = combinedHTML;
-                document.getElementById('invoice-container').style.display = 'block';
-            } catch (templateError) {
-                console.error('❌ Error generating invoice template:', templateError);
-                document.getElementById('invoice-container').innerHTML = `
-                    <div style="padding: 20px; text-align: center; color: #d32f2f;">
-                        <h3>⚠️ Error Loading Invoice</h3>
-                        <p>There was an error displaying this invoice. Please try refreshing the page.</p>
-                        <p><small>Error: ${escapeHtml(templateError.message || 'Unknown template error')}</small></p>
-                        <button onclick="location.reload()" style="background: #1976d2; color: white; border: none; padding: 10px 20px; border-radius: 4px; margin-top: 10px; cursor: pointer;">
-                            🔄 Reload Page
-                        </button>
-                    </div>
-                `;
-                document.getElementById('invoice-container').style.display = 'block';
-                return;
-            }
-        }
-
-        // Show upload form
-        function showUploadForm() {
-            document.getElementById('upload-form').style.display = 'block';
-            document.getElementById('confirm-payment-btn').style.display = 'none';
-        }
-        
-        // Hide upload form
-        function hideUploadForm() {
-            document.getElementById('upload-form').style.display = 'none';
-            document.getElementById('confirm-payment-btn').style.display = 'block';
-            
-            // Reset form
-            document.getElementById('payment-confirmation-form').reset();
-            document.getElementById('file-preview').style.display = 'none';
-        }
-        
-        // File preview functionality
-        function previewFile(file) {
-            const preview = document.getElementById('file-preview');
-            const previewImage = document.getElementById('preview-image');
-            const fileName = document.getElementById('file-name');
-            const fileSize = document.getElementById('file-size');
-            
-            fileName.textContent = file.name;
-            fileSize.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-            
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImage.src = e.target.result;
-                    previewImage.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                previewImage.style.display = 'none';
-            }
-            
-            preview.style.display = 'block';
-        }
-        
-        // Upload payment confirmation
-        async function uploadPaymentConfirmation(formData) {
-            // Use the currentInvoice ID instead of trying to extract from URL params
-            const invoiceId = currentInvoice ? currentInvoice.id : null;
-            
-            if (!invoiceId) {
-                throw new Error('Invoice not loaded. Please refresh the page and try again.');
-            }
-            
-            const statusDiv = document.getElementById('payment-status');
-            statusDiv.className = 'payment-status processing';
-            statusDiv.textContent = '⏳ Mengupload bukti pembayaran...';
-            statusDiv.style.display = 'block';
-            
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}/payment-confirmation`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                // Check if response is ok and content type is JSON
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
-                }
-                
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Server returned non-JSON response');
-                }
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    statusDiv.className = 'payment-status success';
-                    statusDiv.textContent = '✅ Bukti pembayaran berhasil diupload! Menunggu konfirmasi dari merchant.';
-                    
-                    // Hide upload form and show success
-                    hideUploadForm();
-                    
-                    setTimeout(() => {
-                        location.reload();
-                    }, 3000);
-                } else {
-                    throw new Error(result.error || 'Upload failed');
-                }
-            } catch (error) {
-                console.error('Error uploading payment confirmation:', error);
-                statusDiv.className = 'payment-status error';
-                
-                // Provide user-friendly error messages
-                let errorMessage = 'Gagal mengupload bukti pembayaran';
-                
-                if (error.message.includes('500')) {
-                    errorMessage = 'Server mengalami masalah. Silakan coba lagi dalam beberapa saat atau hubungi customer service.';
-                } else if (error.message.includes('404')) {
-                    errorMessage = 'Invoice tidak ditemukan. Silakan periksa kembali link invoice Anda.';
-                } else if (error.message.includes('400')) {
-                    errorMessage = 'File yang diupload tidak valid. Pastikan file berformat gambar (JPG, PNG) atau PDF.';
-                } else if (error.message.includes('Database schema issue')) {
-                    errorMessage = 'Sistem sedang dalam maintenance. Silakan coba lagi nanti atau hubungi customer service.';
-                } else if (error.message.includes('timeout')) {
-                    errorMessage = 'Koneksi timeout. Silakan periksa koneksi internet dan coba lagi.';
-                } else if (error.message.includes('Network')) {
-                    errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
-                } else if (error.message) {
-                    // Use the server's error message if it's user-friendly
-                    errorMessage = error.message;
-                }
-                
-                statusDiv.innerHTML = `
-                    <div style="margin-bottom: 15px;">❌ ${errorMessage}</div>
-                    <button onclick="location.reload()" style="
-                        background: var(--primary-purple); 
-                        color: white; 
-                        border: none; 
-                        padding: 8px 16px; 
-                        border-radius: 4px; 
-                        cursor: pointer;
-                        margin-right: 10px;
-                    ">🔄 Coba Lagi</button>
-                    <button onclick="window.location.href='/customer-support'" style="
-                        background: #28a745; 
-                        color: white; 
-                        border: none; 
-                        padding: 8px 16px; 
-                        border-radius: 4px; 
-                        cursor: pointer;
-                    ">💬 Customer Service</button>
-                `;
-            }
-        }
-
-        // Load invoice from URL parameter
-        async function loadInvoice() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
-            const token = urlParams.get('token');
-            const fromContext = urlParams.get('from');
-            
-            // Check for management context and show appropriate buttons
-            if (fromContext === 'dashboard') {
-                document.getElementById('management-actions').style.display = 'flex';
-            }
-            
-            if (!id && !token) {
-                showError('No invoice ID or token provided');
-                return;
-            }
-            
-            try {
-                // Load payment methods first with timeout
-                await Promise.race([
-                    loadPaymentMethods(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Payment methods timeout')), 5000))
-                ]).catch(error => {
-                    console.warn('Payment methods loading failed:', error);
-                    paymentMethods = { bankTransfer: { enabled: false } }; // Fallback
-                });
-
-                // Prioritize ID over token for consistent behavior
-                let response;
-                if (id) {
-                    console.log('🔍 Loading invoice by ID (numeric or invoice number):', id);
-                    response = await Promise.race([
-                        fetch(`/api/invoices/${id}`),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 10000))
-                    ]);
-                } else if (token) {
-                    console.log('🔍 Loading invoice by token:', token);
-                    response = await Promise.race([
-                        fetch(`/api/customer/invoice/${token}`),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 10000))
-                    ]);
-                }
-
-                if (!response.ok) {
-                    console.error('API response not ok:', response.status, response.statusText);
-                    throw new Error('Invoice not found');
-                }
-                
-                const result = await response.json();
-                if (!result.success) {
-                    throw new Error(result.error || 'Failed to load invoice');
-                }
-                displayInvoice(result.invoice);
-            } catch (error) {
-                console.error('Error loading invoice:', error);
-                let errorMessage = 'Failed to load invoice. Please check the URL and try again.';
-                
-                if (error.message === 'Invoice not found') {
-                    errorMessage = 'Invoice tidak ditemukan. Silakan periksa nomor faktur dan coba lagi.';
-                } else if (error.message.includes('Failed to fetch')) {
-                    errorMessage = 'Koneksi ke server gagal. Silakan periksa koneksi internet Anda.';
-                } else if (error.message.includes('network')) {
-                    errorMessage = 'Masalah jaringan. Silakan coba lagi dalam beberapa saat.';
-                } else if (error.message.includes('validation') || error.message.includes('500')) {
-                    errorMessage = 'Server sedang memproses data. Invoice mungkin sedang dibuat atau diperbarui. Silakan coba lagi dalam beberapa detik.';
-                }
-                
-                showError(errorMessage);
-            }
-        }
-
-        function showError(message, showRetry = true) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('invoice-container').style.display = 'none';
-            
-            const errorDiv = document.getElementById('error');
-            const retryButton = showRetry ? `
-                <button onclick="window.location.reload()" style="background: #3182ce; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    🔄 Coba Lagi
-                </button>
-            ` : '';
-            
-            errorDiv.innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <h2 style="color: #e53e3e; margin-bottom: 20px;">⚠️ Terjadi Kesalahan</h2>
-                    <p style="margin-bottom: 20px;">${message}</p>
-                    ${retryButton}
-                    <div style="margin-top: 20px;">
-                        <a href="/merchant" style="color: #3182ce; text-decoration: none; font-size: 14px;">← Kembali ke Dashboard</a>
-                    </div>
-                </div>
-            `;
-            errorDiv.style.display = 'block';
-        }
-
-        // Payment method selection with payment details
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.payment-method')) {
-                const method = e.target.closest('.payment-method');
-                document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
-                method.classList.add('active');
-                selectedPaymentMethod = method.dataset.method;
-                
-                // Show/hide payment details based on selection
-                const bankTransferDetails = document.getElementById('bank-transfer-details');
-                const xenditDetails = document.getElementById('xendit-details');
-                const qrisDetails = document.getElementById('qris-details');
-                const ewalletDetails = document.getElementById('ewallet-details');
-                const cashDetails = document.getElementById('cash-details');
-                
-                // Hide all details first
-                if (bankTransferDetails) bankTransferDetails.style.display = 'none';
-                if (xenditDetails) xenditDetails.style.display = 'none';
-                if (qrisDetails) qrisDetails.style.display = 'none';
-                if (ewalletDetails) ewalletDetails.style.display = 'none';
-                if (cashDetails) cashDetails.style.display = 'none';
-                
-                // Show relevant details
-                if (selectedPaymentMethod === 'bank_transfer' && bankTransferDetails) {
-                    bankTransferDetails.style.display = 'block';
-                } else if (selectedPaymentMethod === 'xendit' && xenditDetails) {
-                    xenditDetails.style.display = 'block';
-                } else if (selectedPaymentMethod === 'qris' && qrisDetails) {
-                    qrisDetails.style.display = 'block';
-                } else if (selectedPaymentMethod === 'ewallet' && ewalletDetails) {
-                    ewalletDetails.style.display = 'block';
-                } else if (selectedPaymentMethod === 'cash' && cashDetails) {
-                    cashDetails.style.display = 'block';
-                }
-            }
+// Verify token
+app.get('/api/auth/verify',
+  authMiddleware.authenticateMerchant,
+  async (req, res) => {
+    try {
+      // Get full merchant profile
+      const profileResult = await authService.getMerchantProfile(req.merchant.id);
+      
+      if (profileResult.success) {
+        res.json({
+          success: true,
+          merchant: profileResult.profile,
+          token: req.token
         });
+      } else {
+        res.status(404).json(profileResult);
+      }
 
-        // Add event listeners after DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // File input change event for preview
-            document.addEventListener('change', function(e) {
-                if (e.target.id === 'payment-file') {
-                    const file = e.target.files[0];
-                    if (file) {
-                        // Validate file type
-                        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-                        if (!allowedTypes.includes(file.type)) {
-                            showError('File harus berformat gambar (JPG, PNG) atau PDF!');
-                            e.target.value = '';
-                            return;
-                        }
-                        
-                        // Validate file size (10MB limit)
-                        if (file.size > 10 * 1024 * 1024) {
-                            showError('File terlalu besar! Maksimal 10MB.');
-                            e.target.value = '';
-                            return;
-                        }
-                        
-                        // Additional validation for very small files (likely corrupted)
-                        if (file.size < 1024) { // Less than 1KB
-                            showError('File terlalu kecil atau rusak. Silakan pilih file yang valid.');
-                            e.target.value = '';
-                            return;
-                        }
-                        
-                        previewFile(file);
-                    }
-                }
-            });
-            
-            // Form submit event
-            document.addEventListener('submit', function(e) {
-                if (e.target.id === 'payment-confirmation-form') {
-                    e.preventDefault();
-                    
-                    const fileInput = document.getElementById('payment-file');
-                    const notesInput = document.getElementById('payment-notes');
-                    
-                    if (!fileInput.files[0]) {
-                        showError('Silakan pilih file bukti pembayaran terlebih dahulu.');
-                        return;
-                    }
-                    
-                    const formData = new FormData();
-                    formData.append('paymentProof', fileInput.files[0]);
-                    formData.append('notes', notesInput.value);
-                    
-                    uploadPaymentConfirmation(formData);
-                }
-            });
-        });
+    } catch (error) {
+      console.error('Token verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Token verification failed'
+      });
+    }
+  }
+);
 
-
-        // Xendit payment processing
-        async function processXenditPayment() {
-            if (!currentInvoice) {
-                showError('Invoice tidak ditemukan. Silakan refresh halaman.');
-                return;
-            }
-
-            const payBtn = document.getElementById('xendit-pay-btn');
-            const statusDiv = document.getElementById('payment-status');
-            
-            // Show loading state
-            payBtn.disabled = true;
-            payBtn.innerHTML = '⏳ Memproses pembayaran...';
-            statusDiv.className = 'payment-status processing';
-            statusDiv.textContent = '🔄 Membuat link pembayaran Xendit...';
-            statusDiv.style.display = 'block';
-            
-            try {
-                const response = await fetch('/api/xendit/create-payment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        invoiceId: currentInvoice.id,
-                        paymentData: {
-                            // Additional payment data if needed
-                        }
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    statusDiv.className = 'payment-status success';
-                    statusDiv.innerHTML = '✅ Link pembayaran berhasil dibuat! Anda akan dialihkan ke Xendit...';
-                    
-                    // Use mobile-friendly payment redirect
-                    setTimeout(async () => {
-                        const confirmed = await window.mobileNotifications.confirmPaymentRedirect(
-                            result.paymentUrl,
-                            'Anda akan diarahkan ke halaman pembayaran Xendit untuk menyelesaikan transaksi.'
-                        );
-                        if (!confirmed) {
-                            // Reset button state if user cancelled
-                            paymentButton.style.display = 'block';
-                            paymentButton.disabled = false;
-                            paymentButton.innerHTML = originalButtonText;
-                        }
-                    }, 500);
-                    
-                    // Reset button after delay
-                    setTimeout(() => {
-                        payBtn.disabled = false;
-                        payBtn.innerHTML = '💳 Bayar Sekarang dengan Xendit';
-                        statusDiv.style.display = 'none';
-                    }, 3000);
-                } else {
-                    throw new Error(result.error || 'Gagal membuat pembayaran Xendit');
-                }
-            } catch (error) {
-                console.error('Xendit payment error:', error);
-                statusDiv.className = 'payment-status error';
-                statusDiv.textContent = '❌ Error: ' + (error.message || 'Unknown error');
-                
-                // Reset button
-                payBtn.disabled = false;
-                payBtn.innerHTML = '💳 Bayar Sekarang dengan Xendit';
-            }
+// Logout
+app.post('/api/auth/logout',
+  authMiddleware.logAuthEvent('LOGOUT'),
+  async (req, res) => {
+    try {
+      // Clear all possible token cookies
+      res.clearCookie('merchantToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/'
+      });
+      res.clearCookie('authToken');
+      res.clearCookie('token');
+      
+      // Get merchant info from token if available
+      let merchantInfo = null;
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.split(' ')[1] || req.cookies?.merchantToken;
+      
+      if (token) {
+        const tokenResult = authService.verifyToken(token);
+        if (tokenResult.success) {
+          merchantInfo = tokenResult.payload;
+          console.log(`👋 Merchant logout: ${merchantInfo.email}`);
         }
+      }
+      
+      // Clear any server-side session data if implemented
+      // (For future use with Redis or database sessions)
+      
+      // Set security headers
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      const result = authService.logout();
+      
+      // Enhanced response with cleanup confirmation and redirect URL
+      res.json({
+        ...result,
+        message: 'Successfully logged out. All sessions cleared.',
+        redirectUrl: '/auth/login?from=merchant',
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Logout failed',
+        message: 'An error occurred during logout. Please clear your browser data.'
+      });
+    }
+  }
+);
 
-        // WhatsApp sharing function
-        async function shareInvoiceWhatsApp() {
-            if (!currentInvoice) {
-                showError('Tidak ada data faktur yang tersedia. Silakan refresh halaman.');
-                return;
+// Verify email
+app.post('/api/auth/verify-email',
+  authMiddleware.logAuthEvent('EMAIL_VERIFICATION'),
+  async (req, res) => {
+    try {
+      const { verificationToken } = req.body;
+      if (!verificationToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'Verification token is required'
+        });
+      }
+
+      const result = await authService.verifyEmail(verificationToken);
+      res.json(result);
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Email verification failed'
+      });
+    }
+  }
+);
+
+// Resend email verification
+app.post('/api/auth/resend-verification',
+  authMiddleware.logAuthEvent('RESEND_EMAIL_VERIFICATION'),
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email address is required'
+        });
+      }
+
+      const result = await authService.resendEmailVerification(email);
+      res.json(result);
+    } catch (error) {
+      console.error('Resend email verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to resend email verification'
+      });
+    }
+  }
+);
+
+// Change password
+app.post('/api/auth/change-password',
+  authMiddleware.authenticateMerchant,
+  authMiddleware.logAuthEvent('PASSWORD_CHANGE'),
+  async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Current password and new password are required'
+        });
+      }
+
+      const result = await authService.changePassword(
+        req.merchant.id,
+        currentPassword,
+        newPassword
+      );
+
+      res.json(result);
+
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Password change failed. Please try again.'
+      });
+    }
+  }
+);
+
+// Request password reset
+app.post('/api/auth/forgot-password',
+  authMiddleware.logAuthEvent('PASSWORD_RESET_REQUEST'),
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email address is required'
+        });
+      }
+
+      const result = await authService.requestPasswordReset(email);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Password reset request failed. Please try again.'
+      });
+    }
+  }
+);
+
+// Reset password with token
+app.post('/api/auth/reset-password',
+  authMiddleware.logAuthEvent('PASSWORD_RESET'),
+  async (req, res) => {
+    try {
+      const { resetToken, newPassword } = req.body;
+
+      if (!resetToken || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Reset token and new password are required'
+        });
+      }
+
+      const result = await authService.resetPassword(resetToken, newPassword);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Password reset error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Password reset failed. Please try again.'
+      });
+    }
+  }
+);
+
+// Get merchant profile
+app.get('/api/auth/profile',
+  authMiddleware.authenticateMerchant,
+  async (req, res) => {
+    try {
+      const result = await authService.getMerchantProfile(req.merchant.id);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Get profile error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get profile'
+      });
+    }
+  }
+);
+
+// Update merchant profile
+app.put('/api/auth/profile',
+  authMiddleware.authenticateMerchant,
+  authMiddleware.logAuthEvent('PROFILE_UPDATE'),
+  async (req, res) => {
+    try {
+      const result = await authService.updateMerchantProfile(req.merchant.id, req.body);
+      res.json(result);
+
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update profile'
+      });
+    }
+  }
+);
+
+// ==========================================
+// MERCHANT DASHBOARD ROUTES (Protected)
+// ==========================================
+
+// Redirect old invoice dashboard to merchant dashboard
+app.get('/dashboard', (req, res) => {
+  res.redirect('/merchant#invoices');
+});
+
+// Serve the merchant dashboard (Protected)
+app.get('/merchant', (req, res, next) => {
+  console.log('🎯 MERCHANT ROUTE HIT - Before auth middleware');
+  console.log('🔍 Request details:', {
+    url: req.url,
+    method: req.method,
+    headers: {
+      authorization: req.headers.authorization ? 'Present' : 'None',
+      cookie: req.headers.cookie ? 'Present' : 'None'
+    }
+  });
+  next();
+}, authMiddleware.authenticateMerchant, (req, res) => {
+  console.log('🎯 MERCHANT ROUTE - After auth middleware, merchant:', req.merchant?.email);
+
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const filePath = path.join(__dirname, 'merchant-dashboard.html');
+  console.log('📁 Computed file path:', filePath);
+  console.log('📁 __dirname:', __dirname);
+
+  // Verify the file exists and is valid before serving
+  if (!fs.existsSync(filePath)) {
+    console.error('❌ Merchant dashboard file not found:', filePath);
+    return res.status(404).send('Dashboard not found');
+  }
+
+  // Get file stats for debugging
+  const fileStats = fs.statSync(filePath);
+  console.log('📊 File stats:', {
+    size: fileStats.size,
+    isFile: fileStats.isFile(),
+    modified: fileStats.mtime
+  });
+
+  // Read first 100 characters to verify it's HTML
+  const fileStart = fs.readFileSync(filePath, { encoding: 'utf8' }).substring(0, 100);
+  console.log('📄 File starts with:', fileStart);
+
+  if (!fileStart.toLowerCase().includes('<!doctype') && !fileStart.toLowerCase().includes('<html')) {
+    console.error('❌ File is not HTML:', filePath);
+    return res.status(500).send('Invalid file type');
+  }
+
+  console.log('✅ File validation passed, serving dashboard');
+
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Content-Type', 'text/html; charset=utf-8');
+
+  // Use absolute path for sendFile
+  const absoluteFilePath = path.resolve(filePath);
+  console.log('📁 Absolute file path for sendFile:', absoluteFilePath);
+
+  res.sendFile(absoluteFilePath, (err) => {
+    if (err) {
+      console.error('❌ Error serving merchant dashboard:', err);
+      console.error('❌ Error details:', err.message);
+      if (!res.headersSent) {
+        res.status(500).send('Error loading dashboard');
+      }
+    } else {
+      console.log('✅ Merchant dashboard served successfully via sendFile');
+    }
+  });
+});
+
+// Direct access to merchant-dashboard.html (for navigation buttons) (Protected)
+app.get('/merchant-dashboard.html', authMiddleware.authenticateMerchant, (req, res) => {
+  console.log('🎯 Merchant dashboard HTML route accessed by:', req.merchant?.email);
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const filePath = path.join(__dirname, 'merchant-dashboard.html');
+  console.log('📁 Serving HTML file from:', filePath);
+
+  // Verify the file exists before serving
+  if (!fs.existsSync(filePath)) {
+    console.error('❌ Merchant dashboard file not found:', filePath);
+    return res.status(404).send('Dashboard not found');
+  }
+
+  console.log('✅ File exists, proceeding to serve dashboard');
+
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Content-Type', 'text/html; charset=utf-8');
+
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('❌ Error serving merchant dashboard HTML:', err);
+      res.status(500).send('Error loading dashboard');
+    } else {
+      console.log('✅ Merchant dashboard HTML served successfully');
+    }
+  });
+});
+
+// Serve the business settings page (Protected)
+app.get('/business-settings', (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(__dirname, 'business-settings.html'));
+});
+
+// Serve the main invoice generator interface (Protected)
+app.get('/generator', authMiddleware.authenticateMerchant, (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(__dirname, 'web-interface-indonesian.html'));
+});
+
+// Serve the customer portal (legacy - for backwards compatibility)
+app.get('/customer', (req, res) => {
+  res.sendFile(path.join(__dirname, 'customer-portal.html'));
+});
+
+// Serve specific invoice for customer (with token) - NEW SIMPLIFIED VIEW
+app.get('/customer/invoice/:token', (req, res) => {
+  res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
+});
+
+// Simple invoice view (direct link from emails)
+app.get('/invoice', (req, res) => {
+  res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
+});
+
+// Public invoice viewing route
+app.get('/invoice/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
+});
+
+// Direct access to simple-invoice-view.html (for generated URLs)
+app.get('/simple-invoice-view.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'simple-invoice-view.html'));
+});
+
+// Service ticket printing page
+app.get('/service-ticket', (req, res) => {
+  res.sendFile(path.join(__dirname, 'service-ticket.html'));
+});
+
+// Final payment page
+app.get('/final-payment', (req, res) => {
+  res.sendFile(path.join(__dirname, 'final-payment.html'));
+});
+
+// API endpoint to get business profile
+app.get('/api/business-profile', authMiddleware.authenticateMerchant, (req, res) => {
+  res.json({
+    success: true,
+    profile: {
+      businessName: config.merchant.businessName,
+      address: config.merchant.address,
+      phone: config.merchant.phone,
+      email: config.merchant.email,
+      website: config.merchant.website,
+      taxId: config.merchant.taxId,
+      defaultTaxRate: config.merchant.taxRate || 0,
+      additionalNotes: ""
+    }
+  });
+});
+
+// API endpoint to save business profile
+app.post('/api/business-profile', authMiddleware.authenticateMerchant, (req, res) => {
+  try {
+    const { profile } = req.body;
+    // In a real app, this would save to database
+    // For now, we'll just return success
+    res.json({
+      success: true,
+      message: 'Business profile saved successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save business profile'
+    });
+  }
+});
+
+// Business settings API endpoints
+app.get('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🔍 Loading business settings for merchant:', req.merchant.id, req.merchant.email);
+    const settings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Raw settings from database:', settings);
+    console.log('🔍 Settings object keys:', Object.keys(settings || {}));
+    
+    // If no settings in database, return config defaults
+    if (!settings || Object.keys(settings).length === 0) {
+      console.log('🔍 No settings found, returning defaults');
+      const defaults = {
+        name: config.merchant.businessName,
+        email: config.merchant.email,
+        address: config.merchant.address,
+        phone: config.merchant.phone,
+        website: config.merchant.website,
+        taxId: config.merchant.taxId,
+        taxRate: config.merchant.taxRate || 0,
+        taxEnabled: config.merchant.taxRate > 0,
+        taxName: 'PPN',
+        taxDescription: '',
+        termsAndConditions: '',
+        // Include empty logo fields so frontend doesn't get undefined
+        logoUrl: null,
+        logoPublicId: null,
+        logoFilename: null
+      };
+      console.log('🔍 Returning default settings:', defaults);
+      return res.json(defaults);
+    }
+    
+    console.log('🔍 Returning actual settings:', settings);
+    res.json(settings);
+  } catch (error) {
+    console.error('Error loading business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load business settings'
+    });
+  }
+});
+
+app.post('/api/business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('🏢 Updating business settings for merchant:', req.merchant.id, req.merchant.email);
+    console.log('🏢 Settings payload:', JSON.stringify(settings, null, 2));
+    
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
+    console.log('🏢 Database update result:', updatedSettings ? 'Success' : 'Failed');
+    console.log('🏢 Updated settings returned:', updatedSettings);
+    
+    res.json({
+      success: true,
+      message: 'Business settings saved successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error saving business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save business settings'
+    });
+  }
+});
+
+// Route aliases to handle frontend calls to /api/business/settings (with slash)
+app.get('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🏢 Loading business settings for merchant:', req.merchant.id);
+    const settings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🏢 Loaded settings - Premium active:', settings?.premiumActive);
+    
+    // If no settings in database, return config defaults
+    if (!settings || Object.keys(settings).length === 0) {
+      console.log('🏢 No settings found, returning defaults');
+      return res.json({
+        success: true,
+        settings: {
+          name: config.merchant.businessName,
+          email: config.merchant.email,
+          address: config.merchant.address,
+          phone: config.merchant.phone,
+          website: config.merchant.website,
+          taxId: config.merchant.taxId,
+          taxRate: config.merchant.taxRate || 0,
+          taxEnabled: config.merchant.taxRate > 0,
+          taxName: 'PPN',
+          taxDescription: '',
+          termsAndConditions: '',
+          logoUrl: null,
+          logoPublicId: null,
+          logoFilename: null,
+          premiumActive: false
+        }
+      });
+    }
+    
+    // Return settings wrapped in success object for consistent API response
+    res.json({
+      success: true,
+      settings: settings
+    });
+  } catch (error) {
+    console.error('❌ Error loading business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load business settings'
+    });
+  }
+});
+
+app.post('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('🏢 Updating business settings via /api/business/settings for merchant:', req.merchant.id, settings);
+    
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Business settings saved successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error saving business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save business settings'
+    });
+  }
+});
+
+app.put('/api/business/settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('🏢 Updating business settings via PUT /api/business/settings for merchant', req.merchant.id, ':', settings);
+    
+    const updatedSettings = await database.updateBusinessSettings(settings, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Business settings updated successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error updating business settings via PUT:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update business settings'
+    });
+  }
+});
+
+// Premium Branding API Endpoints
+app.get('/api/premium/status', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    const brandingSettings = isPremium ? await database.getPremiumBrandingSettings(req.merchant.id) : null;
+    
+    res.json({
+      success: true,
+      isPremium: isPremium,
+      brandingSettings: brandingSettings
+    });
+  } catch (error) {
+    console.error('Error checking premium status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check premium status'
+    });
+  }
+});
+
+app.post('/api/premium/activate', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { premiumSettings = {} } = req.body;
+    
+    console.log('🏆 Activating premium branding for merchant:', req.merchant.id);
+    console.log('🏆 Premium settings to apply:', premiumSettings);
+    
+    // Check if business settings exist first
+    let existingSettings;
+    try {
+      existingSettings = await database.getBusinessSettings(req.merchant.id);
+      console.log('🏢 Existing business settings:', existingSettings ? 'Found' : 'Not found');
+    } catch (error) {
+      console.log('⚠️ Error getting existing settings:', error.message);
+      // Create default business settings if they don't exist
+      existingSettings = {};
+    }
+    
+    // Activate premium branding
+    console.log('🏆 Calling activatePremiumBranding...');
+    const result = await database.activatePremiumBranding(premiumSettings, req.merchant.id);
+    console.log('🏆 Premium activation result:', result);
+    
+    // Verify the activation worked by checking the database
+    const verifySettings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Verification - Premium active after update:', verifySettings?.premiumActive);
+    
+    res.json({
+      success: true,
+      message: 'Premium branding activated successfully',
+      settings: result
+    });
+  } catch (error) {
+    console.error('❌ Error activating premium branding:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to activate premium branding: ' + error.message
+    });
+  }
+});
+
+app.post('/api/premium/deactivate', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deactivatePremiumBranding(req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Premium branding deactivated successfully',
+      settings: result
+    });
+  } catch (error) {
+    console.error('Error deactivating premium branding:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to deactivate premium branding'
+    });
+  }
+});
+
+app.put('/api/premium/branding', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    if (!isPremium) {
+      return res.status(403).json({
+        success: false,
+        error: 'Premium subscription required for custom branding'
+      });
+    }
+    
+    const brandingSettings = req.body;
+    console.log('🎨 Updating premium branding settings:', brandingSettings);
+    
+    // Update the business settings with the new branding
+    const result = await database.updateBusinessSettings({
+      ...brandingSettings,
+      premiumActive: true // Ensure premium remains active
+    }, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Premium branding settings updated successfully',
+      settings: result
+    });
+  } catch (error) {
+    console.error('Error updating premium branding:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update premium branding settings'
+    });
+  }
+});
+
+// Premium Logo Upload Endpoints
+app.post('/api/premium/upload/header-logo', authMiddleware.authenticateMerchant, logoUpload.single('headerLogo'), async (req, res) => {
+  try {
+    console.log('📤 Header logo upload request from merchant:', req.merchant?.id);
+    console.log('📄 File info:', req.file);
+    
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    if (!isPremium) {
+      console.log('❌ Premium not active for merchant:', req.merchant.id);
+      return res.status(403).json({
+        success: false,
+        error: 'Premium subscription required for custom logos'
+      });
+    }
+    
+    if (!req.file) {
+      console.log('❌ No file provided in request');
+      return res.status(400).json({
+        success: false,
+        error: 'No header logo file provided'
+      });
+    }
+    
+    // Get current settings to check for existing logo
+    const currentSettings = await database.getBusinessSettings(req.merchant.id);
+    
+    // Upload to Cloudinary instead of local storage
+    const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, {
+      filename: `merchant_${req.merchant.id}_header_logo_${Date.now()}`,
+      merchantId: req.merchant.id,
+      folder: 'ai-invoice-generator/premium-headers'
+    });
+    
+    // Delete old header logo from Cloudinary if it exists
+    if (currentSettings.customHeaderLogoPublicId) {
+      console.log('🗑️  Deleting old header logo from Cloudinary:', currentSettings.customHeaderLogoPublicId);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.customHeaderLogoPublicId);
+      if (deleteResult.success) {
+        console.log('✅ Old header logo deleted successfully');
+      } else {
+        console.warn('⚠️  Failed to delete old header logo:', deleteResult.error);
+      }
+    }
+    
+    if (!uploadResult.success) {
+      console.error('❌ Cloudinary upload failed:', uploadResult.error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upload header logo to cloud storage'
+      });
+    }
+    
+    console.log('📍 Logo URL generated:', uploadResult.url);
+    
+    // Update business settings with Cloudinary URL
+    const result = await database.updateBusinessSettings({
+      customHeaderLogoUrl: uploadResult.url,
+      customHeaderLogoPublicId: uploadResult.publicId // Store for deletion later
+    }, req.merchant.id);
+    
+    console.log('✅ Header logo upload successful:', uploadResult.url);
+    res.json({
+      success: true,
+      message: 'Header logo uploaded successfully to cloud storage',
+      logoUrl: uploadResult.url,
+      publicId: uploadResult.publicId,
+      settings: result
+    });
+  } catch (error) {
+    console.error('❌ Error uploading header logo:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload header logo: ' + error.message
+    });
+  }
+});
+
+app.post('/api/premium/upload/footer-logo', authMiddleware.authenticateMerchant, logoUpload.single('footerLogo'), async (req, res) => {
+  try {
+    console.log('📤 Footer logo upload request from merchant:', req.merchant?.id);
+    console.log('📄 File info:', req.file);
+    
+    const isPremium = await database.isPremiumActive(req.merchant.id);
+    if (!isPremium) {
+      console.log('❌ Premium not active for merchant:', req.merchant.id);
+      return res.status(403).json({
+        success: false,
+        error: 'Premium subscription required for custom logos'
+      });
+    }
+    
+    if (!req.file) {
+      console.log('❌ No file provided in request');
+      return res.status(400).json({
+        success: false,
+        error: 'No footer logo file provided'
+      });
+    }
+    
+    // Get current settings to check for existing logo
+    const currentSettings = await database.getBusinessSettings(req.merchant.id);
+    
+    // Upload to Cloudinary instead of local storage
+    const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, {
+      filename: `merchant_${req.merchant.id}_footer_logo_${Date.now()}`,
+      merchantId: req.merchant.id,
+      folder: 'ai-invoice-generator/premium-footers'
+    });
+    
+    // Delete old footer logo from Cloudinary if it exists
+    if (currentSettings.customFooterLogoPublicId) {
+      console.log('🗑️  Deleting old footer logo from Cloudinary:', currentSettings.customFooterLogoPublicId);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.customFooterLogoPublicId);
+      if (deleteResult.success) {
+        console.log('✅ Old footer logo deleted successfully');
+      } else {
+        console.warn('⚠️  Failed to delete old footer logo:', deleteResult.error);
+      }
+    }
+    
+    if (!uploadResult.success) {
+      console.error('❌ Cloudinary upload failed:', uploadResult.error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upload footer logo to cloud storage'
+      });
+    }
+    
+    console.log('📍 Logo URL generated:', uploadResult.url);
+    
+    // Update business settings with Cloudinary URL
+    const result = await database.updateBusinessSettings({
+      customFooterLogoUrl: uploadResult.url,
+      customFooterLogoPublicId: uploadResult.publicId // Store for deletion later
+    }, req.merchant.id);
+    
+    console.log('✅ Footer logo upload successful:', uploadResult.url);
+    res.json({
+      success: true,
+      message: 'Footer logo uploaded successfully to cloud storage',
+      logoUrl: uploadResult.url,
+      publicId: uploadResult.publicId,
+      settings: result
+    });
+  } catch (error) {
+    console.error('❌ Error uploading footer logo:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload footer logo: ' + error.message
+    });
+  }
+});
+
+// Payment methods API endpoint
+app.get('/api/settings/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
+    
+    res.json({
+      success: true,
+      paymentMethods: paymentMethods
+    });
+  } catch (error) {
+    console.error('Error loading payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load payment methods'
+    });
+  }
+});
+
+// Alternative payment methods API endpoint (without /settings/)
+app.get('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
+    
+    res.json({
+      success: true,
+      paymentMethods: paymentMethods
+    });
+  } catch (error) {
+    console.error('Error loading payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load payment methods'
+    });
+  }
+});
+
+// Business logo upload endpoint
+app.post('/api/upload-business-logo', authMiddleware.authenticateMerchant, logoUpload.single('logo'), async (req, res) => {
+  try {
+    console.log('📸 Logo upload request received for merchant:', req.merchant?.id);
+    
+    if (!req.file) {
+      console.log('❌ No logo file in request');
+      return res.status(400).json({
+        success: false,
+        error: 'No logo file uploaded'
+      });
+    }
+
+    console.log('📸 Business logo uploading to Cloudinary...', {
+      originalName: req.file.originalname,
+      size: req.file.size,
+      mimeType: req.file.mimetype
+    });
+    
+    // Upload to Cloudinary with merchant isolation and old logo cleanup
+    const currentSettings = await database.getBusinessSettings(req.merchant.id) || {};
+    const businessName = currentSettings.name || 'business';
+    const oldPublicId = currentSettings.logo_public_id || currentSettings.logoPublicId;
+    
+    console.log('🏢 Uploading logo for merchant:', {
+      merchantId: req.merchant.id,
+      businessName: businessName,
+      oldPublicId: oldPublicId
+    });
+    
+    const uploadResult = await cloudinaryService.uploadBusinessLogo(
+      req.file.buffer, 
+      businessName,
+      req.merchant.id,  // Add merchant ID for isolation
+      oldPublicId       // Add old public ID for cleanup
+    );
+    
+    if (!uploadResult.success) {
+      console.error('❌ Cloudinary upload failed:', uploadResult.error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upload logo to cloud storage: ' + uploadResult.error
+      });
+    }
+
+    console.log('✅ Logo uploaded to Cloudinary:', {
+      publicId: uploadResult.publicId,
+      url: uploadResult.url,
+      width: uploadResult.width,
+      height: uploadResult.height
+    });
+    
+    // Delete old logo from Cloudinary if it exists
+    if (currentSettings.logo_public_id) {
+      console.log('🗑️  Deleting old logo from Cloudinary:', currentSettings.logo_public_id);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.logo_public_id);
+      if (deleteResult.success) {
+        console.log('✅ Old logo deleted successfully');
+      } else {
+        console.error('⚠️  Failed to delete old logo:', deleteResult.error);
+      }
+    }
+    
+    // Update business settings with the new Cloudinary URL
+    const updatedSettings = {
+      ...currentSettings,
+      logo_url: uploadResult.url,
+      logo_public_id: uploadResult.publicId,
+      logo_filename: uploadResult.publicId
+    };
+    
+    console.log('📋 Updating business settings with logo:', {
+      merchantId: req.merchant.id,
+      merchantEmail: req.merchant.email,
+      logo_url: updatedSettings.logo_url,
+      logo_public_id: updatedSettings.logo_public_id,
+      updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
+    });
+    
+    const updateResult = await database.updateBusinessSettings(updatedSettings, req.merchant.id);
+    console.log('✅ Database update result:', { 
+      success: !!updateResult,
+      merchantId: req.merchant.id,
+      resultData: updateResult 
+    });
+    
+    res.json({
+      success: true,
+      message: 'Logo uploaded successfully to cloud storage',
+      logoUrl: uploadResult.url,
+      publicId: uploadResult.publicId,
+      cloudinary: {
+        width: uploadResult.width,
+        height: uploadResult.height,
+        format: uploadResult.format,
+        bytes: uploadResult.bytes
+      },
+      debug: {
+        oldLogoDeleted: !!currentSettings.logo_public_id,
+        updatedDatabase: true
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error uploading business logo:', error);
+    console.error('❌ Error stack:', error.stack);
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload logo: ' + error.message
+    });
+  }
+});
+
+// Remove business logo endpoint
+app.delete('/api/remove-business-logo', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🗑️  Logo removal request received for merchant:', req.merchant?.id);
+    
+    const currentSettings = await database.getBusinessSettings(req.merchant.id) || {};
+    console.log('📋 Current business settings:', {
+      hasLogoUrl: !!currentSettings.logo_url,
+      hasLogoPublicId: !!currentSettings.logo_public_id,
+      hasLogoFilename: !!currentSettings.logo_filename,
+      logoUrl: currentSettings.logo_url,
+      logoPublicId: currentSettings.logo_public_id
+    });
+    
+    // Delete from Cloudinary if it exists
+    if (currentSettings.logo_public_id) {
+      console.log('🗑️  Deleting logo from Cloudinary:', currentSettings.logo_public_id);
+      const deleteResult = await cloudinaryService.deleteImage(currentSettings.logo_public_id);
+      
+      if (deleteResult.success) {
+        console.log('✅ Logo deleted from Cloudinary successfully');
+      } else {
+        console.error('⚠️  Failed to delete logo from Cloudinary:', deleteResult.error);
+        // Continue with database update even if Cloudinary deletion fails
+      }
+    } else {
+      console.log('ℹ️  No logo_public_id found, skipping Cloudinary deletion');
+    }
+    
+    // Remove logo info from database
+    const updatedSettings = {
+      ...currentSettings,
+      logo_url: null,
+      logo_public_id: null,
+      logo_filename: null
+    };
+    
+    console.log('📋 Removing logo from business settings:', {
+      before_logo_url: currentSettings.logo_url,
+      before_logo_public_id: currentSettings.logo_public_id,
+      after_logo_url: updatedSettings.logo_url,
+      updating_fields: Object.keys(updatedSettings).filter(key => key.includes('logo'))
+    });
+    
+    const updateResult = await database.updateBusinessSettings(updatedSettings, req.merchant.id);
+    console.log('✅ Database update result:', { success: !!updateResult });
+    
+    res.json({
+      success: true,
+      message: 'Logo removed successfully from cloud storage',
+      debug: {
+        hadLogo: !!currentSettings.logo_url,
+        removedFromCloudinary: !!currentSettings.logo_public_id,
+        updatedDatabase: true
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error removing business logo:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to remove logo: ' + error.message
+    });
+  }
+});
+
+// Account Settings API endpoints
+app.get('/api/account-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = await database.getAccountSettings(req.merchant.id);
+    res.json(settings || {});
+  } catch (error) {
+    console.error('Error loading account settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load account settings'
+    });
+  }
+});
+
+app.post('/api/account-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const settings = req.body;
+    console.log('👤 Updating account settings for merchant:', req.merchant.id, settings);
+    
+    const updatedSettings = await database.updateAccountSettings(settings, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Account settings saved successfully',
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error saving account settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save account settings'
+    });
+  }
+});
+
+// Usage Statistics API endpoint
+app.get('/api/usage-stats', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const stats = await database.getUsageStatistics(req.merchant.id);
+    res.json(stats);
+  } catch (error) {
+    console.error('Error loading usage statistics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load usage statistics'
+    });
+  }
+});
+
+// Subscription Info API endpoint
+app.get('/api/subscription-info', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const subscription = await database.getSubscriptionInfo();
+    res.json(subscription || {
+      plan: 'free',
+      planName: 'Free Plan',
+      features: [
+        'Unlimited invoices',
+        'Up to 100 customers',
+        'Basic payment methods',
+        'Email support',
+        'Standard templates'
+      ],
+      limits: {
+        customers: 100,
+        invoices: -1, // unlimited
+        emailsPerMonth: 1000
+      }
+    });
+  } catch (error) {
+    console.error('Error loading subscription info:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load subscription info'
+    });
+  }
+});
+
+// Data Export API endpoint
+app.get('/api/export-data', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('📥 Exporting account data for merchant:', req.merchant.id);
+    
+    const data = await database.exportAllData(req.merchant.id);
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=account-data.json');
+    res.json(data);
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export data'
+    });
+  }
+});
+
+// Backup API endpoint  
+app.get('/api/backup-data', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('💾 Creating backup...');
+    
+    const backupData = await database.createBackup();
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename=backup.zip');
+    res.send(backupData);
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create backup'
+    });
+  }
+});
+
+// Account Reset API endpoint
+app.post('/api/reset-account', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🔄 Resetting account data...');
+    
+    await database.resetAccountData();
+    
+    res.json({
+      success: true,
+      message: 'Account reset successfully'
+    });
+  } catch (error) {
+    console.error('Error resetting account:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset account'
+    });
+  }
+});
+
+// Payment Methods API endpoints
+app.get('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const paymentMethods = await database.getPaymentMethods(req.merchant.id);
+    res.json(paymentMethods);
+  } catch (error) {
+    console.error('Error loading payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load payment methods'
+    });
+  }
+});
+
+app.post('/api/payment-methods', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const methods = req.body;
+    console.log('💳 Updating payment methods for merchant', req.merchant.id, ':', methods);
+    
+    const updatedMethods = await database.updatePaymentMethods(methods, req.merchant.id);
+    
+    res.json({
+      success: true,
+      message: 'Payment methods saved successfully',
+      data: updatedMethods
+    });
+  } catch (error) {
+    console.error('Error saving payment methods:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save payment methods'
+    });
+  }
+});
+
+// Xendit API endpoints
+app.post('/api/xendit/test', async (req, res) => {
+  try {
+    const { secretKey, environment, amount } = req.body;
+    
+    if (!secretKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Secret key is required'
+      });
+    }
+    
+    console.log('🧪 Testing Xendit connection...', environment);
+    const result = await xenditService.testConnection(secretKey, environment);
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Xendit test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to test Xendit connection'
+    });
+  }
+});
+
+app.post('/api/xendit/create-payment', async (req, res) => {
+  try {
+    const { invoiceId, paymentData } = req.body;
+    
+    if (!invoiceId || !paymentData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and payment data are required'
+      });
+    }
+    
+    // Get Xendit credentials from database
+    const credentials = await database.getXenditCredentials();
+    if (!credentials || !credentials.secretKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Xendit is not configured. Please configure Xendit in business settings.'
+      });
+    }
+    
+    // Get invoice details
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Create Xendit invoice
+    const xenditInvoiceData = {
+      externalId: `${invoice.invoice_number}-${Date.now()}`,
+      amount: invoice.grand_total,
+      description: `Payment for Invoice ${invoice.invoice_number}`,
+      customer: {
+        name: invoice.customer_name,
+        email: invoice.customer_email,
+        phone: invoice.customer_phone
+      },
+      successUrl: `${req.protocol}://${req.get('host')}/customer?token=${invoice.customer_token}&payment=success`,
+      failureUrl: `${req.protocol}://${req.get('host')}/customer?token=${invoice.customer_token}&payment=failed`,
+      currency: 'IDR',
+      paymentMethods: xenditService.getPaymentMethodsForInvoice(credentials.paymentMethods)
+    };
+    
+    const result = await xenditService.createInvoice(
+      credentials.secretKey,
+      credentials.environment,
+      xenditInvoiceData
+    );
+    
+    if (result.success) {
+      // Store Xendit invoice reference in database
+      // This could be added to invoice metadata or a separate xendit_payments table
+      console.log('✅ Xendit payment created:', result.data.id);
+      
+      res.json({
+        success: true,
+        paymentUrl: result.data.invoice_url,
+        xenditInvoiceId: result.data.id,
+        externalId: result.data.external_id
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error creating Xendit payment:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create Xendit payment'
+    });
+  }
+});
+
+app.post('/api/xendit/webhook', async (req, res) => {
+  try {
+    const signature = req.headers['x-callback-token'] || req.headers['x-xendit-callback-token'];
+    const rawBody = JSON.stringify(req.body);
+    
+    // Get webhook token from database
+    const credentials = await database.getXenditCredentials();
+    
+    // Verify webhook signature if token is configured
+    if (credentials && credentials.webhookToken) {
+      const isValid = xenditService.verifyWebhookSignature(rawBody, signature, credentials.webhookToken);
+      if (!isValid) {
+        console.warn('❌ Invalid webhook signature from Xendit');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+    }
+    
+    // Parse webhook event
+    const event = xenditService.parseWebhookEvent(req.body);
+    if (!event) {
+      return res.status(400).json({ error: 'Invalid webhook data' });
+    }
+    
+    console.log('📨 Xendit webhook received:', event.event, event.externalId, event.status);
+    
+    // Find the corresponding invoice by external ID
+    // The external ID format is: {invoice_number}-{timestamp}
+    const invoiceNumber = event.externalId.split('-')[0];
+    const invoice = await database.getInvoiceByNumber(invoiceNumber);
+    
+    if (!invoice) {
+      console.warn(`⚠️ Invoice not found for Xendit webhook: ${invoiceNumber}`);
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+    
+    // Update invoice status based on Xendit event
+    if (event.status === 'PAID') {
+      await database.updateInvoiceStatus(invoice.id, 'paid', invoice.merchant_id);
+      console.log(`✅ Invoice ${invoice.invoice_number} marked as paid via Xendit`);
+      
+      // You could add additional logic here:
+      // - Send payment confirmation email
+      // - Update inventory
+      // - Trigger order fulfillment
+    } else if (event.status === 'EXPIRED') {
+      console.log(`⏰ Xendit payment expired for invoice ${invoice.invoice_number}`);
+    }
+    
+    // Always respond with 200 to acknowledge receipt
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Xendit webhook error:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+// Payment confirmation upload endpoint
+app.post('/api/invoices/:id/payment-confirmation', upload.single('paymentProof'), async (req, res) => {
+  try {
+    const invoiceId = req.params.id;
+    const notes = req.body.notes || '';
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded'
+      });
+    }
+
+    // Server-side file validation
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid file type. Please upload JPG, PNG, or PDF files only.'
+      });
+    }
+
+    // File size validation (10MB limit)
+    if (req.file.size > 10 * 1024 * 1024) {
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: 'File too large. Maximum size is 10MB.'
+      });
+    }
+
+    // Very small file validation
+    if (req.file.size < 1024) {
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: 'File too small or corrupted. Please upload a valid file.'
+      });
+    }
+    
+    // Save payment confirmation to database
+    const confirmationData = {
+      filePath: req.file.path,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      notes: notes
+    };
+    
+    const updatedInvoice = await database.addPaymentConfirmation(invoiceId, confirmationData);
+    
+    if (!updatedInvoice) {
+      // Clean up uploaded file if invoice not found
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    console.log('✅ Payment confirmation uploaded for invoice:', invoiceId);
+    
+    res.json({
+      success: true,
+      message: 'Payment confirmation uploaded successfully',
+      invoice: updatedInvoice
+    });
+  } catch (error) {
+    console.error('Error uploading payment confirmation:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('Error cleaning up file:', cleanupError);
+      }
+    }
+    
+    // Provide more specific error messages based on error type
+    let errorMessage = 'Failed to upload payment confirmation';
+    let statusCode = 500;
+    
+    if (error.message && error.message.includes('Invoice not found')) {
+      errorMessage = 'Invoice not found. Please verify the invoice ID.';
+      statusCode = 404;
+    } else if (error.code === 'ENOENT') {
+      errorMessage = 'File upload failed. Please try again.';
+      statusCode = 400;
+    } else if (error.code === 'PGRST204' || error.message?.includes('does not exist')) {
+      errorMessage = 'Database schema issue. Missing payment confirmation columns. Please contact support.';
+      statusCode = 500;
+    } else if (error.message && error.message.includes('timeout')) {
+      errorMessage = 'Database connection timeout. Please try again.';
+      statusCode = 503;
+    } else if (error.message) {
+      errorMessage = `Upload failed: ${error.message}`;
+    }
+    
+    res.status(statusCode).json({
+      success: false,
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Down Payment Confirmation API
+app.post('/api/invoices/:id/confirm-down-payment', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoiceId = req.params.id;
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    
+    if (!invoice) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Invoice not found' 
+      });
+    }
+
+    // Check if invoice is in down payment stage
+    if (invoice.payment_stage !== 'down_payment') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invoice is not in down payment stage. Current stage: ' + invoice.payment_stage 
+      });
+    }
+
+    // Check if invoice has payment schedule
+    const paymentSchedule = typeof invoice.payment_schedule_json === 'string' 
+      ? JSON.parse(invoice.payment_schedule_json || 'null') 
+      : (invoice.payment_schedule_json || null);
+    if (!paymentSchedule || paymentSchedule.scheduleType !== 'down_payment') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invoice does not have down payment schedule' 
+      });
+    }
+
+    // Calculate final payment amount (grand total minus down payment)
+    const finalPaymentAmount = invoice.grand_total - paymentSchedule.downPayment.amount;
+    
+    // Generate final payment token
+    const finalPaymentToken = database.generateCustomerToken();
+    
+    // Extract final payment due date from payment schedule
+    const finalPaymentDueDate = paymentSchedule.remainingBalance.dueDate;
+    
+    // Update invoice to down payment confirmed stage
+    const updatedInvoice = {
+      ...invoice,
+      status: 'dp_paid',
+      payment_stage: 'final_payment',
+      payment_status: 'partial',
+      final_payment_token: finalPaymentToken,
+      final_payment_amount: finalPaymentAmount,
+      due_date: finalPaymentDueDate,                // Update due date to final payment due date
+      original_due_date: invoice.due_date,          // Preserve original due date
+      dp_confirmed_date: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Update payment schedule to mark down payment as paid
+    paymentSchedule.downPayment.status = 'paid';
+    paymentSchedule.downPayment.paidDate = new Date().toISOString();
+    
+    // Update remaining balance to reflect the correct final payment amount
+    paymentSchedule.remainingBalance.amount = finalPaymentAmount;
+    paymentSchedule.remainingBalance.status = 'pending';
+    
+    updatedInvoice.payment_schedule_json = JSON.stringify(paymentSchedule);
+
+    // Save changes to Supabase database
+    await database.updateInvoice(invoiceId, updatedInvoice, req.merchant.id);
+    
+    console.log(`✅ Down payment confirmed for invoice ${invoice.invoice_number}`);
+    
+    res.json({
+      success: true,
+      message: 'Down payment confirmed successfully',
+      finalPaymentToken: finalPaymentToken,
+      finalPaymentAmount: finalPaymentAmount,
+      finalPaymentLink: `${req.protocol}://${req.get('host')}/final-payment?token=${finalPaymentToken}`,
+      invoice: updatedInvoice
+    });
+    
+  } catch (error) {
+    console.error('Error confirming down payment:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to confirm down payment: ' + error.message 
+    });
+  }
+});
+
+// Final Payment Confirmation API
+app.post('/api/invoices/:id/confirm-final-payment', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoiceId = req.params.id;
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    
+    if (!invoice) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Invoice not found' 
+      });
+    }
+
+    // Check if invoice is in final payment stage (should be 'final_payment' for this endpoint)
+    if (invoice.payment_stage !== 'final_payment') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invoice is not in final payment stage. Current stage: ' + invoice.payment_stage 
+      });
+    }
+
+    // Update invoice to fully paid
+    const updatedInvoice = {
+      ...invoice,
+      status: 'paid',
+      payment_stage: 'completed',
+      payment_status: 'paid',
+      final_payment_confirmed_date: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Update payment schedule to mark remaining balance as paid
+    const paymentSchedule = typeof invoice.payment_schedule_json === 'string' 
+      ? JSON.parse(invoice.payment_schedule_json || 'null') 
+      : (invoice.payment_schedule_json || null);
+    if (paymentSchedule) {
+      paymentSchedule.remainingBalance.status = 'paid';
+      paymentSchedule.remainingBalance.paidDate = new Date().toISOString();
+      updatedInvoice.payment_schedule_json = JSON.stringify(paymentSchedule);
+    }
+
+    // Save changes to Supabase database
+    await database.updateInvoice(invoiceId, updatedInvoice, req.merchant.id);
+    
+    // Auto-create order from fully paid invoice
+    let orderResult = null;
+    try {
+      orderResult = await database.createOrderFromInvoice(invoiceId, req.merchant.id);
+      console.log(`✅ Order ${orderResult.orderNumber} auto-created from fully paid invoice ${invoice.invoice_number}`);
+    } catch (orderError) {
+      console.error('Failed to auto-create order:', orderError);
+      // Don't fail the payment confirmation if order creation fails
+    }
+
+    console.log(`✅ Final payment confirmed for invoice ${invoice.invoice_number}`);
+    
+    res.json({
+      success: true,
+      message: 'Final payment confirmed successfully, invoice moved to orders',
+      orderId: orderResult?.lastInsertRowid,
+      orderNumber: orderResult?.orderNumber,
+      invoice: updatedInvoice
+    });
+    
+  } catch (error) {
+    console.error('Error confirming final payment:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to confirm final payment: ' + error.message 
+    });
+  }
+});
+
+// Final payment confirmation upload (token-based)
+app.post('/api/final-payment/:token/payment-confirmation', upload.single('paymentProof'), async (req, res) => {
+  try {
+    const token = req.params.token;
+    const notes = req.body.notes || '';
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded'
+      });
+    }
+    
+    // Find invoice by final payment token
+    const invoice = await database.getInvoiceByFinalPaymentToken(token);
+    if (!invoice) {
+      // Clean up uploaded file if invoice not found
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({
+        success: false,
+        error: 'Final payment link not found or expired'
+      });
+    }
+
+    // Check if invoice is in correct stage
+    if (invoice.payment_stage !== 'final_payment') {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice is not in final payment stage'
+      });
+    }
+    
+    // Save payment confirmation to database
+    const confirmationData = {
+      filePath: req.file.path,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      notes: notes,
+      paymentType: 'final_payment'
+    };
+    
+    const updatedInvoice = await database.addPaymentConfirmation(invoice.id, confirmationData);
+    
+    if (!updatedInvoice) {
+      // Clean up uploaded file if update failed
+      fs.unlinkSync(req.file.path);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to save payment confirmation'
+      });
+    }
+    
+    console.log(`✅ Final payment confirmation uploaded for invoice: ${invoice.invoice_number}`);
+    
+    res.json({
+      success: true,
+      message: 'Final payment confirmation uploaded successfully',
+      invoice: updatedInvoice
+    });
+    
+  } catch (error) {
+    console.error('Error uploading final payment confirmation:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('Error cleaning up file:', cleanupError);
+      }
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload payment confirmation'
+    });
+  }
+});
+
+// Get final payment token details
+app.get('/api/final-payment/:token', async (req, res) => {
+  try {
+    const token = req.params.token;
+    const invoice = await database.getInvoiceByFinalPaymentToken(token);
+    
+    if (!invoice) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Final payment link not found or expired' 
+      });
+    }
+
+    // Check if already paid
+    if (invoice.payment_stage === 'completed') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Final payment already completed' 
+      });
+    }
+
+    const paymentSchedule = typeof invoice.payment_schedule_json === 'string' 
+      ? JSON.parse(invoice.payment_schedule_json || 'null') 
+      : (invoice.payment_schedule_json || null);
+    
+    res.json({
+      success: true,
+      invoice: {
+        id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        customer_name: invoice.customer_name,
+        grand_total: invoice.grand_total,
+        currency: invoice.currency,
+        final_payment_amount: invoice.final_payment_amount,
+        down_payment_amount: paymentSchedule?.downPayment?.amount || 0,
+        payment_schedule: paymentSchedule
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error getting final payment details:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get payment details' 
+    });
+  }
+});
+
+// Serve uploaded payment confirmation files (protected)
+app.get('/api/payment-confirmations/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, '..', 'uploads', 'payment-confirmations', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('Error serving payment confirmation file:', error);
+    res.status(500).json({ error: 'Failed to load file' });
+  }
+});
+
+// Email settings API endpoints
+app.get('/api/email-settings', (req, res) => {
+  const status = emailService.getStatus();
+  res.json({
+    success: true,
+    settings: {
+      host: status.host || 'smtp.gmail.com',
+      port: emailService.config?.port || 587,
+      secure: emailService.config?.secure || false,
+      user: status.user || ''
+      // Don't return password for security
+    },
+    status: status
+  });
+});
+
+app.post('/api/email-settings', async (req, res) => {
+  try {
+    const settings = req.body;
+    
+    console.log('📧 Updating email settings:', { user: settings.user, host: settings.host });
+    
+    // Update email service configuration
+    const success = await emailService.updateConfig(settings);
+    
+    if (success) {
+      res.json({
+        success: true,
+        message: 'Email settings saved and tested successfully',
+        status: emailService.getStatus()
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Email configuration test failed - please check your credentials',
+        status: emailService.getStatus()
+      });
+    }
+  } catch (error) {
+    console.error('Error updating email settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save email settings: ' + error.message
+    });
+  }
+});
+
+// Email status API endpoint
+app.get('/api/email-status', (req, res) => {
+  const status = emailService.getStatus();
+  
+  res.json({
+    success: true,
+    saasConfigured: status.configured,
+    customConfigured: status.configured,
+    configured: status.configured,
+    mockMode: status.mockMode,
+    isInitialized: status.configured,
+    ...status
+  });
+});
+
+// Test email API endpoint
+app.post('/api/test-email', async (req, res) => {
+  try {
+    const { testEmail } = req.body;
+    
+    if (!testEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Test email address is required'
+      });
+    }
+    
+    console.log('🧪 Testing email to:', testEmail);
+    
+    // Use the email service to send test email
+    const result = await emailService.sendTestEmail(testEmail);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        messageId: result.messageId,
+        message: result.message || 'Test email sent successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to send test email'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Email test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Test email failed: ' + error.message
+    });
+  }
+});
+
+// STAGE 1: Preview-only invoice generation (no database save)
+app.post('/api/preview-invoice', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { message, businessProfile } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required'
+      });
+    }
+
+    console.log('🔍 Generating invoice preview:', message.substring(0, 100) + '...');
+
+    // Get current business settings including logo
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+
+    // Performance optimization: Cache product catalog to avoid database calls
+    const catalogCacheKey = getCacheKey('catalog', 'all');
+    let catalog = getFromCache(catalogCacheKey);
+    
+    if (!catalog) {
+      const products = await database.getAllProducts(100, 0, null, true, req.merchant.id);
+      catalog = products.map(product => ({
+        id: `prod_${product.id}`,
+        name: product.name,
+        description: product.description,
+        sku: product.sku,
+        category: product.category,
+        price: product.unit_price,
+        tags: [product.name.toLowerCase(), product.category.toLowerCase(), product.sku.toLowerCase()]
+      }));
+      
+      // Cache the catalog for 5 minutes
+      setCache(catalogCacheKey, catalog);
+      console.log('📦 Catalog cached for performance');
+    } else {
+      console.log('📦 Using cached catalog');
+    }
+
+    // Use business profile if provided, otherwise use default config
+    const currentMerchantConfig = businessProfile ? {
+      businessName: businessProfile.name || businessProfile.businessName || currentBusinessSettings.name,
+      address: businessProfile.address || currentBusinessSettings.address,
+      phone: businessProfile.phone || currentBusinessSettings.phone,
+      email: businessProfile.email || currentBusinessSettings.email,
+      website: businessProfile.website || currentBusinessSettings.website,
+      logo: businessProfile.logo || currentBusinessSettings.logoUrl || config.merchant.logo || "/assets//assets/aspree2-logo.png?v=2",
+      category: businessProfile.category || 'general',
+      taxId: currentBusinessSettings.taxId,
+      paymentTerms: "NET_30",
+      catalog: catalog.length > 0 ? catalog : merchantConfig.catalog,
+      // Custom business settings
+      defaultTaxRate: businessProfile.taxRate || currentBusinessSettings.taxRate || 0,
+      additionalNotes: businessProfile.additionalNotes || "",
+      hideBusinessName: businessProfile.hideBusinessName !== undefined ? businessProfile.hideBusinessName : currentBusinessSettings.hideBusinessName
+    } : {
+      ...merchantConfig,
+      businessName: currentBusinessSettings.name,
+      address: currentBusinessSettings.address,
+      phone: currentBusinessSettings.phone,
+      hideBusinessName: currentBusinessSettings.hideBusinessName,
+      email: currentBusinessSettings.email,
+      website: currentBusinessSettings.website,
+      logo: currentBusinessSettings.logoUrl || config.merchant.logo || "",
+      taxId: currentBusinessSettings.taxId,
+      catalog: catalog.length > 0 ? catalog : merchantConfig.catalog,
+      category: 'general',
+      // Default settings
+      defaultTaxRate: currentBusinessSettings.taxRate || 0,
+      additionalNotes: ""
+    };
+
+    console.log('📦 Using catalog with', catalog.length, 'products');
+
+    // Process the message for PREVIEW ONLY
+    const result = await generator.processWhatsAppMessage(
+      message,
+      currentMerchantConfig,
+      null, // No default shipping - extract from message
+      "Preview dari web interface"
+    );
+
+    if (result.success) {
+      console.log('✅ Invoice preview generated successfully:', result.invoice.header.invoiceNumber);
+      
+      // Check for missing prices and provide helpful feedback
+      const itemsWithoutPrice = result.invoice.items.filter(item => 
+        item.unitPrice === 0 && item.productName && item.quantity > 0
+      );
+      
+      if (itemsWithoutPrice.length > 0) {
+        console.log('⚠️ Warning: Items found without prices:', itemsWithoutPrice.map(item => item.productName));
+        
+        // Add warning to the result
+        result.warnings = result.warnings || [];
+        result.warnings.push({
+          type: 'missing_prices',
+          message: `Beberapa item tidak memiliki harga: ${itemsWithoutPrice.map(item => item.productName).join(', ')}. Tambahkan "harga [nominal]" setelah nama produk untuk mendapatkan total yang akurat.`,
+          items: itemsWithoutPrice.map(item => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            suggestion: `${item.productName} ${item.quantity}pcs harga [nominal]`
+          })),
+          helpText: 'Contoh: "lolly 13pcs harga 50000" atau "laptop 1pc harga 15000000"'
+        });
+      }
+      
+      // Calculate processing time
+      const processingTime = Date.now() - startTime;
+      console.log(`⏱️ Preview generation completed in ${processingTime}ms`);
+      
+      // Return preview data (no database save)
+      const previewResult = {
+        ...result,
+        preview: true,
+        isPreview: true,
+        processingTime: processingTime,
+        // Generate temporary preview ID for editing reference
+        previewId: `preview_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      };
+      
+      res.json(previewResult);
+      
+    } else {
+      console.error('❌ Invoice preview generation failed:', result.error);
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to generate invoice preview'
+      });
+    }
+    
+  } catch (error) {
+    console.error('💥 Preview generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Preview generation failed: ' + error.message
+    });
+  }
+});
+
+// STAGE 2: Final invoice generation with database save 
+app.post('/api/confirm-invoice', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { invoiceData, businessProfile, previewId } = req.body;
+
+    if (!invoiceData || !invoiceData.invoice) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice data is required'
+      });
+    }
+
+    console.log('✅ Confirming invoice for final generation:', invoiceData.invoice.header.invoiceNumber);
+
+    // AI AUTO-LEARNING: DISABLED to prevent product name modifications
+    // This was causing "linea 28 sumba" to become "sumba blue jeans" due to AI enhancements
+    let autoLearningResults = null;
+    console.log('🧠 AI auto-learning disabled - preserving original product names from user input');
+    
+    // Save invoice to database
+    try {
+      // Get current business settings to ensure logo is included
+      console.log('🔧 Step 1: Getting current business settings...');
+      let currentBusinessSettings;
+      try {
+        currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+        console.log('✅ Business settings retrieved:', {
+          hasName: !!currentBusinessSettings.name,
+          hasLogoUrl: !!currentBusinessSettings.logoUrl,
+          hasAddress: !!currentBusinessSettings.address,
+          hasPhone: !!currentBusinessSettings.phone
+        });
+      } catch (settingsError) {
+        console.error('💥 Failed to get business settings:', settingsError);
+        throw new Error(`Business settings retrieval failed: ${settingsError.message}`);
+      }
+      
+      // Merge business profile with current settings to ensure logo is included
+      const mergedBusinessProfile = businessProfile ? {
+        ...businessProfile,
+        logoUrl: businessProfile.logoUrl || currentBusinessSettings.logoUrl,
+        logo: businessProfile.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2',
+        hideBusinessName: businessProfile.hideBusinessName !== undefined ? businessProfile.hideBusinessName : currentBusinessSettings.hideBusinessName
+      } : {
+        name: currentBusinessSettings.name || 'Business Name',
+        email: currentBusinessSettings.email || 'business@example.com',
+        address: currentBusinessSettings.address || 'Business Address',
+        phone: currentBusinessSettings.phone || 'Business Phone',
+        website: currentBusinessSettings.website || '',
+        logoUrl: currentBusinessSettings.logoUrl || null,
+        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
+        logo: currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2',
+        taxId: currentBusinessSettings.taxId || '',
+        taxRate: currentBusinessSettings.taxRate || 0,
+        taxEnabled: currentBusinessSettings.taxEnabled || false,
+        taxName: currentBusinessSettings.taxName || 'PPN'
+      };
+      
+      console.log('🔧 Step 2: Business profile merged successfully');
+      
+      // Include business profile data and set initial payment stage
+      const invoiceWithProfile = {
+        ...invoiceData.invoice,
+        businessProfile: mergedBusinessProfile
+      };
+      
+      console.log('🔧 Step 3: Invoice with profile created, logo path:', mergedBusinessProfile.logo);
+      
+      // Initialize payment stage based on payment schedule
+      if (invoiceWithProfile.paymentSchedule && invoiceWithProfile.paymentSchedule.scheduleType === 'down_payment') {
+        invoiceWithProfile.payment_stage = 'down_payment';
+        invoiceWithProfile.payment_status = 'pending';
+        console.log('🎯 Setting initial payment stage to down_payment for scheduled payment invoice');
+      } else {
+        invoiceWithProfile.payment_stage = 'full_payment';
+        invoiceWithProfile.payment_status = 'pending';
+        console.log('🎯 Setting initial payment stage to full_payment for regular invoice');
+      }
+      
+      let savedInvoice;
+      const { invoiceId } = req.body; // Check if this is an update
+      
+      if (invoiceId) {
+        // UPDATE existing invoice
+        console.log('🔧 Step 4: Updating existing invoice with ID:', invoiceId);
+        try {
+          savedInvoice = await database.updateInvoice(invoiceId, invoiceWithProfile, req.merchant.id);
+          if (!savedInvoice) {
+            console.error('❌ Invoice not found for update:', invoiceId);
+            return res.status(404).json({
+              success: false,
+              error: 'Invoice not found for update'
+            });
+          }
+          console.log('✅ Invoice updated successfully:', savedInvoice.invoiceNumber);
+        } catch (updateError) {
+          console.error('💥 Invoice update failed:', updateError);
+          throw new Error(`Invoice update failed: ${updateError.message}`);
+        }
+      } else {
+        // CREATE new invoice
+        console.log('🔧 Step 4: Creating new invoice');
+        try {
+          savedInvoice = await database.saveInvoice(invoiceWithProfile, req.merchant.id);
+          console.log('✅ New invoice created successfully:', savedInvoice.invoiceNumber);
+        } catch (saveError) {
+          console.error('💥 Invoice save failed:', saveError);
+          throw new Error(`Invoice save failed: ${saveError.message}`);
+        }
+      }
+      
+      console.log('🔧 Step 5: Invoice processing completed, ID:', savedInvoice.id);
+      
+      // Calculate processing time
+      const processingTime = Date.now() - startTime;
+      console.log(`⏱️ Final invoice generation completed in ${processingTime}ms`);
+      
+      // Update the result with the new invoice number and auto-learning results
+      const finalResult = {
+        ...invoiceData,
+        success: true,
+        invoice: {
+          ...invoiceData.invoice,
+          header: {
+            ...invoiceData.invoice.header,
+            invoiceNumber: savedInvoice.invoiceNumber
+          }
+        },
+        databaseId: savedInvoice.id,
+        customerToken: savedInvoice.customerToken,
+        customerPortalUrl: `${config.server.baseUrl}/customer/invoice/${savedInvoice.customerToken}`,
+        customerGeneralPortalUrl: `${config.server.baseUrl}/customer`,
+        // AI Auto-learning results
+        autoLearning: autoLearningResults,
+        newCustomerDetected: autoLearningResults?.confirmationsNeeded.some(c => c.type === 'customer') || false,
+        newProductDetected: autoLearningResults?.confirmationsNeeded.some(c => c.type === 'product') || false,
+        customerData: autoLearningResults?.confirmationsNeeded.find(c => c.type === 'customer')?.data || null,
+        productData: autoLearningResults?.confirmationsNeeded.filter(c => c.type === 'product').map(c => c.data) || [],
+        processingTime: processingTime,
+        finalInvoice: true,
+        previewId: previewId // Reference to original preview
+      };
+      
+      // Send response immediately to reduce perceived latency
+      res.json(finalResult);
+      
+      // Queue heavy operations (email sending, PDF generation) for async processing
+      heavyOperationQueue.push(async () => {
+        try {
+          if (savedInvoice.customer_email) {
+            console.log('📧 Invoice ready for sharing - email not sent automatically');
+            console.log('💡 Use the sharing options to send via email, WhatsApp, or link');
+          }
+        } catch (error) {
+          console.error('💥 Heavy operation error:', error);
+        }
+      });
+      
+    } catch (databaseError) {
+      console.error('💾 Database operation failed:', databaseError);
+      console.error('💾 Stack trace:', databaseError.stack);
+      console.error('💾 Error type:', databaseError.constructor.name);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to save invoice: ' + databaseError.message,
+        errorType: databaseError.constructor.name
+      });
+    }
+    
+  } catch (error) {
+    console.error('💥 Final invoice generation error:', error);
+    console.error('💥 Stack trace:', error.stack);
+    console.error('💥 Error type:', error.constructor.name);
+    console.error('💥 Request body keys:', Object.keys(req.body || {}));
+    res.status(500).json({
+      success: false,
+      error: 'Final invoice generation failed: ' + error.message,
+      errorType: error.constructor.name
+    });
+  }
+});
+
+// LEGACY: Original process-message API (redirects to preview-only mode)
+app.post('/api/process-message', authMiddleware.authenticateMerchant, async (req, res) => {
+  console.log('⚠️  Legacy API called - redirecting to preview-only mode');
+  console.log('💡 This API now generates previews only. Use /api/confirm-invoice to finalize.');
+  
+  // Redirect to the new preview API
+  try {
+    const { message, businessProfile } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required'
+      });
+    }
+
+    console.log('🔄 Redirecting to preview-only API...');
+    
+    // Make internal request to preview API
+    const previewResponse = await fetch(`${config.server.baseUrl}/api/preview-invoice`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message, businessProfile })
+    });
+
+    if (!previewResponse.ok) {
+      return res.status(previewResponse.status).json({
+        success: false,
+        error: 'Preview generation failed'
+      });
+    }
+
+    const previewData = await previewResponse.json();
+    
+    // Add legacy compatibility flag
+    const legacyResponse = {
+      ...previewData,
+      legacyMode: true,
+      message: 'This is a preview only. Use "Generate Final Invoice" button to create the final invoice.'
+    };
+
+    res.json(legacyResponse);
+    
+  } catch (error) {
+    console.error('💥 Legacy API redirect error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Legacy API redirect failed: ' + error.message
+    });
+  }
+});
+
+// PDF generation removed - replaced with Print functionality
+/*
+app.post('/api/generate-pdf', async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { invoiceData } = req.body;
+
+    if (!invoiceData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Data faktur diperlukan'
+      });
+    }
+
+    console.log('📄 Generating PDF for invoice:', invoiceData.invoice.header.invoiceNumber);
+
+    // Performance optimization: Check cache for recently generated PDFs
+    const pdfCacheKey = getCacheKey('pdf', invoiceData.invoice.header.invoiceNumber);
+    let pdfBuffer = getFromCache(pdfCacheKey);
+    
+    if (!pdfBuffer) {
+      // Generate PDF (with fallback to HTML)
+      pdfBuffer = await pdfGenerator.generateInvoicePDF(invoiceData);
+      
+      // Cache the PDF for 1 minute (shorter TTL for PDFs)
+      setCache(pdfCacheKey, pdfBuffer);
+      console.log('📄 PDF cached for performance');
+    } else {
+      console.log('📄 Using cached PDF');
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`⏱️ PDF generation completed in ${processingTime}ms`);
+
+    // Check if we got HTML fallback instead of PDF
+    if (pdfBuffer.isHTML) {
+      // Set headers for HTML download
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `attachment; filename="Faktur-${invoiceData.invoice.header.invoiceNumber}.html"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      console.log('📄 Generated HTML invoice (fallback mode):', pdfBuffer.fileName);
+      res.send(pdfBuffer);
+    } else {
+      // Set headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Faktur-${invoiceData.invoice.header.invoiceNumber}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+
+      // Send PDF buffer
+      res.send(pdfBuffer);
+      console.log('✅ PDF generated successfully');
+    }
+
+  } catch (error) {
+    console.error('💥 PDF generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Gagal membuat PDF: ' + error.message
+    });
+  }
+});
+
+// API endpoint to download PDF by invoice ID
+app.get('/api/invoices/pdf/:invoiceId', async (req, res) => {
+  try {
+    const invoiceId = req.params.invoiceId;
+    
+    // Get invoice from database
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Create invoice data structure for PDF generation
+    const invoiceData = {
+      invoice: {
+        header: {
+          invoiceNumber: invoice.invoice_number,
+          invoiceDate: invoice.invoice_date,
+          dueDate: invoice.due_date,
+          status: invoice.status
+        },
+        merchant: {
+          businessName: invoice.merchant_name,
+          address: invoice.merchant_address,
+          phone: invoice.merchant_phone,
+          email: invoice.merchant_email,
+          website: invoice.merchant_website || ''
+        },
+        customer: {
+          name: invoice.customer_name,
+          email: invoice.customer_email,
+          address: invoice.customer_address
+        },
+        items: invoice.items_json || [],
+        calculations: {
+          subtotal: invoice.subtotal,
+          totalTax: invoice.tax_amount,
+          shippingCost: invoice.shipping_cost,
+          grandTotal: invoice.grand_total,
+          currency: invoice.currency || 'IDR'
+        },
+        payment: {
+          paymentTerms: invoice.payment_terms || 'NET_30',
+          paymentMethods: ['Bank Transfer', 'QRIS'],
+          notes: invoice.notes || ''
+        }
+      }
+    };
+    
+    // Generate PDF
+    const pdfBuffer = await pdfGenerator.generateInvoicePDF(invoiceData);
+    
+    // Check if we got HTML fallback instead of PDF
+    if (pdfBuffer.isHTML) {
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `attachment; filename="Invoice-${invoice.invoice_number}.html"`);
+      res.send(pdfBuffer);
+    } else {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Invoice-${invoice.invoice_number}.pdf"`);
+      res.send(pdfBuffer);
+    }
+    
+  } catch (error) {
+    console.error('💥 PDF download error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate PDF: ' + error.message
+    });
+  }
+});
+
+// API endpoint to generate bulk PDF export of invoices
+app.post('/api/export/invoices/pdf', async (req, res) => {
+  try {
+    const { invoiceIds, dateRange, status } = req.body;
+    
+    console.log('📄 Starting bulk PDF export for invoices');
+    
+    let invoices = [];
+    
+    // Get invoices based on provided criteria
+    if (invoiceIds && invoiceIds.length > 0) {
+      // Export specific invoices
+      invoices = await Promise.all(
+        invoiceIds.map(async (id) => {
+          const invoice = await database.getInvoice(id);
+          return invoice;
+        })
+      );
+      invoices = invoices.filter(Boolean); // Remove null entries
+    } else {
+      // Export all invoices with filters
+      invoices = await database.getAllInvoices();
+      
+      // Apply date range filter
+      if (dateRange && dateRange.start && dateRange.end) {
+        const startDate = new Date(dateRange.start);
+        const endDate = new Date(dateRange.end);
+        invoices = invoices.filter(invoice => {
+          const invoiceDate = new Date(invoice.invoice_date);
+          return invoiceDate >= startDate && invoiceDate <= endDate;
+        });
+      }
+      
+      // Apply status filter
+      if (status && status !== 'all') {
+        invoices = invoices.filter(invoice => invoice.status === status);
+      }
+    }
+    
+    if (invoices.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No invoices found matching criteria'
+      });
+    }
+    
+    console.log(`📄 PDF Export disabled - returning JSON data instead`);
+    
+    // PDF generation disabled - return JSON data instead
+    const reportData = {
+      title: 'Invoice Export Report',
+      dateRange: dateRange,
+      status: status,
+      invoices: invoices,
+      exportedAt: new Date().toISOString()
+    };
+    
+    res.json({
+      success: true,
+      message: 'PDF export disabled - returning JSON data',
+      data: reportData
+    });
+    console.log(`✅ JSON report generated: ${invoices.length} invoices`);
+    
+  } catch (error) {
+    console.error('💥 Bulk PDF export error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export invoices: ' + error.message
+    });
+  }
+});
+
+// API endpoint to generate comprehensive analytics report
+app.post('/api/export/analytics/pdf', async (req, res) => {
+  try {
+    const { reportType, dateRange, includeCharts = true } = req.body;
+    
+    console.log('📊 Generating analytics report PDF');
+    
+    // Gather analytics data
+    const invoices = await database.getAllInvoices();
+    const orders = await database.getAllOrders();
+    const customers = await database.getAllCustomers();
+    const products = await database.getAllProducts();
+    
+    // Filter data by date range if provided
+    let filteredInvoices = invoices;
+    let filteredOrders = orders;
+    
+    if (dateRange && dateRange.start && dateRange.end) {
+      const startDate = new Date(dateRange.start);
+      const endDate = new Date(dateRange.end);
+      
+      filteredInvoices = invoices.filter(invoice => {
+        const invoiceDate = new Date(invoice.invoice_date);
+        return invoiceDate >= startDate && invoiceDate <= endDate;
+      });
+      
+      filteredOrders = orders.filter(order => {
+        const orderDate = new Date(order.order_date);
+        return orderDate >= startDate && orderDate <= endDate;
+      });
+    }
+    
+    // Calculate top products
+    const calculateTopProducts = (invoices, products) => {
+      const productSales = {};
+      
+      invoices.forEach(invoice => {
+        try {
+          const items = JSON.parse(invoice.items_json || '[]');
+          items.forEach(item => {
+            const key = item.productName || item.name;
+            if (!productSales[key]) {
+              productSales[key] = { name: key, quantity: 0, revenue: 0 };
             }
-            
-            const invoice = currentInvoice;
-            const invoiceNumber = invoice.invoice_number;
-            const customerName = invoice.customer_name || '';
-            const customerPhone = invoice.customer_phone || '';
-            const customerAddress = invoice.customer_address || '';
-            const dueDate = invoice.due_date;
-            const businessName = invoice.business_name || 'Business';
-            const total = invoice.total_amount || 0;
-            const subtotal = invoice.subtotal || total;
-            const discount = invoice.discount || 0;
-            const discountType = invoice.discount_type;
-            const discountValue = invoice.discount_value;
-            const shippingCost = invoice.shipping_cost || 0;
-            
-            // Parse items from JSON with proper error handling
-            let items = [];
-            try {
-                if (invoice.items_json) {
-                    if (typeof invoice.items_json === 'string') {
-                        items = JSON.parse(invoice.items_json);
-                    } else if (Array.isArray(invoice.items_json)) {
-                        items = invoice.items_json;
-                    }
-                }
-            } catch (e) {
-                console.error('Could not parse items for WhatsApp:', e);
-                items = [];
+            productSales[key].quantity += item.quantity || 0;
+            productSales[key].revenue += (item.quantity || 0) * (item.unitPrice || 0);
+          });
+        } catch (error) {
+          console.error('Error parsing items for invoice:', invoice.invoice_number, error);
+        }
+      });
+      
+      return Object.values(productSales).sort((a, b) => b.revenue - a.revenue);
+    };
+    
+    // Calculate analytics
+    const analytics = {
+      revenue: {
+        totalRevenue: filteredInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0),
+        totalInvoices: filteredInvoices.length,
+        avgInvoiceValue: filteredInvoices.length > 0 ? 
+          filteredInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0) / filteredInvoices.length : 0,
+        paidInvoices: filteredInvoices.filter(inv => inv.status === 'paid').length,
+        unpaidInvoices: filteredInvoices.filter(inv => inv.status === 'sent').length,
+        overdueInvoices: filteredInvoices.filter(inv => inv.status === 'overdue').length
+      },
+      customers: {
+        totalCustomers: customers.length,
+        newCustomers: customers.filter(customer => {
+          if (!dateRange) return true;
+          const customerDate = new Date(customer.created_at);
+          return customerDate >= new Date(dateRange.start) && customerDate <= new Date(dateRange.end);
+        }).length,
+        repeatCustomers: customers.filter(customer => {
+          const customerInvoices = filteredInvoices.filter(inv => inv.customer_email === customer.email);
+          return customerInvoices.length > 1;
+        }).length
+      },
+      products: {
+        totalProducts: products.length,
+        topProducts: calculateTopProducts(filteredInvoices, products).slice(0, 10)
+      },
+      orders: {
+        totalOrders: filteredOrders.length,
+        shippedOrders: filteredOrders.filter(order => order.status === 'shipped').length,
+        deliveredOrders: filteredOrders.filter(order => order.status === 'delivered').length,
+        pendingOrders: filteredOrders.filter(order => order.status === 'pending').length
+      },
+      dateRange: dateRange,
+      generatedAt: new Date().toISOString()
+    };
+    
+    // PDF generation disabled - return JSON analytics data
+    const reportData = {
+      reportType: reportType || 'comprehensive',
+      includeCharts: includeCharts,
+      analytics: analytics,
+      generatedAt: new Date().toISOString()
+    };
+    
+    res.json({
+      success: true,
+      message: 'PDF export disabled - returning JSON analytics data',
+      data: reportData
+    });
+    console.log('✅ Analytics report JSON generated successfully');
+    
+  } catch (error) {
+    console.error('💥 Analytics report generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate analytics report: ' + error.message
+    });
+  }
+});
+*/
+
+// API endpoint to get export status and options
+app.get('/api/export/options', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const customers = await database.getAllCustomers(1000, 0, null, req.merchant.id);
+    const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
+    
+    res.json({
+      success: true,
+      exportOptions: {
+        invoices: {
+          total: invoices.length,
+          formats: ['pdf', 'csv', 'xlsx'],
+          bulkOptions: ['single'],
+          filters: ['dateRange', 'status', 'customer']
+        },
+        customers: {
+          total: customers.length,
+          formats: ['csv', 'xlsx', 'pdf']
+        },
+        products: {
+          total: products.length,
+          formats: ['csv', 'xlsx', 'pdf']
+        },
+        analytics: {
+          reportTypes: ['comprehensive', 'revenue', 'customers', 'products'],
+          formats: ['pdf', 'xlsx'],
+          chartOptions: ['includeCharts', 'chartsOnly']
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching export options:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch export options'
+    });
+  }
+});
+
+// API endpoint to send invoice by email
+app.post('/api/invoices/send-email', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { invoiceId, customerEmail, businessProfile } = req.body;
+    
+    if (!invoiceId || !customerEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and customer email are required'
+      });
+    }
+    
+    // Get invoice from database
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    console.log('📧 Sending invoice email for:', invoice.invoice_number);
+    
+    // Send email without PDF attachment
+    // Use the merchant data from the invoice itself to ensure consistency
+    // Include logo from business profile if available
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+    const businessSettings = {
+      name: invoice.merchant_name,
+      email: invoice.merchant_email,
+      address: invoice.merchant_address,
+      phone: invoice.merchant_phone,
+      website: currentBusinessSettings.website,
+      taxId: currentBusinessSettings.taxId,
+      logo: businessProfile?.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2',
+      category: businessProfile?.category || 'general'
+    };
+    await emailService.sendInvoiceEmail(invoice, customerEmail, null, businessSettings);
+    
+    res.json({
+      success: true,
+      message: 'Invoice sent successfully'
+    });
+    
+  } catch (error) {
+    console.error('💥 Email send error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send email: ' + error.message
+    });
+  }
+});
+
+// API endpoint to send final payment email
+app.post('/api/final-payment/send-email', async (req, res) => {
+  try {
+    const { invoiceId, customerEmail, businessProfile } = req.body;
+    
+    if (!invoiceId || !customerEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and customer email are required'
+      });
+    }
+
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+
+    // Check if invoice has final payment token and is in correct stage
+    if (invoice.payment_stage !== 'final_payment' || !invoice.final_payment_token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice is not in final payment stage or missing payment token'
+      });
+    }
+    
+    console.log('📧 Sending final payment email for:', invoice.invoice_number);
+    
+    // Construct final payment URL
+    const finalPaymentUrl = `${req.protocol}://${req.get('host')}/final-payment?token=${invoice.final_payment_token}`;
+    
+    // Use the merchant data from the invoice itself to ensure consistency
+    // Include logo from business profile if available
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+    const businessSettings = {
+      name: invoice.merchant_name,
+      email: invoice.merchant_email,
+      address: invoice.merchant_address,
+      phone: invoice.merchant_phone,
+      website: currentBusinessSettings.website,
+      taxId: currentBusinessSettings.taxId,
+      logo: businessProfile?.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2',
+      category: businessProfile?.category || 'general'
+    };
+    
+    const emailResult = await emailService.sendFinalPaymentEmail(invoice, customerEmail, finalPaymentUrl, businessSettings);
+    
+    res.json({
+      success: emailResult.success,
+      message: emailResult.success ? 'Final payment email sent successfully' : 'Failed to send final payment email',
+      error: emailResult.error || null,
+      messageId: emailResult.messageId || null
+    });
+    
+  } catch (error) {
+    console.error('💥 Final payment email send error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send final payment email: ' + error.message
+    });
+  }
+});
+
+// Email Notification API endpoints
+app.post('/api/notifications/payment-reminder', async (req, res) => {
+  try {
+    const { invoiceId, daysToDue } = req.body;
+    
+    if (!invoiceId || daysToDue === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and daysToDue are required'
+      });
+    }
+    
+    // Get invoice from database
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Send payment reminder email
+    const result = await emailService.sendPaymentReminderEmail(
+      invoice,
+      invoice.customer_email,
+      daysToDue
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Payment reminder error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/notifications/invoice-overdue', async (req, res) => {
+  try {
+    const { invoiceId, daysPastDue } = req.body;
+    
+    if (!invoiceId || daysPastDue === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice ID and daysPastDue are required'
+      });
+    }
+    
+    // Get invoice from database
+    const invoice = await database.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Send overdue notification email
+    const result = await emailService.sendInvoiceOverdueNotification(
+      invoice,
+      invoice.customer_email,
+      daysPastDue
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Overdue notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/notifications/order-shipped', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Order ID is required'
+      });
+    }
+    
+    // Get order from database (using existing orders structure)
+    const order = await database.getOrder(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    // Send shipping notification email
+    const result = await emailService.sendOrderShippedNotification(
+      order,
+      order.customer_email
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Shipping notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/notifications/order-delivered', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Order ID is required'
+      });
+    }
+    
+    // Get order from database
+    const order = await database.getOrder(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    // Send delivery notification email
+    const result = await emailService.sendOrderDeliveredNotification(
+      order,
+      order.customer_email
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Delivery notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/notifications/merchant', async (req, res) => {
+  try {
+    const { type, data, merchantEmail } = req.body;
+    
+    if (!type || !data || !merchantEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Type, data, and merchantEmail are required'
+      });
+    }
+    
+    // Send merchant notification email
+    const result = await emailService.sendMerchantNotification(
+      type,
+      data,
+      merchantEmail
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('💥 Merchant notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// AI Auto-learning API endpoints
+app.post('/api/auto-learning/confirm-customer', async (req, res) => {
+  try {
+    const { customerData, action } = req.body;
+    
+    if (!customerData || !action) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer data and action are required'
+      });
+    }
+
+    if (action === 'add') {
+      await database.findOrCreateCustomer(customerData, merchantId);
+      console.log('✅ Customer manually confirmed and added:', customerData.name);
+      
+      res.json({
+        success: true,
+        message: 'Customer added successfully',
+        customer: customerData
+      });
+    } else if (action === 'skip') {
+      console.log('⏭️ Customer addition skipped for:', customerData.name);
+      
+      res.json({
+        success: true,
+        message: 'Customer addition skipped'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid action. Use "add" or "skip"'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error confirming customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process customer confirmation: ' + error.message
+    });
+  }
+});
+
+app.post('/api/auto-learning/confirm-product', async (req, res) => {
+  try {
+    const { productData, action } = req.body;
+    
+    if (!productData || !action) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product data and action are required'
+      });
+    }
+
+    if (action === 'add') {
+      await database.createProduct(productData);
+      console.log('✅ Product manually confirmed and added:', productData.name);
+      
+      res.json({
+        success: true,
+        message: 'Product added successfully',
+        product: productData
+      });
+    } else if (action === 'skip') {
+      console.log('⏭️ Product addition skipped for:', productData.name);
+      
+      res.json({
+        success: true,
+        message: 'Product addition skipped'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid action. Use "add" or "skip"'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error confirming product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process product confirmation: ' + error.message
+    });
+  }
+});
+
+app.post('/api/auto-learning/edit-customer', async (req, res) => {
+  try {
+    const { customerData } = req.body;
+    
+    if (!customerData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer data is required'
+      });
+    }
+
+    await database.findOrCreateCustomer(customerData, merchantId);
+    console.log('✅ Customer edited and added:', customerData.name);
+    
+    res.json({
+      success: true,
+      message: 'Customer edited and added successfully',
+      customer: customerData
+    });
+
+  } catch (error) {
+    console.error('❌ Error editing customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to edit customer: ' + error.message
+    });
+  }
+});
+
+app.post('/api/auto-learning/edit-product', async (req, res) => {
+  try {
+    const { productData } = req.body;
+    
+    if (!productData) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product data is required'
+      });
+    }
+
+    await database.createProduct(productData);
+    console.log('✅ Product edited and added:', productData.name);
+    
+    res.json({
+      success: true,
+      message: 'Product edited and added successfully',
+      product: productData
+    });
+
+  } catch (error) {
+    console.error('❌ Error editing product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to edit product: ' + error.message
+    });
+  }
+});
+
+// API endpoint to get merchant catalog
+app.get('/api/catalog', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const products = await database.getAllProducts(100, 0, null, true, req.merchant.id);
+    
+    // Convert database products to catalog format for compatibility
+    const catalog = products.map(product => ({
+      id: `prod_${product.id}`,
+      name: product.name,
+      description: product.description,
+      sku: product.sku,
+      category: product.category,
+      price: product.unit_price,
+      tags: [product.name.toLowerCase(), product.category.toLowerCase(), product.sku.toLowerCase()]
+    }));
+    
+    res.json({
+      success: true,
+      catalog: catalog
+    });
+  } catch (error) {
+    console.error('Error fetching catalog:', error);
+    // Fallback to static catalog if database fails
+    res.json({
+      success: true,
+      catalog: merchantConfig.catalog
+    });
+  }
+});
+
+// Invoice Management API Endpoints
+app.get('/api/invoices', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { limit = 50, offset = 0, status, customerEmail, dateFrom, dateTo } = req.query;
+    const invoices = await database.getAllInvoices(
+      parseInt(limit), 
+      parseInt(offset), 
+      status, 
+      customerEmail,
+      dateFrom,
+      dateTo,
+      req.merchant.id
+    );
+    
+    res.json({
+      success: true,
+      invoices,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: invoices.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching invoices:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoices'
+    });
+  }
+});
+
+// Invoice statistics endpoint
+app.get('/api/invoices/statistics', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log(`📊 Fetching invoice statistics for merchant ${req.merchant.id}`);
+
+    // Get all invoices for the merchant to calculate statistics
+    const invoices = await database.getAllInvoices(
+      10000, // High limit to get all invoices
+      0,
+      null,
+      null,
+      null,
+      null,
+      req.merchant.id
+    );
+
+    // Calculate statistics
+    const stats = {
+      totalInvoices: invoices.length,
+      pendingInvoices: invoices.filter(inv => inv.status === 'pending').length,
+      sentInvoices: invoices.filter(inv => inv.status === 'sent').length,
+      paidInvoices: invoices.filter(inv => inv.payment_status === 'paid').length,
+      unpaidInvoices: invoices.filter(inv => inv.payment_status === 'pending').length,
+      overdue: invoices.filter(inv => {
+        if (!inv.due_date || inv.payment_status === 'paid') return false;
+        return new Date(inv.due_date) < new Date();
+      }).length,
+      totalRevenue: invoices
+        .filter(inv => inv.payment_status === 'paid')
+        .reduce((sum, inv) => sum + (parseFloat(inv.grand_total) || 0), 0),
+      pendingRevenue: invoices
+        .filter(inv => inv.payment_status === 'pending')
+        .reduce((sum, inv) => sum + (parseFloat(inv.grand_total) || 0), 0),
+      averageInvoiceValue: invoices.length > 0
+        ? invoices.reduce((sum, inv) => sum + (parseFloat(inv.grand_total) || 0), 0) / invoices.length
+        : 0
+    };
+
+    console.log(`📊 Statistics for merchant ${req.merchant.id}:`, {
+      total: stats.totalInvoices,
+      paid: stats.paidInvoices,
+      revenue: stats.totalRevenue
+    });
+
+    res.json({
+      success: true,
+      statistics: stats,
+      merchantId: req.merchant.id
+    });
+
+  } catch (error) {
+    console.error('Error fetching invoice statistics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoice statistics'
+    });
+  }
+});
+
+app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
+  try {
+    const idParam = req.params.id;
+    let invoice;
+    
+    console.log('🔒 Invoice access attempt for ID:', idParam);
+    console.log('🔒 Request merchant:', req.merchant?.id || 'anonymous');
+    console.log('🔒 Request source IP:', req.ip);
+    
+    // Check if the parameter is a numeric ID or an invoice number
+    if (/^\d+$/.test(idParam)) {
+      // Numeric ID - use original method
+      console.log('🔍 Loading invoice by numeric ID:', parseInt(idParam));
+      invoice = await database.getInvoice(parseInt(idParam));
+    } else {
+      // Invoice number - use invoice number lookup
+      console.log('🔍 Loading invoice by invoice number:', idParam);
+      invoice = await database.getInvoiceByNumber(idParam);
+    }
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+
+    console.log('🔒 Invoice found with merchant_id:', invoice.merchant_id);
+    
+    // SECURITY CHECK: If request is from an authenticated merchant, ensure they can only access their own invoices
+    if (req.merchant && req.merchant.id !== invoice.merchant_id) {
+      console.log('🚨 SECURITY: Merchant', req.merchant.id, 'attempted to access invoice belonging to merchant', invoice.merchant_id);
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own invoices'
+      });
+    }
+    
+    console.log('🔒 Access validated - Invoice details:', {
+      id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      merchant_id: invoice.merchant_id,
+      accessing_merchant: req.merchant?.id || 'public',
+      access_type: req.merchant ? 'merchant' : 'public'
+    });
+
+    // Get current business settings for the invoice's merchant to ensure consistent display
+    const currentBusinessSettings = await getCurrentBusinessSettings(invoice.merchant_id);
+    console.log('✅ Business settings loaded for merchant_id', invoice.merchant_id);
+    
+    // Data consistency check
+    if (currentBusinessSettings.email && currentBusinessSettings.email !== invoice.merchant_email) {
+      console.log('⚠️  Data inconsistency detected between invoice and business settings for merchant', invoice.merchant_id);
+    }
+    
+    // Enhance invoice with business settings for consistent template rendering
+    const enhancedInvoice = {
+      ...invoice,
+      // Ensure business information is available
+      merchant_logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+      merchant_name: invoice.merchant_name || currentBusinessSettings.name,
+      merchant_address: invoice.merchant_address || currentBusinessSettings.address,
+      merchant_phone: invoice.merchant_phone || currentBusinessSettings.phone,
+      merchant_email: invoice.merchant_email || currentBusinessSettings.email,
+      merchant_website: invoice.merchant_website || currentBusinessSettings.website,
+      
+      // Add metadata for business profile (needed for template logic)
+      businessProfile: {
+        name: invoice.merchant_name || currentBusinessSettings.name,
+        address: invoice.merchant_address || currentBusinessSettings.address,
+        phone: invoice.merchant_phone || currentBusinessSettings.phone,
+        email: invoice.merchant_email || currentBusinessSettings.email,
+        website: invoice.merchant_website || currentBusinessSettings.website,
+        logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+        logoUrl: currentBusinessSettings.logoUrl || invoice.merchant_logo, // Ensure both fields are set for compatibility
+        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
+        taxEnabled: currentBusinessSettings.taxEnabled || false,
+        taxRate: currentBusinessSettings.taxRate || 0,
+        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
+      }
+    };
+    
+    console.log('📄 Enhanced invoice data for consistent display:', {
+      invoice_number: enhancedInvoice.invoice_number,
+      hasLogo: !!enhancedInvoice.merchant_logo,
+      hasBusinessProfile: !!enhancedInvoice.businessProfile
+    });
+    
+    res.json({
+      success: true,
+      invoice: enhancedInvoice
+    });
+  } catch (error) {
+    console.error('Error fetching invoice:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoice'
+    });
+  }
+});
+
+// Get payment confirmations for an invoice
+app.get('/api/invoices/:id/payment-confirmations', authMiddleware.authenticateMerchant, async (req, res) => {
+  console.log(`🔍 Payment confirmations request for invoice: ${req.params.id}`);
+  
+  try {
+    const invoiceId = parseInt(req.params.id);
+    console.log(`📋 Parsed invoice ID: ${invoiceId}`);
+    
+    // Step 1: Get invoice from database
+    console.log('🔄 Fetching invoice from database...');
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    console.log(`📊 Invoice data received:`, invoice ? 'Found' : 'Not found');
+    
+    if (!invoice) {
+      console.log('❌ Invoice not found in database');
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    console.log('✅ Invoice found, checking payment confirmation fields...');
+    console.log(`  - payment_confirmation_file: ${invoice.payment_confirmation_file || 'NOT SET'}`);
+    console.log(`  - confirmation_status: ${invoice.confirmation_status || 'NOT SET'}`);
+    console.log(`  - payment_confirmation_date: ${invoice.payment_confirmation_date || 'NOT SET'}`);
+    console.log(`  - payment_confirmation_notes: ${invoice.payment_confirmation_notes || 'NOT SET'}`);
+    
+    // Step 2: Build payment confirmations array from invoice data
+    const confirmations = [];
+    
+    if (invoice.payment_confirmation_file) {
+      console.log('🔄 Processing payment confirmation file...');
+      
+      try {
+        // Fix Windows file path to web-accessible path through API endpoint
+        let webPath = invoice.payment_confirmation_file;
+        
+        // Extract just the filename from the full path
+        const filename = webPath.split(/[\\\/]/).pop();
+        
+        // Use the API endpoint to serve the file
+        webPath = `/api/payment-confirmations/${filename}`;
+        console.log(`📁 Original path: ${invoice.payment_confirmation_file}`);
+        console.log(`🌐 Web path: ${webPath}`);
+        
+        const confirmation = {
+          id: 1, // Simple ID for now
+          filePath: webPath,
+          originalName: invoice.payment_confirmation_file.split(/[\\\/]/).pop(),
+          notes: invoice.payment_confirmation_notes || '',
+          uploadDate: invoice.payment_confirmation_date || invoice.updated_at,
+          status: invoice.confirmation_status || 'pending',
+          paymentType: invoice.paymentType || 'regular'
+        };
+        
+        console.log('✅ Payment confirmation object created:', confirmation);
+        confirmations.push(confirmation);
+      } catch (confirmationError) {
+        console.error('❌ Error processing payment confirmation:', confirmationError);
+        throw confirmationError;
+      }
+    } else {
+      console.log('ℹ️ No payment confirmation file found for this invoice');
+    }
+    
+    console.log(`📤 Returning ${confirmations.length} payment confirmation(s)`);
+    res.json({
+      success: true,
+      confirmations: confirmations
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching payment confirmations:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch payment confirmations',
+      details: error.message
+    });
+  }
+});
+
+// Approve payment confirmation
+app.put('/api/invoices/:id/payment-confirmations/approve', async (req, res) => {
+  try {
+    const invoiceId = parseInt(req.params.id);
+    const { merchantNotes } = req.body;
+    
+    const result = await database.updatePaymentConfirmationStatus(invoiceId, 'approved', merchantNotes || '');
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Check if an order was automatically created
+    let message = 'Payment confirmation approved successfully';
+    if (result.orderCreated) {
+      message += ` and order ${result.orderNumber} was created automatically`;
+    } else if (result.orderError) {
+      message += `, but order creation failed: ${result.orderError}`;
+    }
+
+    res.json({
+      success: true,
+      message: message,
+      invoice: result,
+      orderCreated: result.orderCreated || false,
+      orderId: result.orderId || null,
+      orderNumber: result.orderNumber || null
+    });
+    
+  } catch (error) {
+    console.error('Error approving payment confirmation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve payment confirmation'
+    });
+  }
+});
+
+// Reject payment confirmation
+app.put('/api/invoices/:id/payment-confirmations/reject', async (req, res) => {
+  try {
+    const invoiceId = parseInt(req.params.id);
+    const { merchantNotes } = req.body;
+    
+    const result = await database.updatePaymentConfirmationStatus(invoiceId, 'rejected', merchantNotes || '');
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Payment confirmation rejected',
+      invoice: result
+    });
+    
+  } catch (error) {
+    console.error('Error rejecting payment confirmation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reject payment confirmation'
+    });
+  }
+});
+
+app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const invoiceNumber = req.params.invoiceNumber;
+    
+    console.log(`🔍 Fetching invoice ${invoiceNumber} for merchant ${merchantId}`);
+    
+    // Get invoice with merchant isolation
+    const invoice = await database.getInvoiceByNumber(invoiceNumber, merchantId);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      invoice
+    });
+  } catch (error) {
+    console.error('❌ Error fetching invoice by number:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoice: ' + error.message
+    });
+  }
+});
+
+// Sync paid invoices to orders (creates missing orders for paid invoices)
+app.post('/api/orders/sync-from-invoices', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log(`🔄 Syncing paid invoices to orders for merchant ${req.merchant.id}`);
+
+    // Get all paid invoices for this merchant
+    const paidInvoices = await database.getInvoices(req.merchant.id, { status: 'paid' });
+
+    if (!Array.isArray(paidInvoices) || paidInvoices.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No paid invoices found',
+        processed: 0,
+        created: 0
+      });
+    }
+
+    // Get existing orders to check which invoices already have orders
+    const existingOrders = await database.getOrders(req.merchant.id);
+    const existingOrderInvoiceIds = new Set(
+      existingOrders.map(order => order.source_invoice_id).filter(Boolean)
+    );
+
+    // Find paid invoices without corresponding orders
+    const invoicesNeedingOrders = paidInvoices.filter(invoice =>
+      !existingOrderInvoiceIds.has(invoice.id)
+    );
+
+    console.log(`📊 Found ${paidInvoices.length} paid invoices, ${invoicesNeedingOrders.length} need orders`);
+
+    let createdCount = 0;
+    const errors = [];
+
+    // Create orders for invoices that don't have them
+    for (const invoice of invoicesNeedingOrders) {
+      try {
+        const orderResult = await database.createOrderFromInvoice(invoice.id, req.merchant.id);
+        console.log(`✅ Created order ${orderResult.orderNumber} for invoice ${invoice.invoice_number}`);
+        createdCount++;
+      } catch (error) {
+        console.error(`❌ Failed to create order for invoice ${invoice.invoice_number}:`, error.message);
+        errors.push({
+          invoiceNumber: invoice.invoice_number,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Sync completed: ${createdCount} orders created`,
+      processed: invoicesNeedingOrders.length,
+      created: createdCount,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error('Error syncing invoices to orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to sync invoices to orders: ' + error.message
+    });
+  }
+});
+
+app.put('/api/invoices/:id/status', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { status } = req.body;
+    console.log(`🔄 Updating invoice ${req.params.id} status to '${status}' for merchant ${req.merchant.id}`);
+
+    if (!['draft', 'sent', 'paid'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be draft, sent, or paid'
+      });
+    }
+
+    const result = await database.updateInvoiceStatus(parseInt(req.params.id), status, req.merchant.id);
+
+    // Check if order was created (if status was updated to paid)
+    let orderInfo = null;
+    if (status === 'paid') {
+      console.log('📊 Payment status update result:', {
+        hasResult: !!result,
+        orderCreated: result?.orderCreated,
+        orderId: result?.orderId,
+        orderNumber: result?.orderNumber,
+        orderError: result?.orderError
+      });
+
+      if (result && result.orderCreated) {
+        orderInfo = {
+          orderCreated: true,
+          orderId: result.orderId,
+          orderNumber: result.orderNumber
+        };
+        console.log(`✅ Order ${result.orderNumber} successfully created from paid invoice ${req.params.id}`);
+      } else if (result && result.orderError) {
+        orderInfo = {
+          orderCreated: false,
+          orderError: result.orderError
+        };
+        console.warn(`⚠️ Order creation failed for invoice ${req.params.id}: ${result.orderError}`);
+      } else {
+        orderInfo = {
+          orderCreated: false
+        };
+        console.warn(`⚠️ No order creation info returned for paid invoice ${req.params.id}`);
+      }
+    }
+
+    const responseMessage = `Invoice status updated to ${status}${orderInfo?.orderCreated ? ` and order ${orderInfo.orderNumber} created` : ''}`;
+
+    res.json({
+      success: true,
+      message: responseMessage,
+      result,
+      ...orderInfo
+    });
+  } catch (error) {
+    console.error('Error updating invoice status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update invoice status'
+    });
+  }
+});
+
+// Payment stage management
+app.put('/api/invoices/:id/payment-stage', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { action, status } = req.body;
+    const invoiceId = parseInt(req.params.id);
+    
+    console.log(`🎯 Payment stage action: ${action} for invoice ${invoiceId}`);
+    
+    if (!['confirm_down_payment', 'confirm_final_payment'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid action. Must be confirm_down_payment or confirm_final_payment'
+      });
+    }
+    
+    // Get current invoice to check payment stage
+    const invoice = await database.getInvoice(invoiceId, req.merchant.id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    let newStage, newStatus, message;
+    
+    if (action === 'confirm_down_payment') {
+      if (invoice.payment_stage !== 'down_payment') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invoice is not in down payment stage'
+        });
+      }
+      newStage = 'final_payment';
+      newStatus = 'partial';
+      message = 'Down payment confirmed, moved to final payment stage';
+    } else if (action === 'confirm_final_payment') {
+      if (invoice.payment_stage !== 'final_payment') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invoice is not in final payment stage'
+        });
+      }
+      newStage = 'completed';
+      newStatus = 'completed';
+      message = 'Final payment confirmed, invoice completed';
+    }
+    
+    // Update the payment stage
+    const result = await database.updatePaymentStage(invoiceId, newStage, newStatus);
+    
+    res.json({
+      success: true,
+      message: message,
+      paymentStage: newStage,
+      paymentStatus: newStatus,
+      result
+    });
+  } catch (error) {
+    console.error('Error updating payment stage:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update payment stage: ' + error.message
+    });
+  }
+});
+
+app.delete('/api/invoices/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deleteInvoice(parseInt(req.params.id), req.merchant.id);
+    res.json({
+      success: true,
+      message: 'Invoice deleted successfully',
+      result
+    });
+  } catch (error) {
+    console.error('Error deleting invoice:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete invoice'
+    });
+  }
+});
+
+// Bulk delete invoices endpoint
+app.post('/api/invoices/bulk-delete', async (req, res) => {
+  try {
+    const { invoiceIds } = req.body;
+    
+    if (!invoiceIds || !Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid invoiceIds array provided'
+      });
+    }
+
+    const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const invoiceId of invoiceIds) {
+      try {
+        await database.deleteInvoice(parseInt(invoiceId));
+        results.push({ invoiceId, success: true });
+        successCount++;
+      } catch (error) {
+        results.push({ invoiceId, success: false, error: error.message });
+        errorCount++;
+      }
+    }
+
+    res.json({
+      success: errorCount === 0,
+      message: `Successfully deleted ${successCount} invoice(s). ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+      results,
+      summary: {
+        total: invoiceIds.length,
+        successful: successCount,
+        failed: errorCount
+      }
+    });
+  } catch (error) {
+    console.error('Error in bulk delete invoices:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete invoices'
+    });
+  }
+});
+
+// Customer Portal API Endpoints
+app.get('/api/customer/invoice/:token', async (req, res) => {
+  try {
+    const invoice = await database.getInvoiceByCustomerToken(req.params.token);
+    const clientIP = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    
+    if (!invoice) {
+      // Log failed access attempt
+      await database.logAccess({
+        ip: clientIP,
+        userAgent: userAgent,
+        type: 'token',
+        email: null,
+        invoiceId: null,
+        success: false
+      });
+      
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found or invalid token'
+      });
+    }
+    
+    // Log successful access
+    await database.logAccess({
+      ip: clientIP,
+      userAgent: userAgent,
+      type: 'token',
+      email: invoice.customer_email,
+      invoiceId: invoice.id,
+      success: true
+    });
+    
+    // Get current business settings to ensure consistent display (same as main invoice endpoint)
+    const currentBusinessSettings = await getCurrentBusinessSettings(invoice.merchant_id);
+    
+    // Enhance invoice with business settings for consistent template rendering
+    const enhancedInvoice = {
+      ...invoice,
+      // Ensure business information is available
+      merchant_logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+      merchant_name: invoice.merchant_name || currentBusinessSettings.name,
+      merchant_address: invoice.merchant_address || currentBusinessSettings.address,
+      merchant_phone: invoice.merchant_phone || currentBusinessSettings.phone,
+      merchant_email: invoice.merchant_email || currentBusinessSettings.email,
+      merchant_website: invoice.merchant_website || currentBusinessSettings.website,
+      
+      // Add metadata for business profile (needed for template logic)
+      businessProfile: {
+        name: invoice.merchant_name || currentBusinessSettings.name,
+        address: invoice.merchant_address || currentBusinessSettings.address,
+        phone: invoice.merchant_phone || currentBusinessSettings.phone,
+        email: invoice.merchant_email || currentBusinessSettings.email,
+        website: invoice.merchant_website || currentBusinessSettings.website,
+        logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+        logoUrl: currentBusinessSettings.logoUrl || invoice.merchant_logo, // Ensure both fields are set for compatibility
+        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
+        taxEnabled: currentBusinessSettings.taxEnabled || false,
+        taxRate: currentBusinessSettings.taxRate || 0,
+        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
+      }
+    };
+    
+    console.log('📄 Enhanced customer invoice data for consistent display:', {
+      invoice_number: enhancedInvoice.invoice_number,
+      token: req.params.token,
+      hasLogo: !!enhancedInvoice.merchant_logo,
+      hasBusinessProfile: !!enhancedInvoice.businessProfile
+    });
+    
+    res.json({
+      success: true,
+      invoice: enhancedInvoice
+    });
+  } catch (error) {
+    console.error('Error fetching customer invoice:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch invoice'
+    });
+  }
+});
+
+app.get('/api/customer/invoices/:email', async (req, res) => {
+  try {
+    const email = req.params.email;
+    const invoices = await database.getCustomerInvoices(email);
+    const clientIP = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    
+    // Log access attempt
+    await database.logAccess({
+      ip: clientIP,
+      userAgent: userAgent,
+      type: 'email',
+      email: email,
+      invoiceId: null,
+      success: invoices.length > 0
+    });
+    
+    res.json({
+      success: true,
+      invoices
+    });
+  } catch (error) {
+    console.error('Error fetching customer invoices:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer invoices'
+    });
+  }
+});
+
+// Product Management API Endpoints
+app.post('/api/products', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('Creating product with data:', req.body);
+    
+    // Validate required fields
+    if (!req.body.name || !req.body.sku || !req.body.unit_price) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: name, sku, and unit_price are required'
+      });
+    }
+    
+    const result = await database.createProduct(req.body, req.merchant.id);
+    console.log('Product created successfully:', result);
+    
+    res.json({
+      success: true,
+      message: 'Product created successfully',
+      productId: result.lastInsertRowid
+    });
+  } catch (error) {
+    console.error('Error creating product:', error);
+    let errorMessage = 'Failed to create product';
+    
+    if (error.message.includes('UNIQUE constraint failed')) {
+      errorMessage = 'Product SKU already exists';
+    } else if (error.message.includes('NOT NULL constraint failed')) {
+      errorMessage = 'Missing required field';
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: errorMessage + ': ' + error.message
+    });
+  }
+});
+
+app.get('/api/products', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { limit = 50, offset = 0, category, active_only = 'true' } = req.query;
+    const products = await database.getAllProducts(
+      parseInt(limit),
+      parseInt(offset),
+      category,
+      active_only === 'true',
+      req.merchant.id
+    );
+    
+    res.json({
+      success: true,
+      products,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: products.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch products'
+    });
+  }
+});
+
+app.get('/api/products/categories', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const categories = await database.getProductCategories(req.merchant.id);
+    res.json({
+      success: true,
+      categories
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch categories'
+    });
+  }
+});
+
+app.get('/api/products/low-stock', async (req, res) => {
+  try {
+    const products = await database.getLowStockProducts();
+    res.json({
+      success: true,
+      products
+    });
+  } catch (error) {
+    console.error('Error fetching low stock products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch low stock products'
+    });
+  }
+});
+
+app.get('/api/products/:id', async (req, res) => {
+  try {
+    const product = await database.getProduct(parseInt(req.params.id));
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      product
+    });
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch product'
+    });
+  }
+});
+
+app.put('/api/products/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.updateProduct(parseInt(req.params.id), req.body, req.merchant.id);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update product'
+    });
+  }
+});
+
+app.delete('/api/products/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deleteProduct(parseInt(req.params.id), req.merchant.id);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete product'
+    });
+  }
+});
+
+app.put('/api/products/:id/stock', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { quantity, operation = 'set' } = req.body;
+    const result = await database.updateProductStock(parseInt(req.params.id), quantity, operation);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product stock updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating product stock:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update product stock'
+    });
+  }
+});
+
+// Order Management API Endpoints
+app.post('/api/orders', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('Creating order with data:', req.body);
+    
+    // Validate required fields
+    if (!req.body.customer_name || !req.body.customer_email || !req.body.total_amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: customer_name, customer_email, and total_amount are required'
+      });
+    }
+    
+    const result = await database.createOrder(req.body, req.merchant.id);
+    console.log('Order created successfully:', result);
+    
+    res.json({
+      success: true,
+      message: 'Order created successfully',
+      orderId: result.lastInsertRowid,
+      orderNumber: result.orderNumber
+    });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create order: ' + error.message
+    });
+  }
+});
+
+app.get('/api/orders', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { 
+      limit = 50, 
+      offset = 0, 
+      status, 
+      customerEmail, 
+      dateFrom, 
+      dateTo 
+    } = req.query;
+    
+    const orders = await database.getAllOrders(
+      parseInt(limit),
+      parseInt(offset),
+      status,
+      customerEmail,
+      dateFrom,
+      dateTo,
+      req.merchant.id
+    );
+    
+    res.json({
+      success: true,
+      orders,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: orders.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch orders'
+    });
+  }
+});
+
+// Order stats route (must come before :id route)
+app.get('/api/orders/stats', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    const stats = await database.getOrderStats(dateFrom, dateTo, req.merchant.id);
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Error fetching order stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order statistics'
+    });
+  }
+});
+
+app.get('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log(`🔍 Getting order ${req.params.id} for merchant ${req.merchant.id}`);
+
+    const order = await database.getOrder(parseInt(req.params.id), req.merchant.id);
+    if (!order) {
+      console.log(`❌ Order ${req.params.id} not found or access denied for merchant ${req.merchant.id}`);
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found or access denied'
+      });
+    }
+
+    console.log(`✅ Order ${req.params.id} retrieved successfully for merchant ${req.merchant.id}`);
+    res.json({
+      success: true,
+      order
+    });
+  } catch (error) {
+    console.error(`❌ Error getting order ${req.params.id} for merchant ${req.merchant.id}:`, error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order'
+    });
+  }
+});
+
+app.put('/api/orders/:id/status', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { status, tracking_number, notes } = req.body;
+    
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'invoiced'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+    
+    const result = await database.updateOrderStatus(parseInt(req.params.id), status, tracking_number, notes, req.merchant.id);
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: `Order status updated to ${status}`
+    });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update order status'
+    });
+  }
+});
+
+app.put('/api/orders/bulk/status', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { orderIds, status, tracking_number } = req.body;
+    
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'orderIds must be a non-empty array'
+      });
+    }
+    
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'invoiced'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+    
+    const additionalData = {};
+    if (tracking_number) additionalData.tracking_number = tracking_number;
+    
+    const result = await database.bulkUpdateOrderStatus(orderIds, status, additionalData);
+    
+    res.json({
+      success: true,
+      message: `${result.changes} orders updated to ${status}`,
+      updatedCount: result.changes
+    });
+  } catch (error) {
+    console.error('Error bulk updating order status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to bulk update order status'
+    });
+  }
+});
+
+app.delete('/api/orders/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log(`🗑️ Deleting order ${req.params.id} for merchant ${req.merchant.id}`);
+
+    const result = await database.deleteOrder(parseInt(req.params.id), req.merchant.id);
+    
+    if (result.changes === 0) {
+      console.log(`❌ Order ${req.params.id} not found or access denied for merchant ${req.merchant.id}`);
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found or access denied'
+      });
+    }
+
+    console.log(`✅ Order ${req.params.id} deleted successfully for merchant ${req.merchant.id}`);
+    res.json({
+      success: true,
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    console.error(`❌ Error deleting order ${req.params.id} for merchant ${req.merchant.id}:`, error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete order'
+    });
+  }
+});
+
+app.post('/api/orders/:id/convert-to-invoice', async (req, res) => {
+  try {
+    const invoice = await database.convertOrderToInvoice(parseInt(req.params.id));
+    
+    res.json({
+      success: true,
+      message: 'Order converted to invoice successfully',
+      invoice: {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        customerToken: invoice.customerToken
+      }
+    });
+  } catch (error) {
+    console.error('Error converting order to invoice:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to convert order to invoice: ' + error.message
+    });
+  }
+});
+
+app.post('/api/orders/seed', async (req, res) => {
+  try {
+    const sampleOrders = [
+      {
+        customer_name: "John Doe",
+        customer_email: "john@example.com", 
+        customer_phone: "+62 812 3456 7890",
+        shipping_address: "Jl. Merdeka No. 123, Jakarta",
+        billing_address: "Jl. Merdeka No. 123, Jakarta",
+        status: "pending",
+        subtotal: 16500000,
+        tax_amount: 1815000,
+        shipping_cost: 15000,
+        total_amount: 18330000,
+        notes: "Rush order",
+        items: [
+          {
+            product_id: 1,
+            product_name: "iPhone 15 Pro",
+            sku: "IPHONE15PRO",
+            quantity: 1,
+            unit_price: 16500000,
+            line_total: 16500000
+          }
+        ]
+      },
+      {
+        customer_name: "Jane Smith",
+        customer_email: "jane@example.com",
+        customer_phone: "+62 813 9876 5432", 
+        shipping_address: "Jl. Sudirman No. 456, Bandung",
+        billing_address: "Jl. Sudirman No. 456, Bandung",
+        status: "processing",
+        subtotal: 5000,
+        tax_amount: 550,
+        shipping_cost: 15000,
+        total_amount: 20550,
+        notes: "Gift wrapping requested",
+        items: [
+          {
+            product_id: 5,
+            product_name: "Lolly",
+            sku: "LOLLY001",
+            quantity: 1,
+            unit_price: 5000,
+            line_total: 5000
+          }
+        ]
+      },
+      {
+        customer_name: "Ahmad Rahman", 
+        customer_email: "ahmad@example.com",
+        customer_phone: "+62 821 1122 3344",
+        shipping_address: "Jl. Thamrin No. 789, Surabaya",
+        billing_address: "Jl. Thamrin No. 789, Surabaya",
+        status: "shipped",
+        subtotal: 4925000,
+        tax_amount: 541750,
+        shipping_cost: 25000,
+        total_amount: 5491750,
+        tracking_number: "TRK123456789",
+        notes: "Express shipping",
+        items: [
+          {
+            product_id: 3,
+            product_name: "AirPods Pro",
+            sku: "AIRPODSPRO", 
+            quantity: 1,
+            unit_price: 4100000,
+            line_total: 4100000
+          },
+          {
+            product_id: 6,
+            product_name: "Wireless Charger",
+            sku: "WIRELESSCHARGER",
+            quantity: 1,
+            unit_price: 825000,
+            line_total: 825000
+          }
+        ]
+      }
+    ];
+
+    let created = 0;
+    let errors = [];
+
+    for (const order of sampleOrders) {
+      try {
+        await database.createOrder(order);
+        created++;
+      } catch (error) {
+        console.error(`Error creating sample order:`, error);
+        errors.push(error.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Seeding completed. Created: ${created} orders`,
+      created,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error('Seed orders error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to seed orders: ' + error.message
+    });
+  }
+});
+
+// Customer Management API Endpoints
+app.get('/api/customers', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { limit = 50, offset = 0, search } = req.query;
+    const customers = await database.getAllCustomers(
+      parseInt(limit),
+      parseInt(offset),
+      search,
+      req.merchant.id
+    );
+    
+    res.json({
+      success: true,
+      customers,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: customers.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customers'
+    });
+  }
+});
+
+// Customer stats and export routes (must come before :id route)
+app.get('/api/customers/stats', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const stats = await database.getCustomerStats(req.merchant.id);
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('Error fetching customer stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer statistics'
+    });
+  }
+});
+
+app.get('/api/customers/export/csv', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const csvData = await database.exportCustomersToCSV(req.merchant.id);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="customers.csv"');
+    res.send(csvData);
+  } catch (error) {
+    console.error('Error exporting customers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export customers'
+    });
+  }
+});
+
+app.get('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const customer = await database.getCustomerById(parseInt(req.params.id), req.merchant.id);
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      customer
+    });
+  } catch (error) {
+    console.error('Error fetching customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer'
+    });
+  }
+});
+
+app.put('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.updateCustomer(parseInt(req.params.id), req.body, req.merchant.id);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Customer updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update customer'
+    });
+  }
+});
+
+app.delete('/api/customers/:id', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const result = await database.deleteCustomer(parseInt(req.params.id), req.merchant.id);
+    if (result.changes === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Customer deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete customer'
+    });
+  }
+});
+
+// Smart customer matching endpoint
+app.post('/api/customers/smart-match', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const customerData = req.body;
+    
+    if (!customerData.name && !customerData.email && !customerData.phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one of name, email, or phone is required'
+      });
+    }
+    
+    const merchantId = req.merchant.id;
+    const customer = await database.findOrCreateCustomer(customerData, merchantId);
+    
+    res.json({
+      success: true,
+      customer,
+      message: customer.created_at === customer.updated_at ? 'New customer created' : 'Existing customer matched and updated'
+    });
+  } catch (error) {
+    console.error('Error in smart customer matching:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to match or create customer'
+    });
+  }
+});
+
+// Statistics API (Combined invoice, order, and customer stats)
+app.get('/api/stats', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    const invoiceStats = await database.getInvoiceStats(dateFrom, dateTo, req.merchant.id);
+    const orderStats = await database.getOrderStats(dateFrom, dateTo, req.merchant.id);
+    const customerStats = await database.getCustomerStats(req.merchant.id);
+    
+    res.json({
+      success: true,
+      stats: invoiceStats,
+      orderStats: orderStats,
+      customerStats: customerStats
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch statistics'
+    });
+  }
+});
+
+// Payment Processing API Endpoints (Midtrans Integration)
+app.post('/api/payments/create', async (req, res) => {
+  try {
+    const { invoice_id, invoice_number, amount, payment_method, customer_email, customer_name } = req.body;
+    
+    // Validate required fields
+    if (!invoice_id || !invoice_number || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: invoice_id, invoice_number, amount'
+      });
+    }
+    
+    // Get invoice details
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Check if invoice is already paid
+    if (invoice.status === 'paid') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice has already been paid'
+      });
+    }
+    
+    // Create Midtrans payment transaction
+    const transactionDetails = {
+      order_id: `${invoice_number}-${Date.now()}`,
+      gross_amount: Math.round(amount)
+    };
+    
+    const customerDetails = {
+      first_name: customer_name || invoice.customer_name,
+      email: customer_email || invoice.customer_email,
+      phone: invoice.customer_phone
+    };
+    
+    const itemDetails = [];
+    try {
+      const items = JSON.parse(invoice.items_json);
+      items.forEach(item => {
+        itemDetails.push({
+          id: item.sku || item.productName,
+          price: Math.round(item.unitPrice || item.lineTotal),
+          quantity: item.quantity || 1,
+          name: item.productName
+        });
+      });
+      
+      // Add tax if applicable
+      if (invoice.tax_amount > 0) {
+        itemDetails.push({
+          id: 'TAX',
+          price: Math.round(invoice.tax_amount),
+          quantity: 1,
+          name: 'Tax'
+        });
+      }
+      
+      // Add shipping if applicable
+      if (invoice.shipping_cost > 0) {
+        itemDetails.push({
+          id: 'SHIPPING',
+          price: Math.round(invoice.shipping_cost),
+          quantity: 1,
+          name: 'Shipping Cost'
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing invoice items:', error);
+    }
+    
+    // Mock Midtrans response for demonstration
+    // In production, you would use actual Midtrans SDK
+    const mockSnapToken = `snap_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Update invoice status to sent if it's draft
+    if (invoice.status === 'draft') {
+      await database.updateInvoiceStatus(invoice_id, 'sent');
+    }
+    
+    // Log payment attempt
+    console.log('💳 Payment transaction created:', {
+      invoice_number,
+      amount,
+      payment_method,
+      customer_email,
+      transaction_id: transactionDetails.order_id
+    });
+    
+    res.json({
+      success: true,
+      snap_token: mockSnapToken,
+      transaction_id: transactionDetails.order_id,
+      amount: amount,
+      payment_method: payment_method
+    });
+    
+  } catch (error) {
+    console.error('Payment creation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create payment: ' + error.message
+    });
+  }
+});
+
+// Mock payment success webhook (In production, this would be called by Midtrans)
+app.post('/api/payments/webhook', async (req, res) => {
+  try {
+    const { order_id, transaction_status, payment_type, fraud_status } = req.body;
+    
+    // Extract invoice number from order_id
+    const invoiceNumber = order_id.split('-')[0];
+    
+    // Get invoice by number
+    const invoice = await database.getInvoiceByNumber(invoiceNumber);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Update invoice status based on transaction status
+    if (transaction_status === 'capture' || transaction_status === 'settlement') {
+      const result = await database.updateInvoiceStatus(invoice.id, 'paid', invoice.merchant_id);
+
+      let message = `✅ Payment confirmed for invoice: ${invoiceNumber}`;
+      if (result && result.orderCreated) {
+        message += ` and order ${result.orderNumber} was created automatically`;
+      } else if (result && result.orderError) {
+        message += `, but order creation failed: ${result.orderError}`;
+        console.warn('⚠️ Order creation failed during webhook processing:', result.orderError);
+      }
+
+      console.log(message);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Webhook processed successfully'
+    });
+    
+  } catch (error) {
+    console.error('Payment webhook error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process webhook: ' + error.message
+    });
+  }
+});
+
+// Mock payment success endpoint (for demo purposes)
+app.post('/api/payments/success', async (req, res) => {
+  try {
+    const { invoice_id, transaction_id, payment_method } = req.body;
+    
+    // Get invoice to get merchant_id
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({ success: false, error: 'Invoice not found' });
+    }
+    
+    // Update invoice status to paid (this automatically creates an order)
+    const result = await database.updateInvoiceStatus(invoice_id, 'paid', invoice.merchant_id);
+
+    let message = `✅ Payment successful for invoice ID: ${invoice_id}`;
+    if (result && result.orderCreated) {
+      message += ` and order ${result.orderNumber} was created automatically`;
+    } else if (result && result.orderError) {
+      message += `, but order creation failed: ${result.orderError}`;
+      console.warn('⚠️ Order creation failed during payment processing:', result.orderError);
+    }
+
+    console.log(message);
+    
+    // Send payment confirmation email
+    try {
+      if (invoice && invoice.customer_email) {
+        const paymentDetails = {
+          amount: invoice.grand_total,
+          payment_method: payment_method || 'Unknown',
+          transaction_id: transaction_id
+        };
+        
+        await emailService.sendPaymentConfirmationEmail(invoice, invoice.customer_email, paymentDetails);
+      }
+    } catch (emailError) {
+      console.error('Failed to send payment confirmation email:', emailError.message);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Payment processed successfully',
+      invoice_id: invoice_id,
+      transaction_id: transaction_id,
+      orderCreated: result?.orderCreated || false,
+      orderId: result?.orderId || null,
+      orderNumber: result?.orderNumber || null,
+      orderError: result?.orderError || null
+    });
+    
+  } catch (error) {
+    console.error('Payment success error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process payment success: ' + error.message
+    });
+  }
+});
+
+// Payment notification endpoint for email confirmations
+app.post('/api/notifications/payment-confirmation', async (req, res) => {
+  try {
+    const { invoice_id, payment_details, customer_email } = req.body;
+    
+    // Get invoice details
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    // Send payment confirmation email
+    const emailResult = await emailService.sendPaymentConfirmationEmail(
+      invoice, 
+      customer_email || invoice.customer_email, 
+      payment_details
+    );
+    
+    res.json({
+      success: emailResult.success,
+      message: emailResult.success ? 'Payment confirmation email sent successfully' : 'Failed to send email',
+      error: emailResult.error
+    });
+    
+  } catch (error) {
+    console.error('Payment notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send payment confirmation: ' + error.message
+    });
+  }
+});
+
+// Send invoice email endpoint
+app.post('/api/notifications/send-invoice', async (req, res) => {
+  try {
+    const { invoice_id, customer_email, include_pdf } = req.body;
+    
+    // Get invoice details
+    const invoice = await database.getInvoice(invoice_id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found'
+      });
+    }
+    
+    console.log('📧 Sending invoice email for:', invoice.invoice_number);
+    
+    // Send invoice email without PDF attachment
+    // Use the merchant data from the invoice itself to ensure consistency
+    const currentBusinessSettings = await getCurrentBusinessSettings(req.merchant.id);
+    const businessSettings = {
+      name: invoice.merchant_name,
+      email: invoice.merchant_email,
+      address: invoice.merchant_address,
+      phone: invoice.merchant_phone,
+      website: currentBusinessSettings.website,
+      taxId: currentBusinessSettings.taxId,
+      logo: currentBusinessSettings.logoUrl || null
+    };
+    const emailResult = await emailService.sendInvoiceEmail(
+      invoice, 
+      customer_email || invoice.customer_email,
+      null,
+      businessSettings
+    );
+    
+    res.json({
+      success: emailResult.success,
+      message: emailResult.success ? 'Invoice email sent successfully' : 'Failed to send email',
+      error: emailResult.error
+    });
+    
+  } catch (error) {
+    console.error('Send invoice email error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send invoice email'
+    });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'WhatsApp Invoice Generator API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Logo accessibility test endpoint
+app.get('/api/test-logo-url', async (req, res) => {
+  const { url } = req.query;
+  
+  if (!url) {
+    return res.status(400).json({
+      success: false,
+      error: 'URL parameter is required'
+    });
+  }
+
+  try {
+    console.log('🧪 Testing logo URL accessibility:', url);
+    
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (error) {
+      return res.json({
+        success: false,
+        error: 'Invalid URL format',
+        url,
+        details: error.message
+      });
+    }
+
+    // Test if URL is accessible
+    const response = await fetch(url, {
+      method: 'HEAD',
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'AI-Invoice-Generator/1.0 (Logo Accessibility Test)'
+      }
+    });
+
+    const result = {
+      success: response.ok,
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      contentLength: response.headers.get('content-length'),
+      accessible: response.ok,
+      isImage: response.headers.get('content-type')?.startsWith('image/') || false
+    };
+
+    if (!response.ok) {
+      result.error = `HTTP ${response.status}: ${response.statusText}`;
+    }
+
+    console.log('🧪 Logo URL test result:', result);
+    res.json(result);
+
+  } catch (error) {
+    const result = {
+      success: false,
+      url,
+      error: error.message,
+      accessible: false,
+      timeout: error.name === 'FetchError' && error.message.includes('timeout')
+    };
+    
+    console.error('🧪 Logo URL test failed:', result);
+    res.json(result);
+  }
+});
+
+// Business logo test endpoint
+// Debug endpoint to check business settings for current merchant
+app.get('/api/debug-business-settings', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    console.log('🔍 Debug business settings for merchant:', req.merchant.id, req.merchant.email);
+    
+    // Get business settings
+    const businessSettings = await database.getBusinessSettings(req.merchant.id);
+    console.log('🔍 Raw business settings from database:', businessSettings);
+    
+    // Get processed settings
+    const currentSettings = await getCurrentBusinessSettings(req.merchant.id);
+    console.log('🔍 Processed business settings:', currentSettings);
+    
+    res.json({
+      success: true,
+      merchant: {
+        id: req.merchant.id,
+        email: req.merchant.email,
+        businessName: req.merchant.businessName
+      },
+      rawBusinessSettings: businessSettings,
+      processedSettings: currentSettings,
+      debug: {
+        hasLogo: !!currentSettings.logoUrl,
+        logoUrl: currentSettings.logoUrl,
+        hasTerms: !!currentSettings.termsAndConditions,
+        termsAndConditions: currentSettings.termsAndConditions
+      }
+    });
+  } catch (error) {
+    console.error('Error getting debug business settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/test-business-logo', async (req, res) => {
+  try {
+    console.log('🧪 Testing current business logo accessibility...');
+    
+    // Get current business settings
+    const currentBusinessSettings = database.getBusinessSettings();
+    const businessProfile = typeof database.getBusinessProfile === 'function' 
+      ? database.getBusinessProfile() 
+      : null;
+    
+    const logoPath = businessProfile?.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2';
+    const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
+    
+    let logoUrl;
+    if (logoPath.startsWith('http') || logoPath.startsWith('data:')) {
+      logoUrl = logoPath;
+    } else {
+      logoUrl = `${baseUrl}/${logoPath.replace(/^\//, '')}`;
+    }
+    
+    console.log('🧪 Constructed logo URL:', logoUrl);
+    
+    // Test the URL
+    const response = await fetch(logoUrl, {
+      method: 'HEAD',
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'AI-Invoice-Generator/1.0 (Business Logo Test)'
+      }
+    });
+
+    const result = {
+      success: response.ok,
+      businessSettings: {
+        name: businessProfile?.name || currentBusinessSettings.name,
+        logoPath: logoPath,
+        logoUrl: logoUrl
+      },
+      logoUrl,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      contentLength: response.headers.get('content-length'),
+      accessible: response.ok,
+      isImage: response.headers.get('content-type')?.startsWith('image/') || false
+    };
+
+    if (!response.ok) {
+      result.error = `HTTP ${response.status}: ${response.statusText}`;
+    }
+
+    console.log('🧪 Business logo test result:', result);
+    res.json(result);
+
+  } catch (error) {
+    const result = {
+      success: false,
+      error: error.message,
+      accessible: false
+    };
+    
+    console.error('🧪 Business logo test failed:', result);
+    res.json(result);
+  }
+});
+
+// Test email sending endpoint for logo testing
+app.post('/api/send-test-email', async (req, res) => {
+  try {
+    const { customerEmail } = req.body;
+    
+    if (!customerEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer email is required'
+      });
+    }
+    
+    console.log('🧪 Sending test email with logo debugging...');
+    
+    // Create a test invoice for logo testing
+    const testInvoice = {
+      id: 'TEST-001',
+      invoice_number: 'INV-TEST-001',
+      customer_name: 'Test Customer',
+      customer_email: customerEmail,
+      customer_phone: '+62123456789',
+      customer_address: 'Test Address, Jakarta',
+      merchant_name: 'Test Business',
+      merchant_address: 'Test Business Address',
+      merchant_phone: '+62987654321',
+      merchant_email: 'business@test.com',
+      items_json: JSON.stringify([
+        {
+          product_name: 'Test Product',
+          quantity: 1,
+          unit_price: 100000,
+          line_total: 100000
+        }
+      ]),
+      subtotal: 100000,
+      discount: 0,
+      shipping_cost: 0,
+      grand_total: 100000,
+      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date().toISOString(),
+      customer_token: 'test-token-12345'
+    };
+    
+    // Get business settings for logo testing
+    const currentBusinessSettings = database.getBusinessSettings();
+    const businessProfile = typeof database.getBusinessProfile === 'function' 
+      ? database.getBusinessProfile() 
+      : null;
+    
+    const businessSettings = {
+      name: businessProfile?.name || currentBusinessSettings.name || 'Test Business',
+      address: businessProfile?.address || currentBusinessSettings.address || 'Test Address',
+      phone: businessProfile?.phone || currentBusinessSettings.phone || '+62123456789',
+      email: businessProfile?.email || currentBusinessSettings.email || 'test@business.com',
+      website: businessProfile?.website || currentBusinessSettings.website || 'https://test.com',
+      logo: businessProfile?.logo || currentBusinessSettings.logoUrl || '/assets/aspree2-logo.png?v=2'
+    };
+    
+    console.log('🧪 Business settings for email test:', businessSettings);
+    
+    // Send test email
+    const emailResult = await emailService.sendInvoiceEmail(testInvoice, customerEmail, null, businessSettings);
+    
+    res.json({
+      success: emailResult.success,
+      messageId: emailResult.messageId,
+      mode: emailResult.mode,
+      error: emailResult.error,
+      note: emailResult.note,
+      testInvoice: testInvoice.invoice_number,
+      businessSettings: {
+        name: businessSettings.name,
+        logo: businessSettings.logo
+      }
+    });
+    
+  } catch (error) {
+    console.error('🧪 Test email send failed:', error);
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Database test endpoint
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const stats = await database.getInvoiceStats();
+    const products = await database.getAllProducts(5, 0);
+    const invoices = await database.getAllInvoices(5, 0);
+    const orders = await database.getAllOrders(5, 0);
+    const orderStats = await database.getOrderStats();
+    
+    const catalog = products.map(product => ({
+      id: `prod_${product.id}`,
+      name: product.name,
+      description: product.description,
+      sku: product.sku,
+      category: product.category,
+      price: product.unit_price,
+      tags: [product.name.toLowerCase(), product.category.toLowerCase(), product.sku.toLowerCase()]
+    }));
+    
+    // Test invoice number generation
+    const testInvoiceNumber = await database.generateInvoiceNumber();
+    const testOrderNumber = await database.generateOrderNumber();
+    
+    res.json({
+      success: true,
+      message: 'Database is working',
+      stats,
+      orderStats,
+      productCount: products.length,
+      orderCount: orders.length,
+      sampleProducts: products.slice(0, 2),
+      sampleOrders: orders.slice(0, 2),
+      catalogFormat: catalog.slice(0, 2),
+      recentInvoices: invoices.slice(0, 3).map(inv => ({
+        id: inv.id,
+        number: inv.invoice_number,
+        customer: inv.customer_name,
+        date: inv.created_at
+      })),
+      nextInvoiceNumber: testInvoiceNumber,
+      nextOrderNumber: testOrderNumber
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Database connection failed: ' + error.message
+    });
+  }
+});
+
+
+// Seed products endpoint
+app.post('/api/seed-products', async (req, res) => {
+  try {
+    const sampleProducts = [
+      {
+        sku: "IPHONE15PRO",
+        name: "iPhone 15 Pro",
+        description: "Latest iPhone with Pro features",
+        category: "Smartphones",
+        unit_price: 16500000,
+        cost_price: 14000000,
+        stock_quantity: 25,
+        min_stock_level: 5,
+        tax_rate: 11,
+        weight: 0.187,
+        dimensions: "14.7 x 7.1 x 0.8"
+      },
+      {
+        sku: "GALAXYS24",
+        name: "Samsung Galaxy S24",
+        description: "Premium Android smartphone",
+        category: "Smartphones",
+        unit_price: 14800000,
+        cost_price: 12500000,
+        stock_quantity: 30,
+        min_stock_level: 8,
+        tax_rate: 11,
+        weight: 0.168,
+        dimensions: "14.7 x 7.1 x 0.8"
+      },
+      {
+        sku: "AIRPODSPRO",
+        name: "AirPods Pro",
+        description: "Wireless earbuds with noise cancellation",
+        category: "Audio",
+        unit_price: 4100000,
+        cost_price: 3200000,
+        stock_quantity: 50,
+        min_stock_level: 15,
+        tax_rate: 11,
+        weight: 0.056,
+        dimensions: "4.5 x 6.1 x 2.2"
+      },
+      {
+        sku: "LOLLY001",
+        name: "Lolly",
+        description: "Sweet lollipop candy",
+        category: "Candy",
+        unit_price: 5000,
+        cost_price: 2000,
+        stock_quantity: 100,
+        min_stock_level: 20,
+        tax_rate: 11,
+        weight: 0.01,
+        dimensions: "5 x 1 x 1"
+      }
+    ];
+
+    let created = 0;
+    let skipped = 0;
+
+    for (const product of sampleProducts) {
+      try {
+        const existing = await database.getProductBySku(product.sku);
+        if (existing) {
+          skipped++;
+          continue;
+        }
+        
+        await database.createProduct(product);
+        created++;
+      } catch (error) {
+        console.error(`Error creating product ${product.sku}:`, error);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Seeding completed. Created: ${created}, Skipped: ${skipped}`,
+      created,
+      skipped
+    });
+  } catch (error) {
+    console.error('Seed products error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to seed products: ' + error.message
+    });
+  }
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Server error:', error);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error'
+  });
+});
+
+
+
+// Performance monitoring endpoint
+app.get('/api/performance', async (req, res) => {
+  try {
+    const uptime = process.uptime();
+    const memoryUsage = process.memoryUsage();
+    
+    res.json({
+      success: true,
+      performance: {
+        uptime: Math.round(uptime),
+        uptimeFormatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`,
+        metrics: performanceMetrics,
+        memory: {
+          used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+          rss: Math.round(memoryUsage.rss / 1024 / 1024)
+        },
+        cache: {
+          size: cache.size,
+          hitRate: performanceMetrics.cacheHitRate
+        },
+        asyncQueue: {
+          pending: heavyOperationQueue.length,
+          processing: isProcessingQueue
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching performance metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch performance metrics'
+    });
+  }
+});
+
+
+
+// Real-time metrics endpoint for live dashboard updates
+app.get('/api/analytics/realtime', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    
+    // Get today's metrics
+    const todayInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const todayOrders = await database.getAllOrders(1000, 0, null, null, todayStart.toISOString(), null, req.merchant.id);
+    
+    const todayInvoicesFiltered = todayInvoices.filter(inv => 
+      new Date(inv.created_at) >= todayStart
+    );
+    
+    const todayRevenue = todayInvoicesFiltered
+      .filter(inv => inv.status === 'paid')
+      .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+    
+    const todayOrdersCount = todayOrders.length;
+    const todayInvoicesCount = todayInvoicesFiltered.length;
+    
+    // Get yesterday's metrics for comparison
+    const yesterdayInvoices = todayInvoices.filter(inv => {
+      const created = new Date(inv.created_at);
+      return created >= yesterdayStart && created < todayStart;
+    });
+    
+    const yesterdayRevenue = yesterdayInvoices
+      .filter(inv => inv.status === 'paid')
+      .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+    
+    const realtimeMetrics = {
+      success: true,
+      data: {
+        today: {
+          revenue: todayRevenue,
+          invoices: todayInvoicesCount,
+          orders: todayOrdersCount,
+          averageOrderValue: todayOrdersCount > 0 ? (todayRevenue / todayOrdersCount) : 0
+        },
+        yesterday: {
+          revenue: yesterdayRevenue,
+          invoices: yesterdayInvoices.length
+        },
+        growth: {
+          revenue: yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : 0,
+          invoices: yesterdayInvoices.length > 0 ? ((todayInvoicesCount - yesterdayInvoices.length) / yesterdayInvoices.length * 100) : 0
+        },
+        performance: {
+          systemUptime: process.uptime(),
+          memoryUsage: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          cacheHitRate: performanceMetrics.cacheHitRate,
+          averageResponseTime: performanceMetrics.averageResponseTime,
+          requestsPerMinute: performanceMetrics.requests.total
+        },
+        timestamp: now.toISOString()
+      }
+    };
+    
+    res.json(realtimeMetrics);
+    
+  } catch (error) {
+    console.error('Error fetching realtime metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch realtime metrics'
+    });
+  }
+});
+
+// Revenue analytics endpoint
+app.get('/api/analytics/revenue', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { period = '30d', groupBy = 'day' } = req.query;
+    
+    const cacheKey = getCacheKey('analytics-revenue', period, groupBy, req.merchant.id);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      const revenueData = await getRevenueAnalytics(period, groupBy, req.merchant.id);
+      result = {
+        success: true,
+        data: revenueData
+      };
+      
+      // Cache for 10 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error fetching revenue analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch revenue analytics'
+    });
+  }
+});
+
+// Customer analytics endpoint
+app.get('/api/analytics/customers', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { period = '30d' } = req.query;
+    
+    const cacheKey = getCacheKey('analytics-customers', period, req.merchant.id);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      const customerAnalytics = await getCustomerAnalytics(period, req.merchant.id);
+      result = {
+        success: true,
+        data: customerAnalytics
+      };
+      
+      // Cache for 15 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error fetching customer analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer analytics'
+    });
+  }
+});
+
+// Product analytics endpoint
+app.get('/api/analytics/products', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { period = '30d' } = req.query;
+    
+    const cacheKey = getCacheKey('analytics-products', period, req.merchant.id);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      const productAnalytics = await getProductAnalytics(period, req.merchant.id);
+      result = {
+        success: true,
+        data: productAnalytics
+      };
+      
+      // Cache for 15 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error fetching product analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch product analytics'
+    });
+  }
+});
+
+// Analytics helper functions
+async function getProductAnalytics(period = '30d', merchantId = null) {
+  try {
+    const allProducts = await database.getAllProducts(1000, 0, null, false, merchantId);
+    const categories = await database.getProductCategories(merchantId);
+    const lowStockProducts = await database.getLowStockProducts(merchantId);
+    
+    // Get all invoices to calculate product sales
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, merchantId);
+    const productSales = {};
+    
+    allInvoices.forEach(invoice => {
+      if (invoice.items_json && Array.isArray(invoice.items_json)) {
+        invoice.items_json.forEach(item => {
+          const productName = item.productName || item.name;
+          if (productName) {
+            if (!productSales[productName]) {
+              productSales[productName] = {
+                quantity: 0,
+                revenue: 0,
+                invoiceCount: 0
+              };
             }
-            
-            // Get business settings for payment information
-            const generatePaymentInfo = async () => {
-                let bankInfo = '';
-                let paymentMethods = '';
-                console.log('🔧 Fetching payment methods for WhatsApp message...');
-                
-                try {
-                    const response = await fetch('/api/settings/payment-methods');
-                    console.log('📡 API Response status:', response.status);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log('📊 Payment methods data received:', data);
-                        
-                        if (data.success && data.paymentMethods) {
-                            // Handle both camelCase and snake_case formats
-                            const bank = data.paymentMethods.bankTransfer || data.paymentMethods.bank_transfer;
-                            console.log('🏦 Bank transfer data:', bank);
-                            
-                            if (bank && bank.enabled) {
-                                const bankName = bank.bankName || bank.bank_name || '';
-                                const accountNumber = bank.accountNumber || bank.account_number || '';
-                                const accountHolder = bank.accountHolderName || bank.account_holder_name || '';
-                                const instructions = bank.instructions || '';
-                                
-                                bankInfo = `\n💳 *PEMBAYARAN BANK TRANSFER*\nBank: ${bankName}\nNo. Rekening: ${accountNumber}\nAtas Nama: ${accountHolder}\n${instructions ? `Catatan: ${instructions}` : ''}`;
-                                console.log('✅ Bank info generated:', bankInfo);
-                            } else {
-                                console.log('❌ Bank transfer not enabled or missing');
-                            }
-                            
-                            const methods = [];
-                            if (bank && bank.enabled) methods.push('Transfer Bank');
-                            if (data.paymentMethods.xendit && data.paymentMethods.xendit.enabled) {
-                                methods.push('E-Wallet', 'Kartu Kredit');
-                            }
-                            if (methods.length > 0) {
-                                paymentMethods = `\n📱 *METODE PEMBAYARAN:* ${methods.join(', ')}`;
-                            }
-                        }
-                    }
-                    
-                    return paymentMethods + bankInfo;
-                } catch (error) {
-                    console.error('❌ Error fetching payment methods:', error);
-                    return '';
-                }
+            productSales[productName].quantity += item.quantity || 0;
+            productSales[productName].revenue += item.lineTotal || 0;
+            productSales[productName].invoiceCount += 1;
+          }
+        });
+      }
+    });
+    
+    // Get top selling products
+    const topSellingProducts = Object.entries(productSales)
+      .sort(([,a], [,b]) => b.quantity - a.quantity)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, ...data }));
+    
+    // Get top revenue products
+    const topRevenueProducts = Object.entries(productSales)
+      .sort(([,a], [,b]) => b.revenue - a.revenue)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, ...data }));
+    
+    return {
+      totalProducts: allProducts.length,
+      activeProducts: allProducts.filter(p => p.is_active).length,
+      categories: categories,
+      lowStockProducts: lowStockProducts,
+      topSellingProducts: topSellingProducts,
+      topRevenueProducts: topRevenueProducts,
+      totalStockValue: allProducts.reduce((sum, p) => sum + (p.stock_quantity * p.unit_price), 0),
+      averageProductPrice: allProducts.length > 0 ? 
+        allProducts.reduce((sum, p) => sum + p.unit_price, 0) / allProducts.length : 0
+    };
+  } catch (error) {
+    console.error('Error getting product analytics:', error);
+    return {
+      totalProducts: 0,
+      activeProducts: 0,
+      categories: [],
+      lowStockProducts: [],
+      topSellingProducts: [],
+      topRevenueProducts: [],
+      totalStockValue: 0,
+      averageProductPrice: 0
+    };
+  }
+}
+
+async function getRevenueAnalytics(period = '30d', groupBy = 'day', merchantId = null) {
+  try {
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, null, null, merchantId);
+    const paidInvoices = allInvoices.filter(inv => inv.status === 'paid');
+    
+    // Calculate date range
+    const now = new Date();
+    const daysBack = parseInt(period.replace('d', '')) || 30;
+    const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+    
+    // Filter invoices within period
+    const periodInvoices = paidInvoices.filter(inv => {
+      const invoiceDate = new Date(inv.paid_at || inv.created_at);
+      return invoiceDate >= startDate && invoiceDate <= now;
+    });
+    
+    // Group by time period
+    const revenueByPeriod = {};
+    periodInvoices.forEach(invoice => {
+      const date = new Date(invoice.paid_at || invoice.created_at);
+      let key;
+      
+      if (groupBy === 'day') {
+        key = date.toISOString().split('T')[0];
+      } else if (groupBy === 'week') {
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        key = weekStart.toISOString().split('T')[0];
+      } else if (groupBy === 'month') {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      }
+      
+      if (!revenueByPeriod[key]) {
+        revenueByPeriod[key] = {
+          revenue: 0,
+          invoices: 0,
+          averageOrderValue: 0
+        };
+      }
+      
+      revenueByPeriod[key].revenue += invoice.grand_total || 0;
+      revenueByPeriod[key].invoices += 1;
+    });
+    
+    // Calculate average order value for each period
+    Object.keys(revenueByPeriod).forEach(key => {
+      const period = revenueByPeriod[key];
+      period.averageOrderValue = period.invoices > 0 ? period.revenue / period.invoices : 0;
+    });
+    
+    // Convert to array and sort by date
+    const revenueData = Object.entries(revenueByPeriod)
+      .map(([date, data]) => ({ date, ...data }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const totalRevenue = periodInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+    const averageOrderValue = periodInvoices.length > 0 ? totalRevenue / periodInvoices.length : 0;
+    
+    return {
+      periodData: revenueData,
+      totalRevenue: totalRevenue,
+      totalInvoices: periodInvoices.length,
+      averageOrderValue: averageOrderValue,
+      period: period,
+      groupBy: groupBy
+    };
+  } catch (error) {
+    console.error('Error getting revenue analytics:', error);
+    return {
+      periodData: [],
+      totalRevenue: 0,
+      totalInvoices: 0,
+      averageOrderValue: 0,
+      period: period,
+      groupBy: groupBy
+    };
+  }
+}
+
+async function getCustomerAnalytics(period = '30d', merchantId = null) {
+  try {
+    const allCustomers = await database.getAllCustomers(1000, 0, null, merchantId);
+    const allInvoices = await database.getAllInvoices(1000, 0, null, null, merchantId);
+    
+    // Calculate customer lifetime values
+    const customerValues = {};
+    allInvoices.forEach(invoice => {
+      const email = invoice.customer_email;
+      if (email) {
+        if (!customerValues[email]) {
+          customerValues[email] = {
+            totalSpent: 0,
+            invoiceCount: 0,
+            firstPurchase: invoice.created_at,
+            lastPurchase: invoice.created_at
+          };
+        }
+        customerValues[email].totalSpent += invoice.grand_total || 0;
+        customerValues[email].invoiceCount += 1;
+        
+        if (new Date(invoice.created_at) < new Date(customerValues[email].firstPurchase)) {
+          customerValues[email].firstPurchase = invoice.created_at;
+        }
+        if (new Date(invoice.created_at) > new Date(customerValues[email].lastPurchase)) {
+          customerValues[email].lastPurchase = invoice.created_at;
+        }
+      }
+    });
+    
+    // Get top customers by value
+    const topCustomers = Object.entries(customerValues)
+      .sort(([,a], [,b]) => b.totalSpent - a.totalSpent)
+      .slice(0, 10)
+      .map(([email, data]) => {
+        const customer = allCustomers.find(c => c.email === email);
+        return {
+          email,
+          name: customer ? customer.name : 'Unknown',
+          ...data
+        };
+      });
+    
+    // Calculate customer segments
+    const customerSegments = {
+      new: 0,
+      active: 0,
+      inactive: 0,
+      vip: 0
+    };
+    
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    Object.values(customerValues).forEach(customer => {
+      const lastPurchase = new Date(customer.lastPurchase);
+      const firstPurchase = new Date(customer.firstPurchase);
+      
+      if (firstPurchase > thirtyDaysAgo) {
+        customerSegments.new++;
+      } else if (lastPurchase > thirtyDaysAgo) {
+        customerSegments.active++;
+      } else {
+        customerSegments.inactive++;
+      }
+      
+      if (customer.totalSpent > 10000000) { // 10M IDR
+        customerSegments.vip++;
+      }
+    });
+    
+    return {
+      totalCustomers: allCustomers.length,
+      topCustomers: topCustomers,
+      customerSegments: customerSegments,
+      averageCustomerValue: Object.values(customerValues).length > 0 ? 
+        Object.values(customerValues).reduce((sum, c) => sum + c.totalSpent, 0) / Object.values(customerValues).length : 0,
+      repeatCustomerRate: Object.values(customerValues).filter(c => c.invoiceCount > 1).length / Object.values(customerValues).length * 100
+    };
+  } catch (error) {
+    console.error('Error getting customer analytics:', error);
+    return {
+      totalCustomers: 0,
+      topCustomers: [],
+      customerSegments: { new: 0, active: 0, inactive: 0, vip: 0 },
+      averageCustomerValue: 0,
+      repeatCustomerRate: 0
+    };
+  }
+}
+
+async function getPerformanceAnalytics() {
+  try {
+    const uptime = process.uptime();
+    const memoryUsage = process.memoryUsage();
+    
+    return {
+      uptime: uptime,
+      uptimeFormatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`,
+      memoryUsage: {
+        used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+        total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+        rss: Math.round(memoryUsage.rss / 1024 / 1024)
+      },
+      requests: performanceMetrics.requests,
+      averageResponseTime: performanceMetrics.averageResponseTime,
+      cacheHitRate: performanceMetrics.cacheHitRate,
+      cacheSize: cache.size,
+      asyncQueueSize: heavyOperationQueue.length
+    };
+  } catch (error) {
+    console.error('Error getting performance analytics:', error);
+    return {
+      uptime: 0,
+      uptimeFormatted: '0h 0m 0s',
+      memoryUsage: { used: 0, total: 0, rss: 0 },
+      requests: { total: 0, successful: 0, failed: 0, slow: 0 },
+      averageResponseTime: 0,
+      cacheHitRate: 0,
+      cacheSize: 0,
+      asyncQueueSize: 0
+    };
+  }
+}
+
+async function getPendingOrdersValue() {
+  try {
+    const pendingOrders = await database.getAllOrders(1000, 0, 'pending');
+    return pendingOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+  } catch (error) {
+    console.error('Error getting pending orders value:', error);
+    return 0;
+  }
+}
+
+// Optimized search endpoints
+app.get('/api/search/invoices', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      status, 
+      dateFrom, 
+      dateTo, 
+      limit = 50, 
+      offset = 0,
+      sortBy = 'invoice_date',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    // Check cache first
+    const cacheKey = getCacheKey('search-invoices', searchTerm, status, dateFrom, dateTo, limit, offset, sortBy, sortOrder);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      // Use optimized database search method
+      const searchResult = await database.searchInvoices(
+        searchTerm, 
+        status && status !== 'all' ? status : null, 
+        dateFrom, 
+        dateTo, 
+        parseInt(limit), 
+        parseInt(offset)
+      );
+      
+      result = {
+        success: true,
+        invoices: searchResult.invoices,
+        pagination: {
+          total: searchResult.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: searchResult.page,
+          totalPages: searchResult.totalPages,
+          hasMore: parseInt(offset) + parseInt(limit) < searchResult.total
+        }
+      };
+      
+      // Cache for 2 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Invoice search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error searching invoices:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search invoices'
+    });
+  }
+});
+
+app.get('/api/search/customers', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      limit = 50, 
+      offset = 0,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    // Check cache first
+    const cacheKey = getCacheKey('search-customers', searchTerm, limit, offset, sortBy, sortOrder);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      // Use optimized database search method
+      const searchResult = await database.searchCustomers(
+        searchTerm, 
+        req.merchant.id, 
+        parseInt(limit), 
+        parseInt(offset)
+      );
+      
+      result = {
+        success: true,
+        customers: searchResult.customers,
+        pagination: {
+          total: searchResult.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: searchResult.page,
+          totalPages: searchResult.totalPages,
+          hasMore: parseInt(offset) + parseInt(limit) < searchResult.total
+        }
+      };
+      
+      // Cache for 2 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Customer search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error searching customers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search customers'
+    });
+  }
+});
+
+app.get('/api/search/products', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      category, 
+      active_only = 'true',
+      limit = 50, 
+      offset = 0,
+      sortBy = 'name',
+      sortOrder = 'asc'
+    } = req.query;
+    
+    // Check cache first
+    const cacheKey = getCacheKey('search-products', searchTerm, category, active_only, limit, offset, sortBy, sortOrder);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      // Use optimized database search method
+      const searchResult = await database.searchProducts(
+        searchTerm, 
+        category, 
+        null, // priceMin
+        null, // priceMax
+        active_only === 'true',
+        parseInt(limit), 
+        parseInt(offset),
+        req.merchant.id
+      );
+      
+      result = {
+        success: true,
+        products: searchResult.products,
+        pagination: {
+          total: searchResult.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: searchResult.page,
+          totalPages: searchResult.totalPages,
+          hasMore: parseInt(offset) + parseInt(limit) < searchResult.total
+        }
+      };
+      
+      // Cache for 2 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Product search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error searching products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search products'
+    });
+  }
+});
+
+app.get('/api/search/orders', async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      status, 
+      dateFrom, 
+      dateTo, 
+      limit = 50, 
+      offset = 0,
+      sortBy = 'order_date',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    // Check cache first
+    const cacheKey = getCacheKey('search-orders', searchTerm, status, dateFrom, dateTo, limit, offset, sortBy, sortOrder);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      // Use optimized database search method
+      const searchResult = await database.searchOrders(
+        searchTerm, 
+        status, 
+        null, // customerEmail
+        dateFrom, 
+        dateTo, 
+        parseInt(limit), 
+        parseInt(offset)
+      );
+      
+      result = {
+        success: true,
+        orders: searchResult.orders,
+        pagination: {
+          total: searchResult.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          page: searchResult.page,
+          totalPages: searchResult.totalPages,
+          hasMore: parseInt(offset) + parseInt(limit) < searchResult.total
+        }
+      };
+      
+      // Cache for 2 minutes
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Order search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error searching orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search orders'
+    });
+  }
+});
+
+// Advanced search endpoint with faceted search
+app.get('/api/search/advanced', authMiddleware.authenticateMerchant, async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { 
+      q: searchTerm = '', 
+      type = 'all', // 'invoices', 'customers', 'products', 'orders', 'all'
+      limit = 10
+    } = req.query;
+    
+    // Check cache first with merchant ID
+    const cacheKey = getCacheKey('search-advanced', searchTerm, type, limit, req.merchant.id);
+    let result = getFromCache(cacheKey);
+    
+    if (!result) {
+      const results = {
+        invoices: [],
+        customers: [],
+        products: [],
+        orders: []
+      };
+      
+      const term = searchTerm.toLowerCase();
+      
+      if (type === 'all' || type === 'invoices') {
+        const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+        results.invoices = invoices
+          .filter(invoice => 
+            invoice.invoice_number?.toLowerCase().includes(term) ||
+            invoice.customer_name?.toLowerCase().includes(term) ||
+            invoice.customer_email?.toLowerCase().includes(term)
+          )
+          .slice(0, parseInt(limit));
+      }
+      
+      if (type === 'all' || type === 'customers') {
+        const customers = await database.getAllCustomers(1000, 0, null, req.merchant.id);
+        results.customers = customers
+          .filter(customer => 
+            customer.name?.toLowerCase().includes(term) ||
+            customer.email?.toLowerCase().includes(term) ||
+            customer.phone?.toLowerCase().includes(term)
+          )
+          .slice(0, parseInt(limit));
+      }
+      
+      if (type === 'all' || type === 'products') {
+        const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
+        results.products = products
+          .filter(product => 
+            product.name?.toLowerCase().includes(term) ||
+            product.description?.toLowerCase().includes(term) ||
+            product.sku?.toLowerCase().includes(term)
+          )
+          .slice(0, parseInt(limit));
+      }
+      
+      if (type === 'all' || type === 'orders') {
+        const orders = await database.getAllOrders(1000, 0, null, null, null, null, req.merchant.id);
+        results.orders = orders
+          .filter(order => 
+            order.order_number?.toLowerCase().includes(term) ||
+            order.customer_name?.toLowerCase().includes(term) ||
+            order.customer_email?.toLowerCase().includes(term)
+          )
+          .slice(0, parseInt(limit));
+      }
+      
+      result = {
+        success: true,
+        results,
+        totalFound: {
+          invoices: results.invoices.length,
+          customers: results.customers.length,
+          products: results.products.length,
+          orders: results.orders.length
+        }
+      };
+      
+      // Cache for 1 minute (shorter for advanced search)
+      setCache(cacheKey, result);
+    }
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🔍 Advanced search completed in ${processingTime}ms`);
+    
+    res.json({
+      ...result,
+      processingTime
+    });
+    
+  } catch (error) {
+    console.error('Error in advanced search:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to perform advanced search'
+    });
+  }
+});
+
+// Analytics API endpoints
+// REMOVED: Duplicate revenue analytics endpoint - use the one above with proper merchant isolation
+
+app.get('/api/analytics/sales', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const orders = await database.getAllOrders(1000, 0, null, null, null, null, req.merchant.id);
+    
+    const totalOrders = orders.length;
+    const completedOrders = orders.filter(order => order.status === 'delivered').length;
+    const pendingOrders = orders.filter(order => ['pending', 'processing', 'shipped'].includes(order.status)).length;
+    
+    const totalInvoices = invoices.length;
+    const paidInvoices = invoices.filter(inv => inv.status === 'paid').length;
+    const conversionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices * 100).toFixed(1) : 0;
+    
+    res.json({
+      success: true,
+      totalOrders,
+      completedOrders,
+      pendingOrders,
+      totalInvoices,
+      paidInvoices,
+      conversionRate: parseFloat(conversionRate)
+    });
+  } catch (error) {
+    console.error('Error fetching sales analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch sales analytics'
+    });
+  }
+});
+
+// REMOVED: Duplicate customer analytics endpoint - use the one above with proper merchant isolation
+
+app.get('/api/analytics/top-products', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices(1000, 0, null, null, null, null, req.merchant.id);
+    const products = await database.getAllProducts(1000, 0, null, true, req.merchant.id);
+    
+    // Aggregate product sales data
+    const productSales = {};
+    
+    invoices.forEach(invoice => {
+      if (invoice.items_json) {
+        let items = [];
+        try {
+          items = typeof invoice.items_json === 'string' 
+            ? JSON.parse(invoice.items_json) 
+            : invoice.items_json;
+        } catch (e) {
+          console.error('Error parsing invoice items:', e);
+          return;
+        }
+        
+        items.forEach(item => {
+          const sku = item.sku || item.productSku;
+          if (!productSales[sku]) {
+            productSales[sku] = {
+              name: item.productName || item.product_name,
+              sku: sku,
+              totalSold: 0,
+              revenue: 0
             };
+          }
+          productSales[sku].totalSold += item.quantity || 0;
+          productSales[sku].revenue += (item.lineTotal || item.line_total || 0);
+        });
+      }
+    });
+    
+    // Sort by total sold and get top 10
+    const topProducts = Object.values(productSales)
+      .sort((a, b) => b.totalSold - a.totalSold)
+      .slice(0, 10);
+    
+    res.json({
+      success: true,
+      products: topProducts
+    });
+  } catch (error) {
+    console.error('Error fetching top products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch top products'
+    });
+  }
+});
 
-            // Complete WhatsApp message generation
-            const paymentInfo = await generatePaymentInfo();
-            
-            const whatsappMessage = `📋 *INVOICE ${invoiceNumber}*
+app.get('/api/analytics/recent-activity', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices(50, 0, null, null, null, null, req.merchant.id);
+    const orders = await database.getAllOrders(50, 0, null, null, null, null, req.merchant.id);
+    const customers = await database.getAllCustomers(50, 0, null, req.merchant.id);
+    
+    const activities = [];
+    
+    // Add recent invoices
+    invoices.slice(-5).forEach(invoice => {
+      activities.push({
+        type: 'invoice',
+        description: `Invoice ${invoice.invoice_number} created for ${invoice.customer_name}`,
+        timestamp: invoice.created_at,
+        amount: invoice.grand_total
+      });
+    });
+    
+    // Add recent orders
+    orders.slice(-5).forEach(order => {
+      activities.push({
+        type: 'order',
+        description: `Order ${order.order_number} ${order.status}`,
+        timestamp: order.updated_at,
+        amount: order.total_amount
+      });
+    });
+    
+    // Add recent customers
+    customers.slice(-3).forEach(customer => {
+      activities.push({
+        type: 'customer',
+        description: `New customer ${customer.name} registered`,
+        timestamp: customer.created_at
+      });
+    });
+    
+    // Sort by timestamp and get latest 10
+    const recentActivities = activities
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 10);
+    
+    res.json({
+      success: true,
+      activities: recentActivities
+    });
+  } catch (error) {
+    console.error('Error fetching recent activity:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch recent activity'
+    });
+  }
+});
 
-🏢 *${businessName}*
-📅 Tanggal: ${invoiceDate}
-${dueDate ? `⏰ Jatuh Tempo: ${formatDate(dueDate)}` : ''}
+app.get('/api/analytics/ai-insights', async (req, res) => {
+  try {
+    const invoices = await database.getAllInvoices();
+    const orders = await database.getAllOrders();
+    const products = await database.getAllProducts();
+    const customers = await database.getAllCustomers();
+    
+    const insights = [];
+    
+    // Revenue trend insight
+    const paidInvoices = invoices.filter(inv => inv.status === 'paid');
+    const totalRevenue = paidInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+    if (totalRevenue > 0) {
+      insights.push({
+        icon: '📈',
+        title: 'Revenue Growth',
+        description: `You've generated ${paidInvoices.length} paid invoices with total revenue of ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalRevenue).replace('IDR', 'Rp')}`,
+        action: 'showSection("analytics")',
+        actionText: 'View Details'
+      });
+    }
+    
+    // Low stock insight
+    const lowStockProducts = products.filter(product => 
+      product.stock_quantity <= product.min_stock_level && product.is_active
+    );
+    if (lowStockProducts.length > 0) {
+      insights.push({
+        icon: '⚠️',
+        title: 'Low Stock Alert',
+        description: `${lowStockProducts.length} products are running low on stock. Consider restocking soon.`,
+        action: 'showSection("products")',
+        actionText: 'Manage Stock'
+      });
+    }
+    
+    // Customer engagement insight
+    if (customers.length > 0) {
+      const activeCustomers = customers.filter(c => c.total_orders > 0).length;
+      const engagementRate = (activeCustomers / customers.length * 100).toFixed(1);
+      insights.push({
+        icon: '👥',
+        title: 'Customer Engagement',
+        description: `${engagementRate}% of your customers (${activeCustomers}/${customers.length}) have made purchases.`,
+        action: 'showSection("customers")',
+        actionText: 'View Customers'
+      });
+    }
+    
+    // AI learning insight
+    insights.push({
+      icon: '🤖',
+      title: 'AI Auto-Learning Active',
+      description: 'Your AI system is continuously learning from invoice patterns to improve accuracy and efficiency.',
+      action: null,
+      actionText: null
+    });
+    
+    res.json({
+      success: true,
+      insights: insights
+    });
+  } catch (error) {
+    console.error('Error generating AI insights:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate AI insights'
+    });
+  }
+});
 
-👤 *Pelanggan:*
-${customerName}
-${customerPhone ? `📱 ${customerPhone}` : ''}
-${customerAddress ? `📍 ${customerAddress}` : ''}
+// PREMIUM LOGO UPLOAD API ENDPOINTS
+// Premium Logo Upload Endpoint
+app.post('/api/upload-premium-logo', authMiddleware.authenticateMerchant, upload.single('logo'), async (req, res) => {
+  try {
+    console.log('📸 Premium logo upload request received');
+    console.log('File details:', req.file);
+    console.log('Logo type:', req.body.type); // 'header' or 'footer'
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file uploaded' 
+      });
+    }
 
-📦 *Detail Pesanan:*
-${items.map(item => `• ${item.description || item.name || 'Item'} - ${formatCurrency(item.lineTotal || item.total || 0)}`).join('\n')}
+    const logoType = req.body.type; // 'header' or 'footer'
+    if (!logoType || !['header', 'footer'].includes(logoType)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid logo type. Must be "header" or "footer"' 
+      });
+    }
 
-💰 *Ringkasan:*
-Subtotal: ${formatCurrency(subtotal)}
-${discount > 0 ? `${(() => {
-                if (discountType === 'percentage') {
-                    return `Diskon (${discountValue}%)`;
-                } else {
-                    return 'Diskon (Jumlah Tetap)';
-                }
-            })()}: -${formatCurrency(discount)}` : ''}
-${shippingCost > 0 ? `Biaya Kirim: ${formatCurrency(shippingCost)}` : ''}
-*TOTAL: ${formatCurrency(total)}*
+    const merchantId = req.merchant.id;
+    console.log(`📤 Uploading ${logoType} logo for merchant:`, merchantId);
 
-${paymentInfo}
+    // Upload to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const uploadOptions = {
+        folder: `ai-invoice-generator/premium-logos/${logoType}/merchant_${merchantId}`,
+        public_id: `merchant_${merchantId}_${logoType}_logo_${Date.now()}`,
+        transformation: [
+          { width: logoType === 'header' ? 400 : 200, height: logoType === 'header' ? 200 : 100, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'auto' }
+        ]
+      };
 
-Terima kasih atas kepercayaan Anda! 🙏`;
+      const uploadStream = cloudinary.uploader.upload_stream(
+        uploadOptions,
+        (error, result) => {
+          if (error) {
+            console.error(`❌ Cloudinary upload error for ${logoType} logo:`, error);
+            reject(error);
+          } else {
+            console.log(`✅ ${logoType} logo uploaded successfully:`, result.secure_url);
+            resolve(result);
+          }
+        }
+      );
 
-                return whatsappMessage;
-            }
+      uploadStream.end(req.file.buffer);
+    });
 
-            // Initialize the page
-            async function initializePage() {
-                try {
-                    console.log('🚀 Initializing invoice view page...');
+    // Update business settings with new logo URL
+    const updateData = {};
+    if (logoType === 'header') {
+      updateData.customHeaderLogoUrl = result.secure_url;
+      updateData.customHeaderLogoPublicId = result.public_id;
+    } else {
+      updateData.customFooterLogoUrl = result.secure_url;
+      updateData.customFooterLogoPublicId = result.public_id;
+    }
 
-                    // Show loading indicator
-                    const loadingHtml = `
-                        <div style="display: flex; justify-content: center; align-items: center; height: 50vh; flex-direction: column;">
-                            <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
-                            <p style="margin-top: 20px; color: #666;">Memuat faktur...</p>
-                        </div>
-                        <style>
-                            @keyframes spin {
-                                0% { transform: rotate(0deg); }
-                                100% { transform: rotate(360deg); }
-                            }
-                        </style>
-                    `;
-                    document.getElementById('invoice-container').innerHTML = loadingHtml;
+    await database.updateBusinessSettings(updateData, merchantId);
 
-                    // Get invoice ID from URL
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const invoiceId = urlParams.get('id');
+    res.json({
+      success: true,
+      url: result.secure_url,
+      publicId: result.public_id,
+      message: `${logoType} logo uploaded successfully`
+    });
 
-                    if (!invoiceId) {
-                        throw new Error('Invoice ID not provided');
-                    }
+  } catch (error) {
+    console.error(`❌ Error uploading premium ${req.body.type} logo:`, error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to upload logo' 
+    });
+  }
+});
 
-                    console.log('📋 Loading invoice:', invoiceId);
-                    await loadInvoice();
-                    
-                    // Check for print parameter and trigger print if requested
-                    const printParam = urlParams.get('print');
-                    if (printParam === 'true') {
-                        console.log('🖨️ Print parameter detected, triggering print dialog...');
-                        // Give the page time to fully render before printing
-                        setTimeout(() => {
-                            window.print();
-                        }, 1500);
-                    }
-                    
-                } catch (error) {
-                    console.error('❌ Error initializing page:', error);
-                    document.body.innerHTML = `
-                        <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
-                            <h2 style="color: #e53e3e;">Error Loading Invoice</h2>
-                            <p style="color: #666;">${error.message}</p>
-                            <button onclick="window.location.reload()" style="padding: 10px 20px; background: #3182ce; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                                Try Again
-                            </button>
-                        </div>
-                    `;
-                }
-            }
+// Remove Premium Logo Endpoint
+app.delete('/api/remove-premium-logo/:type', authMiddleware.authenticateMerchant, async (req, res) => {
+  try {
+    const logoType = req.params.type; // 'header' or 'footer'
+    const merchantId = req.merchant.id;
 
-            // Start the application
-            document.addEventListener('DOMContentLoaded', initializePage);
+    if (!['header', 'footer'].includes(logoType)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid logo type' 
+      });
+    }
 
-        // Initialize when DOM is loaded
-        // document.addEventListener('DOMContentLoaded', initializePage);
-    </script>
-</body>
-</html>
+    console.log(`🗑️ Removing ${logoType} logo for merchant:`, merchantId);
+
+    // Get current logo info
+    const settings = await database.getBusinessSettings(merchantId);
+    const publicId = logoType === 'header' ? 
+      settings.customHeaderLogoPublicId || settings.custom_header_logo_public_id :
+      settings.customFooterLogoPublicId || settings.custom_footer_logo_public_id;
+
+    // Remove from Cloudinary if exists
+    if (publicId) {
+      try {
+        await cloudinary.uploader.destroy(publicId);
+        console.log(`✅ ${logoType} logo removed from Cloudinary:`, publicId);
+      } catch (cloudinaryError) {
+        console.error(`⚠️ Error removing ${logoType} logo from Cloudinary:`, cloudinaryError);
+      }
+    }
+
+    // Update database
+    const updateData = {};
+    if (logoType === 'header') {
+      updateData.customHeaderLogoUrl = null;
+      updateData.customHeaderLogoPublicId = null;
+    } else {
+      updateData.customFooterLogoUrl = null;
+      updateData.customFooterLogoPublicId = null;
+    }
+
+    await database.updateBusinessSettings(updateData, merchantId);
+
+    res.json({
+      success: true,
+      message: `${logoType} logo removed successfully`
+    });
+
+  } catch (error) {
+    console.error(`❌ Error removing premium ${req.params.type} logo:`, error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to remove logo' 
+    });
+  }
+});
+
+// Unified Premium Branding Save Endpoint
+app.post('/api/save-premium-branding', authMiddleware.authenticateMerchant, logoUpload.fields([
+  { name: 'headerLogo', maxCount: 1 },
+  { name: 'footerLogo', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    console.log('💎 Saving premium branding for merchant:', merchantId);
+    console.log('📋 Form data received:', {
+      customHeaderText: req.body.customHeaderText,
+      hasHeaderLogo: !!(req.files && req.files.headerLogo),
+      hasFooterLogo: !!(req.files && req.files.footerLogo),
+      hideAspreeBranding: req.body.hideAspreeBranding
+    });
+    
+    // Prepare settings data
+    const settingsData = {
+      customHeaderText: req.body.customHeaderText || '',
+      customHeaderBgColor: req.body.customHeaderBgColor || '#311d6b',
+      customFooterBgColor: req.body.customFooterBgColor || '#311d6b',
+      customHeaderTextColor: req.body.customHeaderTextColor || '#ffffff',
+      customFooterTextColor: req.body.customFooterTextColor || '#ffffff',
+      hideAspreeBranding: req.body.hideAspreeBranding === 'true'
+    };
+    
+    // Upload logos if provided
+    if (req.files && req.files.headerLogo) {
+      console.log('📤 Uploading header logo...');
+      const headerResult = await cloudinaryService.uploadImage(req.files.headerLogo[0].buffer, {
+        filename: `merchant_${merchantId}_header_logo_${Date.now()}`,
+        merchantId: merchantId,
+        folder: `ai-invoice-generator/premium-logos/header/merchant_${merchantId}`,
+        transformation: [
+          { width: 400, height: 200, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'auto' }
+        ]
+      });
+      settingsData.customHeaderLogoUrl = headerResult.secure_url;
+      settingsData.customHeaderLogoPublicId = headerResult.public_id;
+    }
+
+    if (req.files && req.files.footerLogo) {
+      console.log('📤 Uploading footer logo...');
+      const footerResult = await cloudinaryService.uploadImage(req.files.footerLogo[0].buffer, {
+        filename: `merchant_${merchantId}_footer_logo_${Date.now()}`,
+        merchantId: merchantId,
+        folder: `ai-invoice-generator/premium-logos/footer/merchant_${merchantId}`,
+        transformation: [
+          { width: 200, height: 100, crop: 'limit' },
+          { quality: 'auto:good' },
+          { format: 'auto' }
+        ]
+      });
+      settingsData.customFooterLogoUrl = footerResult.secure_url;
+      settingsData.customFooterLogoPublicId = footerResult.public_id;
+    }
+    
+    // Save everything at once
+    await database.updateBusinessSettings(settingsData, merchantId);
+    
+    console.log('✅ Premium branding saved successfully for merchant:', merchantId);
+    res.json({
+      success: true,
+      message: 'Premium branding saved successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error saving premium branding:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to save premium branding'
+    });
+  }
+});
+
+// Note: uploadToCloudinary function removed - now using cloudinaryService.uploadImage directly
+
+// Start the server
+async function startServer() {
+  // Print configuration summary
+  config.printStartupInfo();
+  
+  // Initialize email service
+  await emailService.initialize();
+  
+  let server;
+  
+  if (config.ssl.enabled) {
+    console.log('🔐 Starting HTTPS server...');
+    
+    // Setup SSL certificates
+    const sslReady = await sslManager.setupSSL();
+    if (!sslReady) {
+      console.error('❌ SSL setup failed. Exiting...');
+      process.exit(1);
+    }
+    
+    // Print SSL status
+    sslManager.printSSLStatus();
+    
+    // Load SSL certificates
+    try {
+      const { cert, key } = sslManager.loadCertificates();
+      const httpsOptions = { cert, key };
+      
+      // Create HTTPS server
+      server = https.createServer(httpsOptions, app);
+      
+      server.listen(PORT, config.server.host, () => {
+        console.log(`🔒 HTTPS Server running at: https://${config.server.host}:${PORT}`);
+        printServerInfo();
+      });
+      
+      // Also start HTTP server for redirect (in production)
+      if (config.isProduction) {
+        const httpApp = express();
+        httpApp.use((req, res) => {
+          res.redirect(301, `https://${req.headers.host}${req.url}`);
+        });
+        
+        httpApp.listen(80, config.server.host, () => {
+          console.log('🔄 HTTP redirect server running on port 80');
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to start HTTPS server:', error.message);
+      process.exit(1);
+    }
+  } else {
+    console.log('🌐 Starting HTTP server...');
+    server = http.createServer(app);
+    
+    server.listen(PORT, config.server.host, () => {
+      console.log(`🌐 HTTP Server running at: http://${config.server.host}:${PORT}`);
+      printServerInfo();
+    });
+  }
+  
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('📴 Shutting down server...');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  });
+  
+  process.on('SIGINT', () => {
+    console.log('📴 Shutting down server...');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  });
+}
+
+function printServerInfo() {
+  console.log('📱 Open your browser and go to the URL above');
+  console.log('💡 Make sure you have set OPENAI_API_KEY environment variable');
+  
+  // Print additional development info
+  if (config.isDevelopment) {
+    console.log('\n📋 Development Mode Features:');
+    console.log('• Mock payments enabled');
+    console.log('• Debug logging enabled');
+    console.log('• CORS enabled for development');
+    console.log('• Check .env.example for configuration options');
+    
+    if (config.ssl.enabled) {
+      console.log('• Self-signed SSL certificate (accept security warning)');
+    }
+  }
+  
+  console.log('='.repeat(50));
+}
+
+// Start the server
+startServer().catch(error => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+});
