@@ -4025,7 +4025,12 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
         address: invoice.customer_address,
         phone: invoice.customer_phone,
         email: invoice.customer_email
-      }
+      },
+
+      // Add items array for template compatibility
+      items: Array.isArray(invoice.items_json)
+        ? invoice.items_json
+        : JSON.parse(invoice.items_json || '[]')
     };
 
     console.log('📄 Enhanced invoice data for consistent display:', {
@@ -4033,7 +4038,9 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
       hasLogo: !!enhancedInvoice.merchant_logo,
       hasBusinessProfile: !!enhancedInvoice.businessProfile,
       hasCustomerObject: !!enhancedInvoice.customer,
-      customerName: enhancedInvoice.customer?.name
+      customerName: enhancedInvoice.customer?.name,
+      hasItemsArray: !!enhancedInvoice.items,
+      itemCount: enhancedInvoice.items?.length || 0
     });
     
     res.json({
@@ -4254,7 +4261,12 @@ app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMercha
         address: invoice.customer_address,
         phone: invoice.customer_phone,
         email: invoice.customer_email
-      }
+      },
+
+      // Add items array for template compatibility
+      items: Array.isArray(invoice.items_json)
+        ? invoice.items_json
+        : JSON.parse(invoice.items_json || '[]')
     };
 
     res.json({
