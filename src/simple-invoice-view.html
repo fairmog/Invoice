@@ -1893,7 +1893,7 @@
                     ${(() => {
                         try {
                             console.log('🔧 Processing payment schedule - Context:', context);
-                            console.log('🔧 invoice.paymentSchedule:', invoice.paymentSchedule);
+                            console.log('🔧 invoice.paymentSchedule:', JSON.stringify(invoice.paymentSchedule));
                             console.log('🔧 invoice.payment_schedule_json:', invoice.payment_schedule_json);
 
                             // Handle both direct object (preview) and JSON string (database) formats
@@ -1901,13 +1901,13 @@
                             if (invoice.paymentSchedule) {
                                 // Direct object format (preview mode)
                                 paymentSchedule = invoice.paymentSchedule;
-                                console.log('✅ Using direct paymentSchedule object:', paymentSchedule);
+                                console.log('✅ Using direct paymentSchedule object:', JSON.stringify(paymentSchedule));
                             } else if (invoice.payment_schedule_json) {
                                 // JSON string format (database/view mode)
                                 paymentSchedule = typeof invoice.payment_schedule_json === 'string'
                                     ? JSON.parse(invoice.payment_schedule_json)
                                     : invoice.payment_schedule_json;
-                                console.log('✅ Parsed payment_schedule_json:', paymentSchedule);
+                                console.log('✅ Parsed payment_schedule_json:', JSON.stringify(paymentSchedule));
                             } else {
                                 console.log('❌ No payment schedule data found');
                             }
@@ -2078,7 +2078,7 @@
 
             let items = [];
             console.log('🔧 Processing invoice items...');
-            console.log('🔧 Full invoice object:', invoice);
+            console.log('🔧 Full invoice object keys:', Object.keys(invoice));
             console.log('🔧 Raw items_json:', invoice.items_json);
             console.log('🔧 Type:', typeof invoice.items_json);
             console.log('🔧 Is Array:', Array.isArray(invoice.items_json));
@@ -2087,7 +2087,7 @@
                 // Strategy 1: Direct array items_json
                 if (Array.isArray(invoice.items_json)) {
                     items = invoice.items_json;
-                    console.log('✅ Items parsed as direct array:', items);
+                    console.log('✅ Items parsed as direct array:', JSON.stringify(items));
                 } 
                 // Strategy 2: String JSON items_json
                 else if (typeof invoice.items_json === 'string' && invoice.items_json.trim() !== '') {
@@ -3159,7 +3159,7 @@
                 };
                 
                 const paymentInfo = getPaymentInfo();
-                console.log('💳 Payment info determined:', paymentInfo);
+                console.log('💳 Payment info determined:', JSON.stringify(paymentInfo));
                 
                 return `
                     <div class="paper-wrapper" style="margin-top: 1px;">
