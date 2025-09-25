@@ -4017,13 +4017,23 @@ app.get('/api/invoices/:id', authMiddleware.optionalAuth, async (req, res) => {
         taxEnabled: currentBusinessSettings.taxEnabled || false,
         taxRate: currentBusinessSettings.taxRate || 0,
         termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
+      },
+
+      // Add customer object structure for template compatibility
+      customer: {
+        name: invoice.customer_name,
+        address: invoice.customer_address,
+        phone: invoice.customer_phone,
+        email: invoice.customer_email
       }
     };
-    
+
     console.log('📄 Enhanced invoice data for consistent display:', {
       invoice_number: enhancedInvoice.invoice_number,
       hasLogo: !!enhancedInvoice.merchant_logo,
-      hasBusinessProfile: !!enhancedInvoice.businessProfile
+      hasBusinessProfile: !!enhancedInvoice.businessProfile,
+      hasCustomerObject: !!enhancedInvoice.customer,
+      customerName: enhancedInvoice.customer?.name
     });
     
     res.json({
@@ -4208,10 +4218,48 @@ app.get('/api/invoices/number/:invoiceNumber', authMiddleware.authenticateMercha
         error: 'Invoice not found'
       });
     }
-    
+
+    // Get current business settings for consistent display (same as /api/invoices/:id)
+    const currentBusinessSettings = await getCurrentBusinessSettings(invoice.merchant_id);
+
+    // Enhance invoice with business settings and customer object for consistent template rendering
+    const enhancedInvoice = {
+      ...invoice,
+      // Ensure business information is available
+      merchant_logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+      merchant_name: invoice.merchant_name || currentBusinessSettings.name,
+      merchant_address: invoice.merchant_address || currentBusinessSettings.address,
+      merchant_phone: invoice.merchant_phone || currentBusinessSettings.phone,
+      merchant_email: invoice.merchant_email || currentBusinessSettings.email,
+      merchant_website: invoice.merchant_website || currentBusinessSettings.website,
+
+      // Add metadata for business profile (needed for template logic)
+      businessProfile: {
+        name: invoice.merchant_name || currentBusinessSettings.name,
+        address: invoice.merchant_address || currentBusinessSettings.address,
+        phone: invoice.merchant_phone || currentBusinessSettings.phone,
+        email: invoice.merchant_email || currentBusinessSettings.email,
+        website: invoice.merchant_website || currentBusinessSettings.website,
+        logo: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+        logoUrl: currentBusinessSettings.logoUrl || invoice.merchant_logo,
+        hideBusinessName: currentBusinessSettings.hideBusinessName || false,
+        taxEnabled: currentBusinessSettings.taxEnabled || false,
+        taxRate: currentBusinessSettings.taxRate || 0,
+        termsAndConditions: currentBusinessSettings.termsAndConditions || 'Pembayaran dalam 30 hari'
+      },
+
+      // Add customer object structure for template compatibility
+      customer: {
+        name: invoice.customer_name,
+        address: invoice.customer_address,
+        phone: invoice.customer_phone,
+        email: invoice.customer_email
+      }
+    };
+
     res.json({
       success: true,
-      invoice
+      invoice: enhancedInvoice
     });
   } catch (error) {
     console.error('❌ Error fetching invoice by number:', error);
