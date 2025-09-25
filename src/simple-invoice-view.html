@@ -1675,26 +1675,26 @@
                             }
                             ${businessProfile && businessProfile.hideBusinessName ? '' :
                                 `<strong>${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant.businessName}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.businessName
+                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant_name || invoice.business_name || 'Business Name'}<span class="edit-indicator">✏️</span></span>` :
+                                    (invoice.merchant_name || invoice.business_name || 'Business Name')
                                 }</strong>`
                             }
                         </div>
                         <div class="invoice-meta">
                             <h1 class="invoice-title">${invoiceTitle}</h1>
                             <div class="invoice-details">
-                                <strong>No:</strong> ${invoice.header.invoiceNumber}
+                                <strong>No:</strong> ${invoice.invoice_number || 'INV-UNKNOWN'}
                             </div>
                             <div class="invoice-details">
                                 <strong>Tanggal:</strong> ${context === 'preview' ?
-                                    `<span class="editable" data-field="header.invoiceDate" data-type="date">${formatDate(invoice.header.invoiceDate)}<span class="edit-indicator">✏️</span></span>` :
-                                    formatDate(invoice.header.invoiceDate)
+                                    `<span class="editable" data-field="header.invoiceDate" data-type="date">${formatDate(invoice.invoice_date || invoice.created_at)}<span class="edit-indicator">✏️</span></span>` :
+                                    formatDate(invoice.invoice_date || invoice.created_at)
                                 }
                             </div>
                             <div class="invoice-details">
                                 <strong>Jatuh Tempo:</strong> ${context === 'preview' ?
-                                    `<span class="editable" data-field="header.dueDate" data-type="date">${formatDate(invoice.header.dueDate || invoice.header.invoiceDate)}<span class="edit-indicator">✏️</span></span>` :
-                                    formatDate(invoice.header.dueDate || invoice.header.invoiceDate)
+                                    `<span class="editable" data-field="header.dueDate" data-type="date">${formatDate(invoice.due_date || invoice.invoice_date || invoice.created_at)}<span class="edit-indicator">✏️</span></span>` :
+                                    formatDate(invoice.due_date || invoice.invoice_date || invoice.created_at)
                                 }
                             </div>
                         </div>
@@ -1706,20 +1706,20 @@
                             <h3>DARI</h3>
                             <address>
                                 <strong>${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant.businessName}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.businessName
+                                    `<span class="editable" data-field="merchant.businessName" data-type="text">${invoice.merchant_name || invoice.business_name || 'Business Name'}<span class="edit-indicator">✏️</span></span>` :
+                                    (invoice.merchant_name || invoice.business_name || 'Business Name')
                                 }</strong><br>
                                 ${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.address" data-type="textarea">${invoice.merchant.address}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.address
+                                    `<span class="editable" data-field="merchant.address" data-type="textarea">${invoice.merchant_address || invoice.business_address || 'Business Address'}<span class="edit-indicator">✏️</span></span>` :
+                                    (invoice.merchant_address || invoice.business_address || 'Business Address')
                                 }<br>
                                 ${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.phone" data-type="tel">${invoice.merchant.phone}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.phone
+                                    `<span class="editable" data-field="merchant.phone" data-type="tel">${invoice.merchant_phone || invoice.business_phone || 'Phone'}<span class="edit-indicator">✏️</span></span>` :
+                                    (invoice.merchant_phone || invoice.business_phone || 'Phone')
                                 }<br>
                                 ${context === 'preview' ?
-                                    `<span class="editable" data-field="merchant.email" data-type="email">${invoice.merchant.email}<span class="edit-indicator">✏️</span></span>` :
-                                    invoice.merchant.email
+                                    `<span class="editable" data-field="merchant.email" data-type="email">${invoice.merchant_email || invoice.business_email || 'Email'}<span class="edit-indicator">✏️</span></span>` :
+                                    (invoice.merchant_email || invoice.business_email || 'Email')
                                 }
                             </address>
                         </div>
@@ -2045,7 +2045,7 @@
                     <html>
                     <head>
                         <meta charset="UTF-8">
-                        <title>Faktur - ${invoice.header.invoiceNumber}</title>
+                        <title>Faktur - ${invoice.invoice_number || 'INV-UNKNOWN'}</title>
                         <style>${getContextStyles(context)}</style>
                     </head>
                     <body>
